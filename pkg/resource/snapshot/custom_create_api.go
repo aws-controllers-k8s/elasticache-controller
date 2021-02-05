@@ -15,8 +15,8 @@ package snapshot
 
 import (
 	"context"
-	ackv1alpha1 "github.com/aws/aws-controllers-k8s/apis/core/v1alpha1"
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

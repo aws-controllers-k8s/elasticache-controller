@@ -16,13 +16,13 @@ package replication_group
 import (
 	"context"
 	"fmt"
-	ackv1alpha1 "github.com/aws/aws-controllers-k8s/apis/core/v1alpha1"
-	"github.com/aws/aws-controllers-k8s/pkg/requeue"
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
+	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	"github.com/pkg/errors"
 	"sort"
 
-	ackcompare "github.com/aws/aws-controllers-k8s/pkg/compare"
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

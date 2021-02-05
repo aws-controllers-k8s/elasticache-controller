@@ -15,9 +15,9 @@ package cache_parameter_group
 
 import (
 	"context"
-	ackv1alpha1 "github.com/aws/aws-controllers-k8s/apis/core/v1alpha1"
-	ackerr "github.com/aws/aws-controllers-k8s/pkg/errors"
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
+	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

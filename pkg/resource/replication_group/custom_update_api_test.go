@@ -16,7 +16,7 @@ package replication_group
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-controllers-k8s/pkg/requeue"
+	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 	ctrlrtzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	ackcompare "github.com/aws/aws-controllers-k8s/pkg/compare"
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
