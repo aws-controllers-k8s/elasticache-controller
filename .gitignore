@@ -2,6 +2,7 @@
 *.swp
 *~
 .idea
+go.local.sum
 /docs/site
 bin
 build
