@@ -124,6 +124,8 @@ ignore:
     - GlobalReplicationGroup
     - CacheCluster
     - CacheSecurityGroup
+    - User
+    - UserGroup
   field_paths:
     - DescribeSnapshotsInput.CacheClusterId
     - DescribeSnapshotsInput.ReplicationGroupId
