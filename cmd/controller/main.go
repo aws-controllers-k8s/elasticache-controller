@@ -33,8 +33,6 @@ import (
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_subnet_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/replication_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/snapshot"
-	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/user"
-	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/user_group"
 )
 
 var (

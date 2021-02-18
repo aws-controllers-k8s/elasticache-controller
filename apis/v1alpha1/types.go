@@ -20,8 +20,7 @@ import (
 )
 
 type Authentication struct {
-	PasswordCount *int64  `json:"passwordCount,omitempty"`
-	Type          *string `json:"type_,omitempty"`
+	PasswordCount *int64 `json:"passwordCount,omitempty"`
 }
 
 type AvailabilityZone struct {
@@ -159,11 +158,6 @@ type Event struct {
 	Date             *metav1.Time `json:"date,omitempty"`
 	Message          *string      `json:"message,omitempty"`
 	SourceIdentifier *string      `json:"sourceIdentifier,omitempty"`
-}
-
-type Filter struct {
-	Name   *string   `json:"name,omitempty"`
-	Values []*string `json:"values,omitempty"`
 }
 
 type GlobalNodeGroup struct {
@@ -454,33 +448,22 @@ type UpdateAction struct {
 	UpdateActionStatusModifiedDate      *metav1.Time `json:"updateActionStatusModifiedDate,omitempty"`
 }
 
-type UserGroupPendingChanges struct {
-	UserIDsToAdd    []*string `json:"userIDsToAdd,omitempty"`
-	UserIDsToRemove []*string `json:"userIDsToRemove,omitempty"`
+type User struct {
+	ARN          *string   `json:"arn,omitempty"`
+	AccessString *string   `json:"accessString,omitempty"`
+	Status       *string   `json:"status,omitempty"`
+	UserGroupIDs []*string `json:"userGroupIDs,omitempty"`
+	UserID       *string   `json:"userID,omitempty"`
+	UserName     *string   `json:"userName,omitempty"`
 }
 
-type UserGroup_SDK struct {
-	ARN               *string                  `json:"arn,omitempty"`
-	Engine            *string                  `json:"engine,omitempty"`
-	PendingChanges    *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
-	ReplicationGroups []*string                `json:"replicationGroups,omitempty"`
-	Status            *string                  `json:"status,omitempty"`
-	UserGroupID       *string                  `json:"userGroupID,omitempty"`
-	UserIDs           []*string                `json:"userIDs,omitempty"`
+type UserGroup struct {
+	ARN         *string `json:"arn,omitempty"`
+	Status      *string `json:"status,omitempty"`
+	UserGroupID *string `json:"userGroupID,omitempty"`
 }
 
 type UserGroupsUpdateStatus struct {
 	UserGroupIDsToAdd    []*string `json:"userGroupIDsToAdd,omitempty"`
 	UserGroupIDsToRemove []*string `json:"userGroupIDsToRemove,omitempty"`
-}
-
-type User_SDK struct {
-	ARN            *string         `json:"arn,omitempty"`
-	AccessString   *string         `json:"accessString,omitempty"`
-	Authentication *Authentication `json:"authentication,omitempty"`
-	Engine         *string         `json:"engine,omitempty"`
-	Status         *string         `json:"status,omitempty"`
-	UserGroupIDs   []*string       `json:"userGroupIDs,omitempty"`
-	UserID         *string         `json:"userID,omitempty"`
-	UserName       *string         `json:"userName,omitempty"`
 }
