@@ -16,8 +16,10 @@ package replication_group
 import (
 	"context"
 	"fmt"
+	ackmetrics "github.com/aws-controllers-k8s/runtime/pkg/metrics"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zapcore"
 	ctrlrtzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"testing"
@@ -26,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	mocksvcsdkapi "github.com/aws-controllers-k8s/elasticache-controller/mocks/aws-sdk-go/elasticache"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 )
@@ -33,6 +36,12 @@ import (
 // Helper methods to setup tests
 // provideResourceManager returns pointer to resourceManager
 func provideResourceManager() *resourceManager {
+	return provideResourceManagerWithMockSDKAPI(&mocksvcsdkapi.ElastiCacheAPI{})
+}
+
+// provideResourceManagerWithMockSDKAPI accepts MockElastiCacheAPI and returns pointer to resourceManager
+// the returned resourceManager is configured to use mockapi api.
+func provideResourceManagerWithMockSDKAPI(mockElastiCacheAPI *mocksvcsdkapi.ElastiCacheAPI) *resourceManager {
 	zapOptions := ctrlrtzap.Options{
 		Development: true,
 		Level:       zapcore.InfoLevel,
@@ -43,8 +52,9 @@ func provideResourceManager() *resourceManager {
 		awsAccountID: "",
 		awsRegion:    "",
 		sess:         nil,
-		sdkapi:       nil,
+		sdkapi:       mockElastiCacheAPI,
 		log:          fakeLogger,
+		metrics:      ackmetrics.NewMetrics("elasticache"),
 	}
 }
 
@@ -248,6 +258,27 @@ func validatePayloadReplicaConfig(
 		assert.True(found, "Expected node group id %s not found in payload", *desiredNodeGroup.NodeGroupID)
 	}
 	assert.Equal(len(desiredNodeGroupConfigs), len(payloadReplicaConfigs))
+}
+
+func TestDecreaseReplicaCountMock(t *testing.T) {
+	assert := assert.New(t)
+	// Setup mock API response
+	var mockReplicationGroupDescription = "mock_replication_group_description"
+	var mockOutput = svcsdk.DecreaseReplicaCountOutput{
+		ReplicationGroup: &svcsdk.ReplicationGroup{
+			Description: &mockReplicationGroupDescription,
+		},
+	}
+	mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
+	mocksdkapi.On("DecreaseReplicaCountWithContext", mock.Anything, mock.Anything).Return(&mockOutput, nil)
+	rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
+	// Tests
+	t.Run("MockAPI=DecreaseReplicaCount", func(t *testing.T) {
+		desired := provideResource()
+		latest := provideResource()
+		res, _ := rm.DecreaseReplicaCount(context.Background(), desired, latest)
+		assert.Equal(mockReplicationGroupDescription, *res.ko.Status.Description)
+	})
 }
 
 func TestCustomModifyReplicationGroup(t *testing.T) {
