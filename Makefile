@@ -3,7 +3,9 @@ SHELL := /bin/bash # Use bash syntax
 # Set up variables
 GO111MODULE=on
 
-ELASTICACHE_API_PATH="$(shell echo $(shell go env GOPATH))/pkg/mod/github.com/aws/aws-sdk-go@v1.37.4/service/elasticache/elasticacheiface"
+AWS_SDK_GO_VERSION="$(shell echo $(shell go list -m -f '{{.Version}}' github.com/aws/aws-sdk-go))"
+AWS_SDK_GO_VERSIONED_PATH="$(shell echo github.com/aws/aws-sdk-go@$(AWS_SDK_GO_VERSION))"
+ELASTICACHE_API_PATH="$(shell echo $(shell go env GOPATH))/pkg/mod/$(AWS_SDK_GO_VERSIONED_PATH)/service/elasticache/elasticacheiface"
 SERVICE_CONTROLLER_SRC_PATH="$(shell pwd)"
 
 # Build ldflags
@@ -31,7 +33,7 @@ install-mockery:
 	@scripts/install-mockery.sh
 
 mocks: install-mockery ## Build mocks
-	go get -d github.com/aws/aws-sdk-go@v1.37.4
+	go get -d $(AWS_SDK_GO_VERSIONED_PATH)
 	@echo "building mocks for $(ELASTICACHE_API_PATH) ... "
 	@pushd $(ELASTICACHE_API_PATH) 1>/dev/null; \
 	$(SERVICE_CONTROLLER_SRC_PATH)/bin/mockery --all --dir=. --output=$(SERVICE_CONTROLLER_SRC_PATH)/mocks/aws-sdk-go/elasticache/ ; \
