@@ -3,7 +3,7 @@ module github.com/aws-controllers-k8s/elasticache-controller
 go 1.14
 
 require (
-	github.com/aws-controllers-k8s/runtime v0.0.0-20210204203051-91a6bd53a48c
+	github.com/aws-controllers-k8s/runtime v0.0.4-0.20210302233800-cbda0dfbbca3
 	github.com/aws/aws-sdk-go v1.37.4
 	github.com/go-logr/logr v0.1.0
 	github.com/google/go-cmp v0.3.1
