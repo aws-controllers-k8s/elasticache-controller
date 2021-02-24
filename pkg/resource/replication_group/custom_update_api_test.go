@@ -16,11 +16,13 @@ package replication_group
 import (
 	"context"
 	"fmt"
+	"github.com/aws-controllers-k8s/elasticache-controller/pkg/testutil"
 	ackmetrics "github.com/aws-controllers-k8s/runtime/pkg/metrics"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zapcore"
+	"path/filepath"
 	ctrlrtzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"testing"
 
@@ -264,11 +266,8 @@ func TestDecreaseReplicaCountMock(t *testing.T) {
 	assert := assert.New(t)
 	// Setup mock API response
 	var mockReplicationGroupDescription = "mock_replication_group_description"
-	var mockOutput = svcsdk.DecreaseReplicaCountOutput{
-		ReplicationGroup: &svcsdk.ReplicationGroup{
-			Description: &mockReplicationGroupDescription,
-		},
-	}
+	var mockOutput svcsdk.DecreaseReplicaCountOutput
+	testutil.LoadFromFixture(filepath.Join("testdata", "DecreaseReplicaCountOutput.json"), &mockOutput)
 	mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
 	mocksdkapi.On("DecreaseReplicaCountWithContext", mock.Anything, mock.Anything).Return(&mockOutput, nil)
 	rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
