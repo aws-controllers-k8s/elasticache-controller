@@ -3,6 +3,7 @@
 *~
 .idea
 go.local.sum
+coverage.out
 /docs/site
 bin
 build

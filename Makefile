@@ -23,6 +23,10 @@ all: test
 test: | mocks				## Run code tests
 	go test -v ./...
 
+test-cover: | mocks				## Run code tests with resources coverage
+	go test -coverpkg=./pkg/resource/... -covermode=count -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
 local-test: | mocks		## Run code tests using go.local.mod file
 	go test -modfile=go.local.mod -v ./...
 
