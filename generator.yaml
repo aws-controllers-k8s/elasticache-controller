@@ -132,3 +132,4 @@ ignore:
     - DescribeSnapshotsInput.SnapshotSource
     - ModifyReplicationGroupInput.SecurityGroupIds
     - ModifyReplicationGroupInput.EngineVersion
+    - CreateReplicationGroupInput.GlobalReplicationGroupId

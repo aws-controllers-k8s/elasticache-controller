@@ -1846,11 +1846,6 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.GlobalReplicationGroupID != nil {
-		in, out := &in.GlobalReplicationGroupID, &out.GlobalReplicationGroupID
-		*out = new(string)
-		**out = **in
-	}
 	if in.KMSKeyID != nil {
 		in, out := &in.KMSKeyID, &out.KMSKeyID
 		*out = new(string)

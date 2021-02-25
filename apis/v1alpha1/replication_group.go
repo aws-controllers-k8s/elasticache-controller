@@ -32,7 +32,6 @@ type ReplicationGroupSpec struct {
 	CacheSubnetGroupName       *string                   `json:"cacheSubnetGroupName,omitempty"`
 	Engine                     *string                   `json:"engine,omitempty"`
 	EngineVersion              *string                   `json:"engineVersion,omitempty"`
-	GlobalReplicationGroupID   *string                   `json:"globalReplicationGroupID,omitempty"`
 	KMSKeyID                   *string                   `json:"kmsKeyID,omitempty"`
 	MultiAZEnabled             *bool                     `json:"multiAZEnabled,omitempty"`
 	NodeGroupConfiguration     []*NodeGroupConfiguration `json:"nodeGroupConfiguration,omitempty"`

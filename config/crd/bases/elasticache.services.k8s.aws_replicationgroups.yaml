@@ -58,8 +58,6 @@ spec:
                 type: string
               engineVersion:
                 type: string
-              globalReplicationGroupID:
-                type: string
               kmsKeyID:
                 type: string
               multiAZEnabled:
