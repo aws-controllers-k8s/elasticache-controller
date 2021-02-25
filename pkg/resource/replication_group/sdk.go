@@ -573,9 +573,6 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.EngineVersion != nil {
 		res.SetEngineVersion(*r.ko.Spec.EngineVersion)
 	}
-	if r.ko.Spec.GlobalReplicationGroupID != nil {
-		res.SetGlobalReplicationGroupId(*r.ko.Spec.GlobalReplicationGroupID)
-	}
 	if r.ko.Spec.KMSKeyID != nil {
 		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
 	}
@@ -583,45 +580,45 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetMultiAZEnabled(*r.ko.Spec.MultiAZEnabled)
 	}
 	if r.ko.Spec.NodeGroupConfiguration != nil {
-		f13 := []*svcsdk.NodeGroupConfiguration{}
-		for _, f13iter := range r.ko.Spec.NodeGroupConfiguration {
-			f13elem := &svcsdk.NodeGroupConfiguration{}
-			if f13iter.NodeGroupID != nil {
-				f13elem.SetNodeGroupId(*f13iter.NodeGroupID)
+		f12 := []*svcsdk.NodeGroupConfiguration{}
+		for _, f12iter := range r.ko.Spec.NodeGroupConfiguration {
+			f12elem := &svcsdk.NodeGroupConfiguration{}
+			if f12iter.NodeGroupID != nil {
+				f12elem.SetNodeGroupId(*f12iter.NodeGroupID)
 			}
-			if f13iter.PrimaryAvailabilityZone != nil {
-				f13elem.SetPrimaryAvailabilityZone(*f13iter.PrimaryAvailabilityZone)
+			if f12iter.PrimaryAvailabilityZone != nil {
+				f12elem.SetPrimaryAvailabilityZone(*f12iter.PrimaryAvailabilityZone)
 			}
-			if f13iter.PrimaryOutpostARN != nil {
-				f13elem.SetPrimaryOutpostArn(*f13iter.PrimaryOutpostARN)
+			if f12iter.PrimaryOutpostARN != nil {
+				f12elem.SetPrimaryOutpostArn(*f12iter.PrimaryOutpostARN)
 			}
-			if f13iter.ReplicaAvailabilityZones != nil {
-				f13elemf3 := []*string{}
-				for _, f13elemf3iter := range f13iter.ReplicaAvailabilityZones {
-					var f13elemf3elem string
-					f13elemf3elem = *f13elemf3iter
-					f13elemf3 = append(f13elemf3, &f13elemf3elem)
+			if f12iter.ReplicaAvailabilityZones != nil {
+				f12elemf3 := []*string{}
+				for _, f12elemf3iter := range f12iter.ReplicaAvailabilityZones {
+					var f12elemf3elem string
+					f12elemf3elem = *f12elemf3iter
+					f12elemf3 = append(f12elemf3, &f12elemf3elem)
 				}
-				f13elem.SetReplicaAvailabilityZones(f13elemf3)
+				f12elem.SetReplicaAvailabilityZones(f12elemf3)
 			}
-			if f13iter.ReplicaCount != nil {
-				f13elem.SetReplicaCount(*f13iter.ReplicaCount)
+			if f12iter.ReplicaCount != nil {
+				f12elem.SetReplicaCount(*f12iter.ReplicaCount)
 			}
-			if f13iter.ReplicaOutpostARNs != nil {
-				f13elemf5 := []*string{}
-				for _, f13elemf5iter := range f13iter.ReplicaOutpostARNs {
-					var f13elemf5elem string
-					f13elemf5elem = *f13elemf5iter
-					f13elemf5 = append(f13elemf5, &f13elemf5elem)
+			if f12iter.ReplicaOutpostARNs != nil {
+				f12elemf5 := []*string{}
+				for _, f12elemf5iter := range f12iter.ReplicaOutpostARNs {
+					var f12elemf5elem string
+					f12elemf5elem = *f12elemf5iter
+					f12elemf5 = append(f12elemf5, &f12elemf5elem)
 				}
-				f13elem.SetReplicaOutpostArns(f13elemf5)
+				f12elem.SetReplicaOutpostArns(f12elemf5)
 			}
-			if f13iter.Slots != nil {
-				f13elem.SetSlots(*f13iter.Slots)
+			if f12iter.Slots != nil {
+				f12elem.SetSlots(*f12iter.Slots)
 			}
-			f13 = append(f13, f13elem)
+			f12 = append(f12, f12elem)
 		}
-		res.SetNodeGroupConfiguration(f13)
+		res.SetNodeGroupConfiguration(f12)
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
 		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
@@ -636,13 +633,13 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetPort(*r.ko.Spec.Port)
 	}
 	if r.ko.Spec.PreferredCacheClusterAZs != nil {
-		f18 := []*string{}
-		for _, f18iter := range r.ko.Spec.PreferredCacheClusterAZs {
-			var f18elem string
-			f18elem = *f18iter
-			f18 = append(f18, &f18elem)
+		f17 := []*string{}
+		for _, f17iter := range r.ko.Spec.PreferredCacheClusterAZs {
+			var f17elem string
+			f17elem = *f17iter
+			f17 = append(f17, &f17elem)
 		}
-		res.SetPreferredCacheClusterAZs(f18)
+		res.SetPreferredCacheClusterAZs(f17)
 	}
 	if r.ko.Spec.PreferredMaintenanceWindow != nil {
 		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
@@ -660,22 +657,22 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
 	}
 	if r.ko.Spec.SecurityGroupIDs != nil {
+		f23 := []*string{}
+		for _, f23iter := range r.ko.Spec.SecurityGroupIDs {
+			var f23elem string
+			f23elem = *f23iter
+			f23 = append(f23, &f23elem)
+		}
+		res.SetSecurityGroupIds(f23)
+	}
+	if r.ko.Spec.SnapshotARNs != nil {
 		f24 := []*string{}
-		for _, f24iter := range r.ko.Spec.SecurityGroupIDs {
+		for _, f24iter := range r.ko.Spec.SnapshotARNs {
 			var f24elem string
 			f24elem = *f24iter
 			f24 = append(f24, &f24elem)
 		}
-		res.SetSecurityGroupIds(f24)
-	}
-	if r.ko.Spec.SnapshotARNs != nil {
-		f25 := []*string{}
-		for _, f25iter := range r.ko.Spec.SnapshotARNs {
-			var f25elem string
-			f25elem = *f25iter
-			f25 = append(f25, &f25elem)
-		}
-		res.SetSnapshotArns(f25)
+		res.SetSnapshotArns(f24)
 	}
 	if r.ko.Spec.SnapshotName != nil {
 		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
@@ -687,30 +684,30 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
 	}
 	if r.ko.Spec.Tags != nil {
-		f29 := []*svcsdk.Tag{}
-		for _, f29iter := range r.ko.Spec.Tags {
-			f29elem := &svcsdk.Tag{}
-			if f29iter.Key != nil {
-				f29elem.SetKey(*f29iter.Key)
+		f28 := []*svcsdk.Tag{}
+		for _, f28iter := range r.ko.Spec.Tags {
+			f28elem := &svcsdk.Tag{}
+			if f28iter.Key != nil {
+				f28elem.SetKey(*f28iter.Key)
 			}
-			if f29iter.Value != nil {
-				f29elem.SetValue(*f29iter.Value)
+			if f28iter.Value != nil {
+				f28elem.SetValue(*f28iter.Value)
 			}
-			f29 = append(f29, f29elem)
+			f28 = append(f28, f28elem)
 		}
-		res.SetTags(f29)
+		res.SetTags(f28)
 	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
 		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
 	}
 	if r.ko.Spec.UserGroupIDs != nil {
-		f31 := []*string{}
-		for _, f31iter := range r.ko.Spec.UserGroupIDs {
-			var f31elem string
-			f31elem = *f31iter
-			f31 = append(f31, &f31elem)
+		f30 := []*string{}
+		for _, f30iter := range r.ko.Spec.UserGroupIDs {
+			var f30elem string
+			f30elem = *f30iter
+			f30 = append(f30, &f30elem)
 		}
-		res.SetUserGroupIds(f31)
+		res.SetUserGroupIds(f30)
 	}
 
 	return res, nil
@@ -1009,6 +1006,7 @@ func (rm *resourceManager) sdkDelete(
 	ctx context.Context,
 	r *resource,
 ) error {
+
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
 		return err
