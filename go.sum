@@ -38,6 +38,8 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws-controllers-k8s/runtime v0.0.0-20210204203051-91a6bd53a48c h1:0hHYJ3fVDLSnENSFlYxrajjpFOehEnzYPiX1VIWB4Xw=
 github.com/aws-controllers-k8s/runtime v0.0.0-20210204203051-91a6bd53a48c/go.mod h1:ZENN/6/CjjeUNVEhli84fDgkxDw21zsm7xtzHuCJAGg=
+github.com/aws-controllers-k8s/runtime v0.0.4-0.20210302233800-cbda0dfbbca3 h1:vfdS1CI6OKReRN+wxl7W/J2LVhyNVVT97IeYptnRqXw=
+github.com/aws-controllers-k8s/runtime v0.0.4-0.20210302233800-cbda0dfbbca3/go.mod h1:xA2F18PJerBHaqrS4de1lpP7skeSMeStkmh+3x5sWvw=
 github.com/aws/aws-controllers-k8s v0.0.2 h1:6NzkBLnBFWG8+UlDwZcLun5sLm14c+3yLfRxnZUIgnA=
 github.com/aws/aws-controllers-k8s v0.0.2/go.mod h1:BHGW5NrZT1Ue8mOD964l++247XJzyzwKwB8Tg/Cub0U=
 github.com/aws/aws-sdk-go v1.15.78/go.mod h1:E3/ieXAlvM0XWO57iftYVDLLvQ824smPP3ATZkfNZeM=

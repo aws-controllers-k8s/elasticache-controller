@@ -22,27 +22,27 @@ import (
 
 // ReplicationGroupSpec defines the desired state of ReplicationGroup
 type ReplicationGroupSpec struct {
-	AtRestEncryptionEnabled    *bool                     `json:"atRestEncryptionEnabled,omitempty"`
-	AuthToken                  *string                   `json:"authToken,omitempty"`
-	AutoMinorVersionUpgrade    *bool                     `json:"autoMinorVersionUpgrade,omitempty"`
-	AutomaticFailoverEnabled   *bool                     `json:"automaticFailoverEnabled,omitempty"`
-	CacheNodeType              *string                   `json:"cacheNodeType,omitempty"`
-	CacheParameterGroupName    *string                   `json:"cacheParameterGroupName,omitempty"`
-	CacheSecurityGroupNames    []*string                 `json:"cacheSecurityGroupNames,omitempty"`
-	CacheSubnetGroupName       *string                   `json:"cacheSubnetGroupName,omitempty"`
-	Engine                     *string                   `json:"engine,omitempty"`
-	EngineVersion              *string                   `json:"engineVersion,omitempty"`
-	KMSKeyID                   *string                   `json:"kmsKeyID,omitempty"`
-	MultiAZEnabled             *bool                     `json:"multiAZEnabled,omitempty"`
-	NodeGroupConfiguration     []*NodeGroupConfiguration `json:"nodeGroupConfiguration,omitempty"`
-	NotificationTopicARN       *string                   `json:"notificationTopicARN,omitempty"`
-	NumCacheClusters           *int64                    `json:"numCacheClusters,omitempty"`
-	NumNodeGroups              *int64                    `json:"numNodeGroups,omitempty"`
-	Port                       *int64                    `json:"port,omitempty"`
-	PreferredCacheClusterAZs   []*string                 `json:"preferredCacheClusterAZs,omitempty"`
-	PreferredMaintenanceWindow *string                   `json:"preferredMaintenanceWindow,omitempty"`
-	PrimaryClusterID           *string                   `json:"primaryClusterID,omitempty"`
-	ReplicasPerNodeGroup       *int64                    `json:"replicasPerNodeGroup,omitempty"`
+	AtRestEncryptionEnabled    *bool                           `json:"atRestEncryptionEnabled,omitempty"`
+	AuthToken                  *ackv1alpha1.SecretKeyReference `json:"authToken,omitempty"`
+	AutoMinorVersionUpgrade    *bool                           `json:"autoMinorVersionUpgrade,omitempty"`
+	AutomaticFailoverEnabled   *bool                           `json:"automaticFailoverEnabled,omitempty"`
+	CacheNodeType              *string                         `json:"cacheNodeType,omitempty"`
+	CacheParameterGroupName    *string                         `json:"cacheParameterGroupName,omitempty"`
+	CacheSecurityGroupNames    []*string                       `json:"cacheSecurityGroupNames,omitempty"`
+	CacheSubnetGroupName       *string                         `json:"cacheSubnetGroupName,omitempty"`
+	Engine                     *string                         `json:"engine,omitempty"`
+	EngineVersion              *string                         `json:"engineVersion,omitempty"`
+	KMSKeyID                   *string                         `json:"kmsKeyID,omitempty"`
+	MultiAZEnabled             *bool                           `json:"multiAZEnabled,omitempty"`
+	NodeGroupConfiguration     []*NodeGroupConfiguration       `json:"nodeGroupConfiguration,omitempty"`
+	NotificationTopicARN       *string                         `json:"notificationTopicARN,omitempty"`
+	NumCacheClusters           *int64                          `json:"numCacheClusters,omitempty"`
+	NumNodeGroups              *int64                          `json:"numNodeGroups,omitempty"`
+	Port                       *int64                          `json:"port,omitempty"`
+	PreferredCacheClusterAZs   []*string                       `json:"preferredCacheClusterAZs,omitempty"`
+	PreferredMaintenanceWindow *string                         `json:"preferredMaintenanceWindow,omitempty"`
+	PrimaryClusterID           *string                         `json:"primaryClusterID,omitempty"`
+	ReplicasPerNodeGroup       *int64                          `json:"replicasPerNodeGroup,omitempty"`
 	// +kubebuilder:validation:Required
 	ReplicationGroupDescription *string `json:"replicationGroupDescription"`
 	// +kubebuilder:validation:Required

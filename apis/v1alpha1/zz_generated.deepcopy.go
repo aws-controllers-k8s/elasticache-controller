@@ -1797,7 +1797,7 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 	}
 	if in.AuthToken != nil {
 		in, out := &in.AuthToken, &out.AuthToken
-		*out = new(string)
+		*out = new(corev1alpha1.SecretKeyReference)
 		**out = **in
 	}
 	if in.AutoMinorVersionUpgrade != nil {

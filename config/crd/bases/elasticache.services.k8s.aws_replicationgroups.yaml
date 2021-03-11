@@ -39,7 +39,23 @@ spec:
               atRestEncryptionEnabled:
                 type: boolean
               authToken:
-                type: string
+                description: SecretKeyReference combines a k8s corev1.SecretReference
+                  with a specific key within the referred-to Secret
+                properties:
+                  key:
+                    description: Key is the key within the secret
+                    type: string
+                  name:
+                    description: Name is unique within a namespace to reference a
+                      secret resource.
+                    type: string
+                  namespace:
+                    description: Namespace defines the space within which the secret
+                      name must be unique.
+                    type: string
+                required:
+                - key
+                type: object
               autoMinorVersionUpgrade:
                 type: boolean
               automaticFailoverEnabled:
