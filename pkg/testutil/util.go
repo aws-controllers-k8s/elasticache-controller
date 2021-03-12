@@ -15,11 +15,16 @@ package testutil
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/ghodss/yaml"
 	"io/ioutil"
+	"path"
+	"strings"
 )
 
 // LoadFromFixture fills an empty pointer variable with the
-// data from a fixture JSON file.
+// data from a fixture JSON/YAML file.
 func LoadFromFixture(
 	fixturePath string,
 	output interface{}, // output should be an addressable type (i.e. a pointer)
@@ -28,7 +33,15 @@ func LoadFromFixture(
 	if err != nil {
 		panic(err)
 	}
-	err = json.Unmarshal(contents, output)
+	if strings.HasSuffix(fixturePath, ".json") {
+		err = json.Unmarshal(contents, output)
+	} else if strings.HasSuffix(fixturePath, ".yaml") ||
+		strings.HasSuffix(fixturePath, ".yml") {
+		err = yaml.Unmarshal(contents, output)
+	} else {
+		panic(errors.New(
+			fmt.Sprintf("fixture file format not supported: %s", path.Base(fixturePath))))
+	}
 	if err != nil {
 		panic(err)
 	}

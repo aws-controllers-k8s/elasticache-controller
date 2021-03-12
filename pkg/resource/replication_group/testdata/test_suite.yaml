@@ -1,0 +1,23 @@
+tests:
+  -
+    name: "Cluster mode disabled replication group"
+    description: "Cluster mode disabled replication group CRUD tests"
+    scenarios:
+      -
+        name: "ReadOne=NoDiff"
+        description: "Given desired state matches with server side resource data, ko.Status remain unchanged."
+        given: # fixture
+          desired_state: "replication_group/cr/rg_cmd.yaml"
+          latest_state:
+          svc_api:
+            - operation: DescribeReplicationGroupsWithContext
+              output_fixture: "replication_group/read_one/rg_cmd.json"
+              error: null
+            - operation: ListAllowedNodeTypeModifications
+              output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types.json"
+            - operation: DescribeEventsWithContext
+              output_fixture: "events/read_many/rg_cmd_events.json"
+        invoke: "ReadOne" # Unit under test. Possible values: ReadOne | Create | Update | Delete
+        expect:
+          latest_state: "replication_group/cr/rg_cmd.yaml" #unchanged
+          error: null

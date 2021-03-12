@@ -1,0 +1,10 @@
+{
+  "Events": [
+    {
+      "SourceIdentifier": "rg-cmd",
+      "SourceType": "replication-group",
+      "Message": "Replication group rg-cmd created",
+      "Date": "2021-02-19T12:47:00-00:00"
+    }
+  ]
+}
