@@ -186,9 +186,9 @@ func (rm *resourceManager) sdkUpdate(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
-	diffReporter *ackcompare.Reporter,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
-	return rm.customUpdateCacheParameterGroup(ctx, desired, latest, diffReporter)
+	return rm.customUpdateCacheParameterGroup(ctx, desired, latest, delta)
 }
 
 // sdkDelete deletes the supplied resource in the backend AWS service API

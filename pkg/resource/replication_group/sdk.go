@@ -726,10 +726,10 @@ func (rm *resourceManager) sdkUpdate(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
-	diffReporter *ackcompare.Reporter,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
 
-	customResp, customRespErr := rm.CustomModifyReplicationGroup(ctx, desired, latest, diffReporter)
+	customResp, customRespErr := rm.CustomModifyReplicationGroup(ctx, desired, latest, delta)
 	if customResp != nil || customRespErr != nil {
 		return customResp, customRespErr
 	}
