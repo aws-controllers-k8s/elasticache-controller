@@ -23,7 +23,7 @@ func (rm *resourceManager) customUpdateSnapshot(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
-	diffReporter *ackcompare.Reporter,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
 	return latest, nil
 }

@@ -32,7 +32,7 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
-	diffReporter *ackcompare.Reporter,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
 
 	latestRGStatus := latest.ko.Status.Status

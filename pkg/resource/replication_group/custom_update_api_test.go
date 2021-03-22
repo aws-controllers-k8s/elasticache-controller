@@ -288,9 +288,9 @@ func TestCustomModifyReplicationGroup(t *testing.T) {
 	t.Run("NoAction=NoDiff", func(t *testing.T) {
 		desired := provideResource()
 		latest := provideResource()
-		var diffReporter ackcompare.Reporter
+		var delta ackcompare.Delta
 		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &diffReporter)
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
 		assert.Nil(res)
 		assert.Nil(err)
 	})
@@ -304,9 +304,9 @@ func TestCustomModifyReplicationGroup_Unavailable(t *testing.T) {
 	t.Run("UnavailableRG=Requeue", func(t *testing.T) {
 		desired := provideResource()
 		latest := provideResourceWithStatus("modifying")
-		var diffReporter ackcompare.Reporter
+		var delta ackcompare.Delta
 		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &diffReporter)
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err)
 		var requeueNeededAfter *requeue.RequeueNeededAfter
@@ -327,9 +327,9 @@ func TestCustomModifyReplicationGroup_NodeGroup_Unvailable(t *testing.T) {
 		for _, nodeGroup := range latest.ko.Status.NodeGroups {
 			nodeGroup.Status = &unavailableStatus
 		}
-		var diffReporter ackcompare.Reporter
+		var delta ackcompare.Delta
 		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &diffReporter)
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err)
 		var requeueNeededAfter *requeue.RequeueNeededAfter
@@ -355,10 +355,10 @@ func TestCustomModifyReplicationGroup_NodeGroup_MemberClusters_mismatch(t *testi
 		for _, nodeGroup := range latest.ko.Status.NodeGroups {
 			nodeGroup.Status = &availableStatus
 		}
-		var diffReporter ackcompare.Reporter
+		var delta ackcompare.Delta
 		var ctx context.Context
 		require.NotNil(latest.ko.Status.MemberClusters)
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &diffReporter)
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err) // due to surplus member cluster
 		var requeueNeededAfter *requeue.RequeueNeededAfter
@@ -382,10 +382,10 @@ func TestCustomModifyReplicationGroup_NodeGroup_available(t *testing.T) {
 		for _, nodeGroup := range latest.ko.Status.NodeGroups {
 			nodeGroup.Status = &availableStatus
 		}
-		var diffReporter ackcompare.Reporter
+		var delta ackcompare.Delta
 		var ctx context.Context
 		require.NotNil(latest.ko.Status.MemberClusters)
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &diffReporter)
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
 		assert.Nil(res)
 		assert.Nil(err)
 	})

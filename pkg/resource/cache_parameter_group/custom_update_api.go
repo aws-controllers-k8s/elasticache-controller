@@ -24,7 +24,7 @@ func (rm *resourceManager) customUpdateCacheParameterGroup(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
-	diffReporter *ackcompare.Reporter,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
 	desiredParameters := desired.ko.Spec.ParameterNameValues
 	latestParameters := latest.ko.Spec.ParameterNameValues

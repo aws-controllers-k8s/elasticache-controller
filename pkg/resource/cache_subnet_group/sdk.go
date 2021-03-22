@@ -233,7 +233,7 @@ func (rm *resourceManager) sdkUpdate(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
-	diffReporter *ackcompare.Reporter,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
 
 	input, err := rm.newUpdateRequestPayload(ctx, desired)
