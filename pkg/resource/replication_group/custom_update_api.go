@@ -99,7 +99,7 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 		if diff > 0 {
 			return rm.increaseReplicaCount(ctx, desired, latest)
 		}
-		return rm.DecreaseReplicaCount(ctx, desired, latest)
+		return rm.decreaseReplicaCount(ctx, desired, latest)
 	}
 
 	// increase/decrease shards
@@ -305,7 +305,7 @@ func (rm *resourceManager) increaseReplicaCount(
 	return rm.provideUpdatedResource(desired, resp.ReplicationGroup)
 }
 
-func (rm *resourceManager) DecreaseReplicaCount(
+func (rm *resourceManager) decreaseReplicaCount(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,

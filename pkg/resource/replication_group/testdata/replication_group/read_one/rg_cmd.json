@@ -1,0 +1,50 @@
+{
+  "ReplicationGroups": [
+    {
+      "ReplicationGroupId": "rg-cmd",
+      "Description": "ack-test-rg description",
+      "GlobalReplicationGroupInfo": {},
+      "Status": "available",
+      "PendingModifiedValues": {},
+      "MemberClusters": [
+        "rg-cmd-001"
+      ],
+      "NodeGroups": [
+        {
+          "NodeGroupId": "0001",
+          "Status": "available",
+          "PrimaryEndpoint": {
+            "Address": "rg-cmd.0abcdef.ng.0001.usw2.cache.amazonaws.com",
+            "Port": 6379
+          },
+          "ReaderEndpoint": {
+            "Address": "rg-cmd-ro.0abcdef.ng.0001.usw2.cache.amazonaws.com",
+            "Port": 6379
+          },
+          "NodeGroupMembers": [
+            {
+              "CacheClusterId": "rg-cmd-001",
+              "CacheNodeId": "0001",
+              "ReadEndpoint": {
+                "Address": "rg-cmd-001.0abcdef.0001.usw2.cache.amazonaws.com",
+                "Port": 6379
+              },
+              "PreferredAvailabilityZone": "us-west-2a",
+              "CurrentRole": "primary"
+            }
+          ]
+        }
+      ],
+      "AutomaticFailover": "disabled",
+      "MultiAZ": "disabled",
+      "SnapshotRetentionLimit": 0,
+      "SnapshotWindow": "06:00-07:00",
+      "ClusterEnabled": false,
+      "CacheNodeType": "cache.t3.micro",
+      "AuthTokenEnabled": false,
+      "TransitEncryptionEnabled": false,
+      "AtRestEncryptionEnabled": false,
+      "ARN": "arn:aws:elasticache:us-west-2:012345678910:replicationgroup:rg-cmd"
+    }
+  ]
+}

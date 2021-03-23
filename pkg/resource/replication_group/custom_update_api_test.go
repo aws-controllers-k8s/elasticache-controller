@@ -275,7 +275,7 @@ func TestDecreaseReplicaCountMock(t *testing.T) {
 	t.Run("MockAPI=DecreaseReplicaCount", func(t *testing.T) {
 		desired := provideResource()
 		latest := provideResource()
-		res, _ := rm.DecreaseReplicaCount(context.Background(), desired, latest)
+		res, _ := rm.decreaseReplicaCount(context.Background(), desired, latest)
 		assert.Equal(mockReplicationGroupDescription, *res.ko.Status.Description)
 	})
 }
