@@ -77,35 +77,51 @@ func (runner *TestSuiteRunner) RunTests() {
 // runTestScenario runs given test scenario which is expressed as: given fixture context, unit to test, expected fixture context.
 func (runner *TestSuiteRunner) runTestScenario(scenarioName string, fixtureCxt *fixtureContext, unitUnderTest string, expectationCxt *expectContext) {
 	t := runner.Delegate.GoTestRunner()
-	assert := assert.New(t)
 	t.Run(scenarioName, func(t *testing.T) {
 		rm := fixtureCxt.resourceManager
+		assert := assert.New(t)
+
+		var actual acktypes.AWSResource = nil
+		var err error = nil
 		switch unitUnderTest {
 		case "ReadOne":
-			actual, err := rm.ReadOne(context.Background(), fixtureCxt.desired)
-
-			if expectationCxt.err != nil {
-				assert.NotNil(err)
-				assert.Nil(actual)
-				assert.Equal(expectationCxt.err.Error(), err.Error())
-			} else {
-				assert.Nil(err)
-				delta := runner.Delegate.ResourceDescriptor().Delta(expectationCxt.latest, actual)
-				assert.Equal(0, len(delta.Differences))
-				if len(delta.Differences) > 0 {
-					fmt.Println("Unexpected differences:")
-					for _, difference:= range delta.Differences {
-						fmt.Printf("Path: %v, expected: %v, actual: %v", difference.Path, difference.A, difference.B)
-					}
-				}
-				// Delta only contains Spec differences. Thus, need to have Delegate.Equal to compare `Status`.
-				assert.True(runner.Delegate.Equal(expectationCxt.latest, actual))
-			}
-		// TODO: add remaining methods: "Create", "Update", "Delete"
+			actual, err = rm.ReadOne(context.Background(), fixtureCxt.desired)
+		case "Create":
+			actual, err = rm.Create(context.Background(), fixtureCxt.desired)
+		case "Update":
+			delta := runner.Delegate.ResourceDescriptor().Delta(fixtureCxt.desired, fixtureCxt.latest)
+			actual, err = rm.Update(context.Background(), fixtureCxt.desired, fixtureCxt.latest, delta)
+		case "Delete":
+			err = rm.Delete(context.Background(), fixtureCxt.desired)
 		default:
 			panic(errors.New(fmt.Sprintf("unit under test: %s not supported", unitUnderTest)))
 		}
+		runner.assertExpectations(assert, expectationCxt, actual, err)
 	})
+}
+
+//assertExpectations validates the actual outcome against expected outcome
+func (runner *TestSuiteRunner) assertExpectations(assert *assert.Assertions, expectationCxt *expectContext, actual acktypes.AWSResource, err error) {
+	if expectationCxt.err != nil {
+		assert.NotNil(err)
+		assert.Nil(actual)
+		assert.Equal(expectationCxt.err.Error(), err.Error())
+	} else if expectationCxt.latest == nil { // successful delete scenario
+		assert.Nil(err)
+		assert.Nil(actual)
+	} else {
+		assert.Nil(err)
+		delta := runner.Delegate.ResourceDescriptor().Delta(expectationCxt.latest, actual)
+		assert.Equal(0, len(delta.Differences))
+		if len(delta.Differences) > 0 {
+			fmt.Println("Unexpected differences:")
+			for _, difference := range delta.Differences {
+				fmt.Printf("Path: %v, expected: %v, actual: %v", difference.Path, difference.A, difference.B)
+			}
+		}
+		// Delta only contains `Spec` differences. Thus, need to have Delegate.Equal to compare `Status`.
+		assert.True(runner.Delegate.Equal(expectationCxt.latest, actual))
+	}
 }
 
 // setupFixtureContext provides runtime context for test scenario given fixture.

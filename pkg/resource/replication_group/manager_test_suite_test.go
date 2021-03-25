@@ -59,15 +59,35 @@ func (d *testRunnerDelegate) EmptyServiceAPIOutput(apiName string) (interface{},
 	//TODO: use reflection, template to auto generate this block/method.
 	switch apiName {
 	case "DescribeReplicationGroupsWithContext":
-		var mockDescribeOutput svcsdk.DescribeReplicationGroupsOutput
-		return &mockDescribeOutput, nil
+		var output svcsdk.DescribeReplicationGroupsOutput
+		return &output, nil
 	case "ListAllowedNodeTypeModifications":
-		var mockAllowedNodeTypeOutput svcsdk.ListAllowedNodeTypeModificationsOutput
-		return &mockAllowedNodeTypeOutput, nil
+		var output svcsdk.ListAllowedNodeTypeModificationsOutput
+		return &output, nil
 	case "DescribeEventsWithContext":
-		var mockDescribeEventsOutput svcsdk.DescribeEventsOutput
-		return &mockDescribeEventsOutput, nil
-		// TODO: add more.
+		var output svcsdk.DescribeEventsOutput
+		return &output, nil
+	case "CreateReplicationGroupWithContext":
+		var output svcsdk.CreateReplicationGroupOutput
+		return &output, nil
+	case "DecreaseReplicaCountWithContext":
+		var output svcsdk.DecreaseReplicaCountOutput
+		return &output, nil
+	case "DeleteReplicationGroupWithContext":
+		var output svcsdk.DeleteReplicationGroupOutput
+		return &output, nil
+	case "DescribeCacheClustersWithContext":
+		var output svcsdk.DescribeCacheClustersOutput
+		return &output, nil
+	case "IncreaseReplicaCountWithContext":
+		var output svcsdk.IncreaseReplicaCountOutput
+		return &output, nil
+	case "ModifyReplicationGroupShardConfigurationWithContext":
+		var output svcsdk.ModifyReplicationGroupShardConfigurationOutput
+		return &output, nil
+	case "ModifyReplicationGroupWithContext":
+		var output svcsdk.ModifyReplicationGroupOutput
+		return &output, nil
 	}
 	return nil, errors.New(fmt.Sprintf("no matching API name found for: %s", apiName))
 }
