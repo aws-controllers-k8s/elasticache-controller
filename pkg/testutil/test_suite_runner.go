@@ -40,6 +40,7 @@ type fixtureContext struct {
 	resourceManager acktypes.AWSResourceManager
 }
 
+//TODO: remove if no longer used
 // expectContext is runtime context for test scenario expectation fixture.
 type expectContext struct {
 	latest acktypes.AWSResource
@@ -63,19 +64,18 @@ func (runner *TestSuiteRunner) RunTests() {
 	}
 
 	for _, test := range runner.TestSuite.Tests {
-		fmt.Printf("Starting test: %s", test.Name)
+		fmt.Printf("Starting test: %s\n", test.Name)
 		for _, scenario := range test.Scenarios {
-			fmt.Printf("Running test scenario: %s", scenario.Name)
+			fmt.Printf("Running test scenario: %s\n", scenario.Name)
 			fixtureCxt := runner.setupFixtureContext(&scenario.Fixture)
-			expectationCxt := runner.setupExpectationContext(&scenario.Expect)
-			runner.runTestScenario(scenario.Name, fixtureCxt, scenario.UnitUnderTest, expectationCxt)
+			runner.runTestScenario(scenario.Name, fixtureCxt, scenario.UnitUnderTest, &scenario.Expect)
 		}
-		fmt.Printf("Test: %s completed.", test.Name)
+		fmt.Printf("Test: %s completed.\n", test.Name)
 	}
 }
 
 // runTestScenario runs given test scenario which is expressed as: given fixture context, unit to test, expected fixture context.
-func (runner *TestSuiteRunner) runTestScenario(scenarioName string, fixtureCxt *fixtureContext, unitUnderTest string, expectationCxt *expectContext) {
+func (runner *TestSuiteRunner) runTestScenario(scenarioName string, fixtureCxt *fixtureContext, unitUnderTest string, expectation *Expect) {
 	t := runner.Delegate.GoTestRunner()
 	t.Run(scenarioName, func(t *testing.T) {
 		rm := fixtureCxt.resourceManager
@@ -96,31 +96,55 @@ func (runner *TestSuiteRunner) runTestScenario(scenarioName string, fixtureCxt *
 		default:
 			panic(errors.New(fmt.Sprintf("unit under test: %s not supported", unitUnderTest)))
 		}
-		runner.assertExpectations(assert, expectationCxt, actual, err)
+		runner.assertExpectations(assert, expectation, actual, err)
 	})
 }
 
-//assertExpectations validates the actual outcome against expected outcome
-func (runner *TestSuiteRunner) assertExpectations(assert *assert.Assertions, expectationCxt *expectContext, actual acktypes.AWSResource, err error) {
-	if expectationCxt.err != nil {
-		assert.NotNil(err)
+/* assertExpectations validates the actual outcome against the expected outcome.
+	There are two components to the expected outcome, corresponding to the return values of the resource manager's CRUD operation:
+		1) the actual return value of type AWSResource ("expect.latest_state" in test_suite.yaml)
+		2) the error ("expect.error" in test_suite.yaml)
+	With each of these components, there are three possibilities in test_suite.yaml, which are interpreted as follows:
+		1) the key does not exist, or was provided with no value: no explicit expectations, don't assert anything
+		2) the key was provided with value "nil": explicit expectation; assert that the error or return value is nil
+		3) the key was provided with value other than "nil": explicit expectation; assert that the value matches the
+			expected value
+	However, if neither expect.latest_state nor error are provided, assertExpectations will fail the test case.
+ */
+func (runner *TestSuiteRunner) assertExpectations(assert *assert.Assertions, expectation *Expect, actual acktypes.AWSResource, err error) {
+	if expectation.LatestState == "" && expectation.Error == "" {
+		fmt.Println("Invalid test case: no expectation given for either latest_state or error")
+		assert.True(false)
+		return
+	}
+
+	// expectation exists for at least one of LatestState and Error; assert results independently
+	if expectation.LatestState == "nil" {
 		assert.Nil(actual)
-		assert.Equal(expectationCxt.err.Error(), err.Error())
-	} else if expectationCxt.latest == nil { // successful delete scenario
-		assert.Nil(err)
-		assert.Nil(actual)
-	} else {
-		assert.Nil(err)
-		delta := runner.Delegate.ResourceDescriptor().Delta(expectationCxt.latest, actual)
+	} else if expectation.LatestState != "" {
+		expectedLatest := runner.loadAWSResource(expectation.LatestState)
+		assert.NotNil(actual)
+
+		delta := runner.Delegate.ResourceDescriptor().Delta(expectedLatest, actual)
 		assert.Equal(0, len(delta.Differences))
 		if len(delta.Differences) > 0 {
 			fmt.Println("Unexpected differences:")
 			for _, difference := range delta.Differences {
-				fmt.Printf("Path: %v, expected: %v, actual: %v", difference.Path, difference.A, difference.B)
+				fmt.Printf("Path: %v, expected: %v, actual: %v\n", difference.Path, difference.A, difference.B)
 			}
 		}
-		// Delta only contains `Spec` differences. Thus, need to have Delegate.Equal to compare `Status`.
-		assert.True(runner.Delegate.Equal(expectationCxt.latest, actual))
+
+		// Delta only contains `Spec` differences. Thus, we need Delegate.Equal to compare `Status`.
+		assert.True(runner.Delegate.Equal(expectedLatest, actual))
+	}
+
+	if expectation.Error == "nil" {
+		assert.Nil(err)
+	} else if expectation.Error != "" {
+		expectedError := errors.New(expectation.Error)
+		assert.NotNil(err)
+
+		assert.Equal(expectedError.Error(), err.Error())
 	}
 }
 
@@ -140,8 +164,9 @@ func (runner *TestSuiteRunner) setupFixtureContext(fixture *Fixture) *fixtureCon
 	for _, serviceApi := range fixture.ServiceAPIs {
 		if serviceApi.Operation != "" {
 
-			if serviceApi.Error != "" {
-				mocksdkapi.On(serviceApi.Operation, mock.Anything, mock.Anything).Return(nil, errors.New(serviceApi.Error))
+			if serviceApi.ServiceAPIError != nil {
+				mockError := CreateAWSError(*serviceApi.ServiceAPIError)
+				mocksdkapi.On(serviceApi.Operation, mock.Anything, mock.Anything).Return(nil, mockError)
 			} else if serviceApi.Operation != "" && serviceApi.Output != "" {
 				var outputObj, err = runner.Delegate.EmptyServiceAPIOutput(serviceApi.Operation)
 				apiOutputFixturePath := append([]string{"testdata"}, strings.Split(serviceApi.Output, "/")...)
@@ -155,21 +180,6 @@ func (runner *TestSuiteRunner) setupFixtureContext(fixture *Fixture) *fixtureCon
 	}
 	cxt.mocksdkapi = mocksdkapi
 	cxt.resourceManager = runner.Delegate.ResourceManager(mocksdkapi)
-	return &cxt
-}
-
-//setupExpectationContext provides runtime context for test scenario expectation fixture.
-func (runner *TestSuiteRunner) setupExpectationContext(expect *Expect) *expectContext {
-	if expect == nil {
-		return nil
-	}
-	var cxt = expectContext{}
-	if expect.LatestState != "" {
-		cxt.latest = runner.loadAWSResource(expect.LatestState)
-	}
-	if expect.Error != "" {
-		cxt.err = errors.New(expect.Error)
-	}
 	return &cxt
 }
 

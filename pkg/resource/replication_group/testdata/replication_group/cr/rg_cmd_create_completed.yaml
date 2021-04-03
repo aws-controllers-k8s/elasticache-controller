@@ -2,18 +2,16 @@ apiVersion: elasticache.services.k8s.aws/v1alpha1
 kind: ReplicationGroup
 # omitted metadata
 spec:
-  automaticFailoverEnabled: false
   cacheNodeType: cache.t3.micro
   engine: redis
-  multiAZEnabled: false
   numNodeGroups: 1
-  replicasPerNodeGroup: 0
-  replicationGroupDescription: ack-test-rg description
+  replicasPerNodeGroup: 1
+  replicationGroupDescription: cluster-mode disabled RG
   replicationGroupID: rg-cmd
 status:
   ackResourceMetadata:
-    arn: arn:aws:elasticache:us-west-2:012345678910:replicationgroup:rg-cmd
-    ownerAccountID: "012345678910"
+    arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd
+    ownerAccountID: ""
   allowedScaleUpModifications:
   - cache.m3.2xlarge
   - cache.m3.large
@@ -30,13 +28,7 @@ status:
   - cache.m5.4xlarge
   - cache.m5.large
   - cache.m5.xlarge
-  - cache.m6g.12xlarge
-  - cache.m6g.16xlarge
-  - cache.m6g.2xlarge
-  - cache.m6g.4xlarge
-  - cache.m6g.8xlarge
   - cache.m6g.large
-  - cache.m6g.xlarge
   - cache.r3.2xlarge
   - cache.r3.4xlarge
   - cache.r3.8xlarge
@@ -54,8 +46,6 @@ status:
   - cache.r5.4xlarge
   - cache.r5.large
   - cache.r5.xlarge
-  - cache.r6g.12xlarge
-  - cache.r6g.16xlarge
   - cache.r6g.2xlarge
   - cache.r6g.4xlarge
   - cache.r6g.8xlarge
@@ -72,13 +62,14 @@ status:
   conditions:
   - status: "True"
     type: ACK.ResourceSynced
-  description: ack-test-rg description
+  description: cluster-mode disabled RG
   events:
-  - date: "2021-02-19T12:47:00-00:00"
+  - date: "2021-03-30T20:12:00Z"
     message: Replication group rg-cmd created
   globalReplicationGroupInfo: {}
   memberClusters:
   - rg-cmd-001
+  - rg-cmd-002
   multiAZ: disabled
   nodeGroups:
   - nodeGroupID: "0001"
@@ -86,15 +77,22 @@ status:
     - cacheClusterID: rg-cmd-001
       cacheNodeID: "0001"
       currentRole: primary
-      preferredAvailabilityZone: us-west-2a
+      preferredAvailabilityZone: us-east-1b
       readEndpoint:
-        address: rg-cmd-001.0abcdef.0001.usw2.cache.amazonaws.com
+        address: rg-cmd-001.xxxxxx.0001.use1.cache.amazonaws.com
+        port: 6379
+    - cacheClusterID: rg-cmd-002
+      cacheNodeID: "0001"
+      currentRole: replica
+      preferredAvailabilityZone: us-east-1d
+      readEndpoint:
+        address: rg-cmd-002.xxxxxx.0001.use1.cache.amazonaws.com
         port: 6379
     primaryEndpoint:
-      address: rg-cmd.0abcdef.ng.0001.usw2.cache.amazonaws.com
+      address: rg-cmd.xxxxxx.ng.0001.use1.cache.amazonaws.com
       port: 6379
     readerEndpoint:
-      address: rg-cmd-ro.0abcdef.ng.0001.usw2.cache.amazonaws.com
+      address: rg-cmd-ro.xxxxxx.ng.0001.use1.cache.amazonaws.com
       port: 6379
     status: available
   pendingModifiedValues: {}

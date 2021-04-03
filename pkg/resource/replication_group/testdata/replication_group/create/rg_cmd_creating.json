@@ -1,0 +1,22 @@
+{
+  "ReplicationGroup": {
+    "Status": "creating",
+    "MultiAZ": "disabled",
+    "Description": "cluster-mode disabled RG",
+    "AtRestEncryptionEnabled": false,
+    "ClusterEnabled": false,
+    "ReplicationGroupId": "rg-cmd",
+    "GlobalReplicationGroupInfo": {},
+    "SnapshotRetentionLimit": 0,
+    "AutomaticFailover": "disabled",
+    "TransitEncryptionEnabled": false,
+    "SnapshotWindow": "09:00-10:00",
+    "MemberClusters": [
+      "rg-cmd-001",
+      "rg-cmd-002"
+    ],
+    "CacheNodeType": "cache.t3.micro",
+    "ARN": "arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd",
+    "PendingModifiedValues": {}
+  }
+}

@@ -52,11 +52,20 @@ type Fixture struct {
 type ServiceAPI struct {
 	Operation string `json:"operation"`
 	Output    string `json:"output_fixture"`
-	Error     string `json:"error"`
+	ServiceAPIError  *ServiceAPIError `json:"error,omitempty"`
+}
+
+// ServiceAPIError contains the specification for the error of the mock API response
+type ServiceAPIError struct {
+	// Code here is usually the type of fault/error, not the HTTP status code
+	Code string `json:"code"`
+	Message string `json:"message"`
 }
 
 // Expect represents test scenario expected outcome fixture to load from file path
 type Expect struct {
 	LatestState string `json:"latest_state"`
+	// Error is a string matching the message of the expected error returned from the ResourceManager operation.
+	// Possible errors can be found in runtime/pkg/errors/error.go
 	Error       string `json:"error"`
 }
