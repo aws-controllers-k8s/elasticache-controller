@@ -35,13 +35,13 @@ func TestReadOne_Exists(t *testing.T) {
 	// Setup mock current ko state.
 	var rd = resourceDescriptor{}
 	ro := rd.EmptyRuntimeObject()
-	testutil.LoadFromFixture(filepath.Join("testdata", "replication_group", "cr", "rg_cmd.yaml"), ro)
+	testutil.LoadFromFixture(filepath.Join("testdata", "replication_group", "cr", "rg_cmd_create_completed.yaml"), ro)
 	desired := rd.ResourceFromRuntimeObject(ro)
 
 	// Setup mock API response
 	// Describe RG
 	var mockDescribeOutput svcsdk.DescribeReplicationGroupsOutput
-	testutil.LoadFromFixture(filepath.Join("testdata", "replication_group", "read_one", "rg_cmd.json"), &mockDescribeOutput)
+	testutil.LoadFromFixture(filepath.Join("testdata", "replication_group", "read_one", "rg_cmd_create_completed.json"), &mockDescribeOutput)
 	mocksdkapi.On("DescribeReplicationGroupsWithContext", mock.Anything, mock.Anything).Return(&mockDescribeOutput, nil)
 	// ListAllowedNodeTypeModifications
 	var mockAllowedNodeTypeOutput svcsdk.ListAllowedNodeTypeModificationsOutput
@@ -52,12 +52,14 @@ func TestReadOne_Exists(t *testing.T) {
 	testutil.LoadFromFixture(filepath.Join("testdata", "events", "read_many", "rg_cmd_events.json"), &mockDescribeEventsOutput)
 	mocksdkapi.On("DescribeEventsWithContext", mock.Anything, mock.Anything).Return(&mockDescribeEventsOutput, nil)
 
+	var delegate = testRunnerDelegate{t: t}
+
 	// Tests
 	t.Run("ReadOne=NoDiff", func(t *testing.T) {
 		// Given: describe RG response has no diff compared to latest ko state.
 		// Expect: no change in ko.status
 		latest, err := rm.ReadOne(context.Background(), desired)
 		assert.Nil(err)
-		assert.Equal(rm.concreteResource(desired).ko.Status, rm.concreteResource(latest).ko.Status)
+		assert.True(delegate.Equal(rm.concreteResource(desired), rm.concreteResource(latest)))
 	})
 }

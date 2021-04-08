@@ -1,0 +1,27 @@
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+# omitted metadata
+spec:
+  cacheNodeType: cache.t3.micro
+  engine: redis
+  numNodeGroups: 1
+  replicasPerNodeGroup: 1
+  replicationGroupDescription: cluster-mode disabled RG
+  replicationGroupID: rg-cmd
+status:
+  ackResourceMetadata:
+    arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd
+    ownerAccountID: "" # for tests the ownerAccountID of the resource manager is empty (see implementations of TestRunnerDelegate's ResourceManager function)
+  automaticFailover: disabled
+  clusterEnabled: false
+  conditions:
+    - status: "False"
+      type: ACK.ResourceSynced
+  description: cluster-mode disabled RG
+  globalReplicationGroupInfo: {}
+  memberClusters:
+    - rg-cmd-001
+    - rg-cmd-002
+  multiAZ: disabled
+  pendingModifiedValues: {}
+  status: creating

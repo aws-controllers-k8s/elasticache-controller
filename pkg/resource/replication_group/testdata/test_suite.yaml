@@ -1,23 +1,83 @@
 tests:
-  -
-    name: "Cluster mode disabled replication group"
+  - name: "Cluster mode disabled replication group"
     description: "Cluster mode disabled replication group CRUD tests"
     scenarios:
-      -
-        name: "ReadOne=NoDiff"
-        description: "Given desired state matches with server side resource data, ko.Status remain unchanged."
-        given: # fixture
-          desired_state: "replication_group/cr/rg_cmd.yaml"
-          latest_state:
+      - name: "ReadOne=DNE"
+        description: "Given that the resource doesn't exist, expect an error"
+        given:
+          desired_state: "replication_group/cr/rg_cmd_before_create.yaml"
           svc_api:
             - operation: DescribeReplicationGroupsWithContext
-              output_fixture: "replication_group/read_one/rg_cmd.json"
-              error: null
+              error:
+                code: ReplicationGroupNotFoundFault
+                message: "ReplicationGroup rg-cmd not found"
+        invoke: ReadOne # Unit under test. Possible values: Create | ReadOne | Update | Delete
+        expect: # no explicit latest_state expectation; returned resource may be non-nil
+          error: resource not found
+      - name: "Create=InvalidInput"
+        description: "Given one of the parameters is invalid, ko.Status shows a terminal condition"
+        given:
+          desired_state: "replication_group/cr/rg_cmd_invalid_before_create.yaml"
+          svc_api:
+            - operation: CreateReplicationGroupWithContext
+              error:
+                code: InvalidParameterValue
+                message: "The number of replicas per node group must be within 0 and 5."
+        invoke: Create
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_invalid_create_attempted.yaml"
+          error: resource is in terminal condition
+      - name: "Create"
+        description: "Create a new replication group; ensure ko.Status shows that this create has been initiated"
+        given:
+          desired_state: "replication_group/cr/rg_cmd_before_create.yaml"
+          latest_state: #TODO: remove once we have an update case that demonstrates the use of this
+          svc_api:
+            - operation: CreateReplicationGroupWithContext
+              output_fixture: "replication_group/create/rg_cmd_creating.json"
+        invoke: Create
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_create_initiated.yaml"
+          error: nil
+      - name: "ReadOne=NewlyCreated"
+        description: "Given that the creation of this RG completes, ko.Status reflects that the RG is ready (e.g. ResourceSynced condition True)"
+        given:
+          desired_state: "replication_group/cr/rg_cmd_create_initiated.yaml" # RG is creating, but creating has not yet finished
+          svc_api:
+            - operation: DescribeReplicationGroupsWithContext
+              output_fixture: "replication_group/read_one/rg_cmd_create_completed.json"
             - operation: ListAllowedNodeTypeModifications
               output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types.json"
             - operation: DescribeEventsWithContext
               output_fixture: "events/read_many/rg_cmd_events.json"
-        invoke: "ReadOne" # Unit under test. Possible values: ReadOne | Create | Update | Delete
+        invoke: ReadOne
         expect:
-          latest_state: "replication_group/cr/rg_cmd.yaml" #unchanged
-          error: null
+          latest_state: "replication_group/cr/rg_cmd_create_completed.yaml"
+          error: nil
+      - name: "ReadOne=NoDiff"
+        description: "Given desired state matches with server side resource data, ko.Status remain unchanged (resource is stable)"
+        given: # fixture
+          desired_state: "replication_group/cr/rg_cmd_create_completed.yaml"
+          latest_state: #TODO: remove once we have an update case that demonstrates the use of this
+          svc_api:
+            - operation: DescribeReplicationGroupsWithContext
+              output_fixture: "replication_group/read_one/rg_cmd_create_completed.json"
+            - operation: ListAllowedNodeTypeModifications
+              output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types.json"
+            - operation: DescribeEventsWithContext
+              output_fixture: "events/read_many/rg_cmd_events.json"
+        invoke: ReadOne
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_create_completed.yaml" #unchanged
+          error: nil
+      - name: "Delete"
+        description: "Delete cluster mode-disabled RG"
+        given:
+          desired_state: "replication_group/cr/rg_cmd_create_completed.yaml"
+          svc_api:
+            - operation: DeleteReplicationGroupWithContext
+              output_fixture: "replication_group/delete/rg_cmd_delete_initiated.json"
+        invoke: Delete
+        expect: # for the delete case we don't expect a new latest state or a non-nil error
+          latest_state: nil
+          error: nil

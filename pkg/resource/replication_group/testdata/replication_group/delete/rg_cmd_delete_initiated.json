@@ -1,0 +1,16 @@
+{
+  "ReplicationGroup": {
+    "Status": "deleting",
+    "MultiAZ": "disabled",
+    "Description": "cluster-mode disabled RG",
+    "AtRestEncryptionEnabled": false,
+    "ReplicationGroupId": "rg-cmd",
+    "GlobalReplicationGroupInfo": {},
+    "SnapshotRetentionLimit": 0,
+    "AutomaticFailover": "disabled",
+    "TransitEncryptionEnabled": false,
+    "SnapshotWindow": "10:00-11:00",
+    "ARN": "arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd",
+    "PendingModifiedValues": {}
+  }
+}
