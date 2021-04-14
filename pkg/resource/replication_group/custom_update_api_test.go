@@ -966,9 +966,9 @@ func provideCacheClusterSecurityGroups(IDs ...string) []*svcsdk.SecurityGroupMem
 	return securityGroups
 }
 
-// TestEngineVersionDiffer tests scenarios to check if desired, latest (from cache cluster)
+// TestEngineVersionsDiffer tests scenarios to check if desired, latest (from cache cluster)
 // Engine Version configuration differs.
-func TestEngineVersionDiffer(t *testing.T) {
+func TestEngineVersionsDiffer(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	// setup
@@ -976,41 +976,37 @@ func TestEngineVersionDiffer(t *testing.T) {
 	// Tests
 	t.Run("NoDiff=NoSpec_NoStatus", func(t *testing.T) {
 		desiredRG := provideResource()
-		latestRG := provideResource()
 		latestCacheCluster := provideCacheCluster()
 		require.Nil(desiredRG.ko.Spec.SecurityGroupIDs)
 		require.Nil(latestCacheCluster.SecurityGroups)
-		differ := rm.engineVersionDiffer(desiredRG, latestRG, latestCacheCluster)
+		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
 		assert.False(differ)
 	})
 	t.Run("NoDiff=NoSpec_HasStatus", func(t *testing.T) {
 		desiredRG := provideResource()
-		latestRG := provideResource()
 		latestCacheCluster := provideCacheCluster()
 		latestEV := "test-engine-version"
 		latestCacheCluster.EngineVersion = &latestEV
 		require.Nil(desiredRG.ko.Spec.EngineVersion)
 		require.NotNil(latestCacheCluster.EngineVersion)
-		differ := rm.engineVersionDiffer(desiredRG, latestRG, latestCacheCluster)
+		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
 		assert.False(differ)
 	})
 	t.Run("NoDiff=Spec_Status_Match", func(t *testing.T) {
 		desiredRG := provideResource()
 		latestEV := "test-engine-version"
 		desiredRG.ko.Spec.EngineVersion = &latestEV
-		latestRG := provideResource()
 		latestCacheCluster := provideCacheCluster()
 		latestCacheCluster.EngineVersion = &latestEV
 		require.NotNil(desiredRG.ko.Spec.EngineVersion)
 		require.NotNil(latestCacheCluster.EngineVersion)
-		differ := rm.engineVersionDiffer(desiredRG, latestRG, latestCacheCluster)
+		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
 		assert.False(differ)
 	})
 	t.Run("Diff=Spec_Status_MisMatch", func(t *testing.T) {
 		desiredRG := provideResource()
 		desiredEV := "desired-test-engine-version"
 		desiredRG.ko.Spec.EngineVersion = &desiredEV
-		latestRG := provideResource()
 		latestCacheCluster := provideCacheCluster()
 		latestEV := "latest-test-engine-version"
 		latestCacheCluster.EngineVersion = &latestEV
@@ -1018,7 +1014,7 @@ func TestEngineVersionDiffer(t *testing.T) {
 		require.NotNil(desiredRG.ko.Spec.EngineVersion)
 		require.NotNil(latestCacheCluster.EngineVersion)
 		require.NotEqual(*desiredRG.ko.Spec.EngineVersion, *latestCacheCluster.EngineVersion)
-		differ := rm.engineVersionDiffer(desiredRG, latestRG, latestCacheCluster)
+		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
 		assert.True(differ)
 	})
 }

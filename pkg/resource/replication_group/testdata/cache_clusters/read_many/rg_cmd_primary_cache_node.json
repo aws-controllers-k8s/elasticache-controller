@@ -1,0 +1,32 @@
+{
+  "CacheClusters": [
+    {
+      "CacheClusterId": "rg-cmd-001",
+      "ReplicationGroupId": "rg-cmd",
+      "CacheClusterStatus": "available",
+      "SnapshotRetentionLimit": 0,
+      "ClientDownloadLandingPage": "https://console.aws.amazon.com/elasticache/home#client-download:",
+      "CacheNodeType": "cache.t3.micro",
+      "TransitEncryptionEnabled": false,
+      "Engine": "redis",
+      "CacheSecurityGroups": [],
+      "NumCacheNodes": 1,
+      "AutoMinorVersionUpgrade": true,
+      "PendingModifiedValues": {},
+      "PreferredMaintenanceWindow": "wed:08:00-wed:09:00",
+      "CacheSubnetGroupName": "default",
+      "AuthTokenEnabled": false,
+      "AtRestEncryptionEnabled": false,
+      "EngineVersion": "5.0.0",
+      "CacheClusterCreateTime": "2021-04-13T19:07:04.983Z",
+      "PreferredAvailabilityZone": "us-east-1b",
+      "SnapshotWindow": "06:30-07:30",
+      "ARN": "arn:aws:elasticache:us-east-1:012345678910:cluster:rg-cmd-001",
+      "CacheParameterGroup": {
+        "CacheNodeIdsToReboot": [],
+        "CacheParameterGroupName": "default.redis5.0",
+        "ParameterApplyStatus": "in-sync"
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "ReplicationGroup": {
+    "Status": "creating",
+    "MultiAZ": "disabled",
+    "Description": "cluster-mode enabled RG",
+    "AtRestEncryptionEnabled": false,
+    "ClusterEnabled": true,
+    "ReplicationGroupId": "rg-cme",
+    "GlobalReplicationGroupInfo": {},
+    "SnapshotRetentionLimit": 0,
+    "AutomaticFailover": "enabled",
+    "TransitEncryptionEnabled": false,
+    "SnapshotWindow": "08:00-09:00",
+    "MemberClusters": [
+      "rg-cme-1111-001",
+      "rg-cme-1111-002",
+      "rg-cme-2222-001",
+      "rg-cme-2222-002",
+      "rg-cme-2222-003",
+      "rg-cme-2222-004"
+    ],
+    "CacheNodeType": "cache.t3.micro",
+    "ARN": "arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cme",
+    "PendingModifiedValues": {}
+  }
+}

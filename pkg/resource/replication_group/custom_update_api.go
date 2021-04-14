@@ -134,7 +134,7 @@ func (rm *resourceManager) modifyReplicationGroup(
 
 	// SecurityGroupIds, EngineVersion
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
-		rm.engineVersionDiffer(desired, latest, latestCacheCluster) {
+		rm.engineVersionsDiffer(desired, latestCacheCluster) {
 		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster)
 		resp, respErr := rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
 		rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
@@ -623,7 +623,7 @@ func (rm *resourceManager) describeCacheCluster(
 		}
 		return cc, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("could not find a non-nil cache cluster from API response")
 }
 
 // securityGroupIdsDiffer return true if
@@ -701,7 +701,7 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 		input.SetSecurityGroupIds(ids)
 	}
 
-	if rm.engineVersionDiffer(desired, latest, latestCacheCluster) &&
+	if rm.engineVersionsDiffer(desired, latestCacheCluster) &&
 		desired.ko.Spec.EngineVersion != nil {
 		input.SetEngineVersion(*desired.ko.Spec.EngineVersion)
 	}
@@ -709,11 +709,16 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 	return input
 }
 
-// engineVersionDiffer return true if
-// Engine Version differs between desired spec and latest (from cache cluster) status
-func (rm *resourceManager) engineVersionDiffer(
+/*
+engineVersionsDiffer returns true if the desired engine version is different
+from the latest observed engine version. Inputs:
+
+desired: the resource representing the desired state
+latestCacheCluster: a CacheCluster object representing one cache node in the replication group, which
+	reveals the currently used engine version for the entire replication group
+ */
+func (rm *resourceManager) engineVersionsDiffer(
 	desired *resource,
-	latest *resource,
 	latestCacheCluster *svcsdk.CacheCluster,
 ) bool {
 	if desired.ko.Spec.EngineVersion == nil {

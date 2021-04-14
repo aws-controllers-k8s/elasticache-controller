@@ -1,0 +1,55 @@
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+# omitted metadata
+spec:
+  cacheNodeType: cache.t3.small
+  engine: redis
+  numNodeGroups: 1
+  replicasPerNodeGroup: 1
+  replicationGroupDescription: cluster-mode disabled RG
+  replicationGroupID: rg-cmd
+status:
+  ackResourceMetadata:
+    arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd
+    ownerAccountID: ""
+  authTokenEnabled: false
+  automaticFailover: disabled
+  clusterEnabled: false
+  conditions:
+    - status: "False"
+      type: ACK.ResourceSynced
+  description: cluster-mode disabled RG
+  events:
+    - date: "2021-04-12T23:28:40Z"
+      message: Replication group rg-cmd created
+  globalReplicationGroupInfo: {}
+  memberClusters:
+    - rg-cmd-001
+    - rg-cmd-002
+  multiAZ: disabled
+  nodeGroups:
+    - nodeGroupID: "0001"
+      nodeGroupMembers:
+        - cacheClusterID: rg-cmd-001
+          cacheNodeID: "0001"
+          currentRole: primary
+          preferredAvailabilityZone: us-east-1d
+          readEndpoint:
+            address: rg-cmd-001.xxxxxx.0001.use1.cache.amazonaws.com
+            port: 6379
+        - cacheClusterID: rg-cmd-002
+          cacheNodeID: "0001"
+          currentRole: replica
+          preferredAvailabilityZone: us-east-1c
+          readEndpoint:
+            address: rg-cmd-002.xxxxxx.0001.use1.cache.amazonaws.com
+            port: 6379
+      primaryEndpoint:
+        address: rg-cmd.xxxxxx.ng.0001.use1.cache.amazonaws.com
+        port: 6379
+      readerEndpoint:
+        address: rg-cmd-ro.xxxxxx.ng.0001.use1.cache.amazonaws.com
+        port: 6379
+      status: modifying
+  pendingModifiedValues: {}
+  status: modifying
