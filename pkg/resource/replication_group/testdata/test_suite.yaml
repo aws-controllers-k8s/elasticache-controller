@@ -31,7 +31,6 @@ tests:
         description: "Create a new replication group; ensure ko.Status shows that this create has been initiated"
         given:
           desired_state: "replication_group/cr/rg_cmd_before_create.yaml"
-          latest_state: #TODO: remove once we have an update case that demonstrates the use of this
           svc_api:
             - operation: CreateReplicationGroupWithContext
               output_fixture: "replication_group/create/rg_cmd_creating.json"
@@ -58,7 +57,6 @@ tests:
         description: "Given desired state matches with server side resource data, ko.Status remain unchanged (resource is stable)"
         given: # fixture
           desired_state: "replication_group/cr/rg_cmd_create_completed.yaml"
-          latest_state: #TODO: remove once we have an update case that demonstrates the use of this
           svc_api:
             - operation: DescribeReplicationGroupsWithContext
               output_fixture: "replication_group/read_one/rg_cmd_create_completed.json"
@@ -69,6 +67,44 @@ tests:
         invoke: ReadOne
         expect:
           latest_state: "replication_group/cr/rg_cmd_create_completed.yaml" #unchanged
+          error: nil
+      - name: "Update=IncreaseReplicaCount"
+        description: "Ensure a replica is added once a new config is provided"
+        given: # currently, desired and latest end up being the same in the reconciler (despite a newly applied config)
+          desired_state: "replication_group/cr/rg_cmd_before_increase_replica.yaml"
+          latest_state: "replication_group/cr/rg_cmd_before_increase_replica.yaml"
+          svc_api:
+            - operation: IncreaseReplicaCountWithContext
+              output_fixture: "replication_group/update/rg_cmd_increase_replica_initiated.json"
+        invoke: Update
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_increase_replica_initiated.yaml"
+          error: nil
+      - name: "Update=ScaleUp"
+        description: "Scale up replication group to larger instance type"
+        given:
+          desired_state: "replication_group/cr/rg_cmd_before_scale_up_desired.yaml"
+          latest_state: "replication_group/cr/rg_cmd_before_scale_up_latest.yaml"
+          svc_api:
+            - operation: ModifyReplicationGroupWithContext
+              output_fixture: "replication_group/update/rg_cmd_scale_up_initiated.json"
+        invoke: Update
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_scale_up_initiated.yaml"
+          error: nil
+      - name: "Update=UpgradeEngine"
+        description: "Upgrade Redis engine version from 5.0.0 to a newer version"
+        given: # desired and latest same due to ReadOne behavior, same as increase replica count case
+          desired_state: "replication_group/cr/rg_cmd_before_engine_version_upgrade.yaml"
+          latest_state: "replication_group/cr/rg_cmd_before_engine_version_upgrade.yaml"
+          svc_api:
+            - operation: ModifyReplicationGroupWithContext
+              output_fixture: "replication_group/update/rg_cmd_engine_upgrade_initiated.json"
+            - operation: DescribeCacheClustersWithContext
+              output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
+        invoke: Update
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_engine_upgrade_initiated.yaml"
           error: nil
       - name: "Delete"
         description: "Delete cluster mode-disabled RG"
@@ -81,3 +117,31 @@ tests:
         expect: # for the delete case we don't expect a new latest state or a non-nil error
           latest_state: nil
           error: nil
+  - name: Cluster mode enabled replication group
+    description: Cluster mode enabled replication group CRUD tests
+    scenarios:
+      - name: "Create=CustomShardConfig"
+        description: Create CME RG with custom node group configuration
+        given:
+          desired_state: "replication_group/cr/rg_cme_before_create.yaml"
+          svc_api:
+            - operation: CreateReplicationGroupWithContext
+              output_fixture: "replication_group/create/rg_cme_creating.json"
+        invoke: Create
+        expect:
+          latest_state: "replication_group/cr/rg_cme_create_initiated.yaml"
+          error: nil
+      - name: "Update=ShardConfigMismatch"
+        description: Increasing NumNodeGroups without changing NodeGroupConfiguration should result in a terminal condition
+        given:
+          desired_state: "replication_group/cr/rg_cme_shard_mismatch.yaml"
+          latest_state: "replication_group/cr/rg_cme_shard_mismatch.yaml"
+          svc_api:
+            - operation: ModifyReplicationGroupShardConfigurationWithContext
+              error:
+                code: InvalidParameterValue
+                message: Configuration for all the node groups should be provided.
+        invoke: Update
+        expect:
+          latest_state: "replication_group/cr/rg_cme_invalid_scale_out_attempted.yaml"
+          error: resource is in terminal condition
