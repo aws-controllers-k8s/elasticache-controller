@@ -5,18 +5,62 @@ spec:
   cacheNodeType: cache.t3.micro
   engine: redis
   numNodeGroups: 1
-  replicasPerNodeGroup: 1 # increaseReplicaCount returns a nodeGroups list without the new replica, so this is still 1
+  replicasPerNodeGroup: 1 # as this is the latest state, replicasPerNodeGroup should be consistent with memberClusters/nodeGroups
   replicationGroupDescription: cluster-mode disabled RG
   replicationGroupID: rg-cmd
 status:
   ackResourceMetadata:
     arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd
     ownerAccountID: ""
+  allowedScaleUpModifications:
+    - cache.m3.2xlarge
+    - cache.m3.large
+    - cache.m3.medium
+    - cache.m3.xlarge
+    - cache.m4.10xlarge
+    - cache.m4.2xlarge
+    - cache.m4.4xlarge
+    - cache.m4.large
+    - cache.m4.xlarge
+    - cache.m5.12xlarge
+    - cache.m5.24xlarge
+    - cache.m5.2xlarge
+    - cache.m5.4xlarge
+    - cache.m5.large
+    - cache.m5.xlarge
+    - cache.m6g.large
+    - cache.r3.2xlarge
+    - cache.r3.4xlarge
+    - cache.r3.8xlarge
+    - cache.r3.large
+    - cache.r3.xlarge
+    - cache.r4.16xlarge
+    - cache.r4.2xlarge
+    - cache.r4.4xlarge
+    - cache.r4.8xlarge
+    - cache.r4.large
+    - cache.r4.xlarge
+    - cache.r5.12xlarge
+    - cache.r5.24xlarge
+    - cache.r5.2xlarge
+    - cache.r5.4xlarge
+    - cache.r5.large
+    - cache.r5.xlarge
+    - cache.r6g.2xlarge
+    - cache.r6g.4xlarge
+    - cache.r6g.8xlarge
+    - cache.r6g.large
+    - cache.r6g.xlarge
+    - cache.t2.medium
+    - cache.t2.micro
+    - cache.t2.small
+    - cache.t3.medium
+    - cache.t3.small
   authTokenEnabled: false
   automaticFailover: disabled
   clusterEnabled: false
   conditions:
-    - status: "False"
+    - status: "True"
       type: ACK.ResourceSynced
   description: cluster-mode disabled RG
   events:
@@ -26,7 +70,6 @@ status:
   memberClusters:
     - rg-cmd-001
     - rg-cmd-002
-    - rg-cmd-003
   multiAZ: disabled
   nodeGroups:
     - nodeGroupID: "0001"
@@ -51,6 +94,6 @@ status:
       readerEndpoint:
         address: rg-cmd-ro.xxxxxx.ng.0001.use1.cache.amazonaws.com
         port: 6379
-      status: modifying
+      status: available
   pendingModifiedValues: {}
-  status: modifying
+  status: available

@@ -79,6 +79,9 @@ func (d *testRunnerDelegate) EmptyServiceAPIOutput(apiName string) (interface{},
 	case "DescribeCacheClustersWithContext":
 		var output svcsdk.DescribeCacheClustersOutput
 		return &output, nil
+	case "DescribeCacheClusters":
+		var output svcsdk.DescribeCacheClustersOutput
+		return &output, nil
 	case "IncreaseReplicaCountWithContext":
 		var output svcsdk.IncreaseReplicaCountOutput
 		return &output, nil

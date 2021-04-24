@@ -270,6 +270,11 @@ func TestDecreaseReplicaCountMock(t *testing.T) {
 	testutil.LoadFromFixture(filepath.Join("testdata", "DecreaseReplicaCountOutput.json"), &mockOutput)
 	mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
 	mocksdkapi.On("DecreaseReplicaCountWithContext", mock.Anything, mock.Anything).Return(&mockOutput, nil)
+
+	//for the purposes of this test, leave the DescribeCacheClustersOutput empty
+	var mockDescribeCacheClustersOutput svcsdk.DescribeCacheClustersOutput
+	mocksdkapi.On("DescribeCacheClusters", mock.Anything, mock.Anything).Return(&mockDescribeCacheClustersOutput, nil)
+
 	rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
 	// Tests
 	t.Run("MockAPI=DecreaseReplicaCount", func(t *testing.T) {
@@ -399,46 +404,30 @@ func TestReplicaCountDifference(t *testing.T) {
 	// setup
 	rm := provideResourceManager()
 	// Tests
-	t.Run("NoDiff=NoSpec_NoStatus", func(t *testing.T) {
-		// no replica configuration in spec as well as status
+	t.Run("NoDiff=DesiredNil_LatestNil", func(t *testing.T) {
+		// neither desired nor latest have either ReplicasPerNodeGroup nor NodeGroupConfiguration set
 		desired := provideResource()
 		latest := provideResource()
 		diff := rm.replicaCountDifference(desired, latest)
 		assert.Nil(desired.ko.Spec.ReplicasPerNodeGroup)
 		assert.Nil(desired.ko.Spec.NodeGroupConfiguration)
-		assert.Nil(latest.ko.Status.NodeGroups)
+		assert.Nil(latest.ko.Spec.ReplicasPerNodeGroup)
+		assert.Nil(latest.ko.Spec.NodeGroupConfiguration)
 		assert.Equal(0, diff)
 	})
-	t.Run("NoDiff=NoSpec_Status.NodeGroups", func(t *testing.T) {
-		// no replica configuration in spec but status has nodes as replicas
+	t.Run("NoDiff=DesiredNonNil_LatestNonNil", func(t *testing.T) {
+		// both desired and latest have ReplicasPerNodeGroup set (but not NodeGroupConfiguration)
 		desired := provideResource()
 		latest := provideResource()
-		replicasCount := 2
-		latest.ko.Status.NodeGroups = provideNodeGroupsWithReplicas(replicasCount, "1001")
-		diff := rm.replicaCountDifference(desired, latest)
-		assert.Nil(desired.ko.Spec.ReplicasPerNodeGroup)
-		assert.Nil(desired.ko.Spec.NodeGroupConfiguration)
-		assert.NotNil(latest.ko.Status.NodeGroups)
-		for _, nodeGroup := range latest.ko.Status.NodeGroups {
-			require.NotNil(nodeGroup.NodeGroupMembers)
-			assert.Equal(replicasCount+1, len(nodeGroup.NodeGroupMembers)) // replica + primary node
-		}
-		assert.Equal(0, diff)
-	})
-	t.Run("NoDiff=Spec.ReplicasPerNodeGroup_Status.NodeGroups", func(t *testing.T) {
-		// replica configuration in spec as 'ReplicasPerNodeGroup' and status has matching number of replicas
-		desired := provideResource()
-		latest := provideResource()
-		replicaCount := int64(2)
-		desired.ko.Spec.ReplicasPerNodeGroup = &replicaCount
-		latest.ko.Status.NodeGroups = provideNodeGroupsWithReplicas(int(replicaCount), "1001")
+		desiredReplicaCount := int64(2)
+		latestReplicaCount := int64(2)
+		desired.ko.Spec.ReplicasPerNodeGroup = &desiredReplicaCount
+		latest.ko.Spec.ReplicasPerNodeGroup = &latestReplicaCount
 		diff := rm.replicaCountDifference(desired, latest)
 		assert.Nil(desired.ko.Spec.NodeGroupConfiguration)
-		assert.NotNil(latest.ko.Status.NodeGroups)
-		for _, nodeGroup := range latest.ko.Status.NodeGroups {
-			require.NotNil(nodeGroup.NodeGroupMembers)
-			assert.Equal(int(replicaCount)+1, len(nodeGroup.NodeGroupMembers)) // replica + primary node
-		}
+		assert.Nil(latest.ko.Spec.NodeGroupConfiguration)
+		assert.NotNil(desired.ko.Spec.ReplicasPerNodeGroup)
+		assert.NotNil(latest.ko.Spec.ReplicasPerNodeGroup)
 		assert.Equal(0, diff)
 	})
 	t.Run("NoDiff=Spec.NodeGroupConfiguration_Status.NodeGroups", func(t *testing.T) {
@@ -469,38 +458,36 @@ func TestReplicaCountDifference(t *testing.T) {
 		// latest status has matching number of replicas with desired 'ReplicasPerNodeGroup'
 		desired := provideResource()
 		latest := provideResource()
-		replicaCount := int64(2)
-		desired.ko.Spec.ReplicasPerNodeGroup = &replicaCount
-		desired.ko.Spec.NodeGroupConfiguration = provideNodeGroupConfigurationWithReplicas(int(replicaCount)+1, "1001", "1002")
-		latest.ko.Status.NodeGroups = provideNodeGroupsWithReplicas(int(replicaCount), "1001")
+		desiredReplicaCount := int64(2)
+		latestReplicaCount := int64(2)
+		desired.ko.Spec.ReplicasPerNodeGroup = &desiredReplicaCount
+		latest.ko.Spec.ReplicasPerNodeGroup = &latestReplicaCount
+		desired.ko.Spec.NodeGroupConfiguration = provideNodeGroupConfigurationWithReplicas(int(desiredReplicaCount)+1, "1001", "1002")
+		latest.ko.Status.NodeGroups = provideNodeGroupsWithReplicas(int(latestReplicaCount), "1001")
 		diff := rm.replicaCountDifference(desired, latest)
 		assert.NotNil(desired.ko.Spec.NodeGroupConfiguration)
 		for _, nodeGroupConfig := range desired.ko.Spec.NodeGroupConfiguration {
 			require.NotNil(nodeGroupConfig.ReplicaCount)
-			assert.Equal(int(replicaCount)+1, int(*nodeGroupConfig.ReplicaCount))
+			assert.Equal(int(desiredReplicaCount)+1, int(*nodeGroupConfig.ReplicaCount))
 		}
 		assert.NotNil(latest.ko.Status.NodeGroups)
 		for _, nodeGroup := range latest.ko.Status.NodeGroups {
 			require.NotNil(nodeGroup.NodeGroupMembers)
-			assert.Equal(int(replicaCount)+1, len(nodeGroup.NodeGroupMembers)) // replica + primary node
+			assert.Equal(int(desiredReplicaCount)+1, len(nodeGroup.NodeGroupMembers)) // replica + primary node
 		}
 		assert.Equal(0, diff)
 	})
-	t.Run("DiffIncreaseReplica=Spec.ReplicasPerNodeGroup_Status.NodeGroups", func(t *testing.T) {
-		// replica configuration in spec as 'ReplicasPerNodeGroup' and status has matching number of replicas
+	t.Run("DiffIncreaseReplica=Spec.ReplicasPerNodeGroup", func(t *testing.T) {
+		// desired ReplicasPerNodeGroup is greater than latest.ReplicasPerNodeGroup, NodeGroupConfiguration nil
 		desired := provideResource()
 		latest := provideResource()
 		desiredReplicaCount := int64(2)
-		latestReplicaCount := 1
+		latestReplicaCount := int64(1)
 		desired.ko.Spec.ReplicasPerNodeGroup = &desiredReplicaCount
-		latest.ko.Status.NodeGroups = provideNodeGroupsWithReplicas(latestReplicaCount, "1001")
+		latest.ko.Spec.ReplicasPerNodeGroup = &latestReplicaCount
 		diff := rm.replicaCountDifference(desired, latest)
 		assert.Nil(desired.ko.Spec.NodeGroupConfiguration)
-		assert.NotNil(latest.ko.Status.NodeGroups)
-		for _, nodeGroup := range latest.ko.Status.NodeGroups {
-			require.NotNil(nodeGroup.NodeGroupMembers)
-			assert.Equal(latestReplicaCount+1, len(nodeGroup.NodeGroupMembers)) // replicas + 1 primary node
-		}
+		assert.NotNil(latest.ko.Spec.ReplicasPerNodeGroup)
 		assert.True(diff > 0) // desired replicas > latest replicas
 	})
 	t.Run("DiffIncreaseReplica=Spec.NodeGroupConfiguration_Status.NodeGroups", func(t *testing.T) {
@@ -526,21 +513,17 @@ func TestReplicaCountDifference(t *testing.T) {
 		}
 		assert.True(diff > 0) // desired replicas > latest replicas
 	})
-	t.Run("DiffDecreaseReplica=Spec.ReplicasPerNodeGroup_Status.NodeGroups", func(t *testing.T) {
-		// replica configuration in spec as 'ReplicasPerNodeGroup' and status has matching number of replicas
+	t.Run("DiffDecreaseReplica=Spec.ReplicasPerNodeGroup", func(t *testing.T) {
+		// desired ReplicasPerNodeGroup is lesser than latest.ReplicasPerNodeGroup, NodeGroupConfiguration nil
 		desired := provideResource()
 		latest := provideResource()
 		desiredReplicaCount := int64(2)
-		latestReplicaCount := 3
+		latestReplicaCount := int64(3)
 		desired.ko.Spec.ReplicasPerNodeGroup = &desiredReplicaCount
-		latest.ko.Status.NodeGroups = provideNodeGroupsWithReplicas(latestReplicaCount, "1001")
+		latest.ko.Spec.ReplicasPerNodeGroup = &latestReplicaCount
 		diff := rm.replicaCountDifference(desired, latest)
 		assert.Nil(desired.ko.Spec.NodeGroupConfiguration)
-		assert.NotNil(latest.ko.Status.NodeGroups)
-		for _, nodeGroup := range latest.ko.Status.NodeGroups {
-			require.NotNil(nodeGroup.NodeGroupMembers)
-			assert.Equal(latestReplicaCount+1, len(nodeGroup.NodeGroupMembers)) // replicas + 1 primary node
-		}
+		assert.NotNil(latest.ko.Spec.ReplicasPerNodeGroup)
 		assert.True(diff < 0) // desired replicas < latest replicas
 	})
 	t.Run("DiffDecreaseReplica=Spec.NodeGroupConfiguration_Status.NodeGroups", func(t *testing.T) {
@@ -976,45 +959,44 @@ func TestEngineVersionsDiffer(t *testing.T) {
 	// Tests
 	t.Run("NoDiff=NoSpec_NoStatus", func(t *testing.T) {
 		desiredRG := provideResource()
-		latestCacheCluster := provideCacheCluster()
-		require.Nil(desiredRG.ko.Spec.SecurityGroupIDs)
-		require.Nil(latestCacheCluster.SecurityGroups)
-		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
+		latestRG := provideResource()
+		require.Nil(desiredRG.ko.Spec.EngineVersion)
+		require.Nil(latestRG.ko.Spec.EngineVersion)
+		differ := rm.engineVersionsDiffer(desiredRG, latestRG)
 		assert.False(differ)
 	})
-	t.Run("NoDiff=NoSpec_HasStatus", func(t *testing.T) {
+	t.Run("NoDiff=OnlyDesiredNil", func(t *testing.T) {
 		desiredRG := provideResource()
-		latestCacheCluster := provideCacheCluster()
+		latestRG := provideResource()
 		latestEV := "test-engine-version"
-		latestCacheCluster.EngineVersion = &latestEV
+		latestRG.ko.Spec.EngineVersion = &latestEV
 		require.Nil(desiredRG.ko.Spec.EngineVersion)
-		require.NotNil(latestCacheCluster.EngineVersion)
-		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
+		require.NotNil(latestRG.ko.Spec.EngineVersion)
+		differ := rm.engineVersionsDiffer(desiredRG, latestRG)
 		assert.False(differ)
 	})
 	t.Run("NoDiff=Spec_Status_Match", func(t *testing.T) {
 		desiredRG := provideResource()
+		latestRG := provideResource()
 		latestEV := "test-engine-version"
 		desiredRG.ko.Spec.EngineVersion = &latestEV
-		latestCacheCluster := provideCacheCluster()
-		latestCacheCluster.EngineVersion = &latestEV
+		latestRG.ko.Spec.EngineVersion = &latestEV
 		require.NotNil(desiredRG.ko.Spec.EngineVersion)
-		require.NotNil(latestCacheCluster.EngineVersion)
-		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
+		require.NotNil(latestRG.ko.Spec.EngineVersion)
+		differ := rm.engineVersionsDiffer(desiredRG, latestRG)
 		assert.False(differ)
 	})
-	t.Run("Diff=Spec_Status_MisMatch", func(t *testing.T) {
+	t.Run("Diff=Desired_Latest_Mismatch", func(t *testing.T) {
 		desiredRG := provideResource()
+		latestRG := provideResource()
 		desiredEV := "desired-test-engine-version"
-		desiredRG.ko.Spec.EngineVersion = &desiredEV
-		latestCacheCluster := provideCacheCluster()
 		latestEV := "latest-test-engine-version"
-		latestCacheCluster.EngineVersion = &latestEV
-
+		desiredRG.ko.Spec.EngineVersion = &desiredEV
+		latestRG.ko.Spec.EngineVersion = &latestEV
 		require.NotNil(desiredRG.ko.Spec.EngineVersion)
-		require.NotNil(latestCacheCluster.EngineVersion)
-		require.NotEqual(*desiredRG.ko.Spec.EngineVersion, *latestCacheCluster.EngineVersion)
-		differ := rm.engineVersionsDiffer(desiredRG, latestCacheCluster)
+		require.NotNil(latestRG.ko.Spec.EngineVersion)
+		require.NotEqual(*desiredRG.ko.Spec.EngineVersion, *latestRG.ko.Spec.EngineVersion)
+		differ := rm.engineVersionsDiffer(desiredRG, latestRG)
 		assert.True(differ)
 	})
 }

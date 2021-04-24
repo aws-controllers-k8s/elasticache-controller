@@ -83,3 +83,15 @@ def provide_node_group_configuration(size: int):
     for i in range(1, size+1):
         ngc.append({"nodeGroupID": str(i).rjust(4, '0')})
     return ngc
+
+# retrieve first cache cluster found from specified replication group
+def retrieve_cache_cluster(rg_id: str):
+    rg_response = ec.describe_replication_groups(ReplicationGroupId=rg_id)
+
+    rg = rg_response['ReplicationGroups'][0]
+    if len(rg['MemberClusters']) == 0:
+        logging.debug(f"No member clusters found for replication group {rg_id}")
+        return None
+
+    cc_response = ec.describe_cache_clusters(CacheClusterId=rg['MemberClusters'][0])
+    return cc_response['CacheClusters'][0]

@@ -49,6 +49,8 @@ tests:
               output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types.json"
             - operation: DescribeEventsWithContext
               output_fixture: "events/read_many/rg_cmd_events.json"
+            - operation: DescribeCacheClusters
+              output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: ReadOne
         expect:
           latest_state: "replication_group/cr/rg_cmd_create_completed.yaml"
@@ -64,18 +66,22 @@ tests:
               output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types.json"
             - operation: DescribeEventsWithContext
               output_fixture: "events/read_many/rg_cmd_events.json"
+            - operation: DescribeCacheClusters
+              output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: ReadOne
         expect:
           latest_state: "replication_group/cr/rg_cmd_create_completed.yaml" #unchanged
           error: nil
       - name: "Update=IncreaseReplicaCount"
         description: "Ensure a replica is added once a new config is provided"
-        given: # currently, desired and latest end up being the same in the reconciler (despite a newly applied config)
+        given:
           desired_state: "replication_group/cr/rg_cmd_before_increase_replica.yaml"
-          latest_state: "replication_group/cr/rg_cmd_before_increase_replica.yaml"
+          latest_state: "replication_group/cr/rg_cmd_before_increase_replica_latest.yaml"
           svc_api:
             - operation: IncreaseReplicaCountWithContext
               output_fixture: "replication_group/update/rg_cmd_increase_replica_initiated.json"
+            - operation: DescribeCacheClusters
+              output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: Update
         expect:
           latest_state: "replication_group/cr/rg_cmd_increase_replica_initiated.yaml"
@@ -88,6 +94,8 @@ tests:
           svc_api:
             - operation: ModifyReplicationGroupWithContext
               output_fixture: "replication_group/update/rg_cmd_scale_up_initiated.json"
+            - operation: DescribeCacheClusters
+              output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: Update
         expect:
           latest_state: "replication_group/cr/rg_cmd_scale_up_initiated.yaml"
@@ -96,11 +104,11 @@ tests:
         description: "Upgrade Redis engine version from 5.0.0 to a newer version"
         given: # desired and latest same due to ReadOne behavior, same as increase replica count case
           desired_state: "replication_group/cr/rg_cmd_before_engine_version_upgrade.yaml"
-          latest_state: "replication_group/cr/rg_cmd_before_engine_version_upgrade.yaml"
+          latest_state: "replication_group/cr/rg_cmd_before_engine_version_upgrade_latest.yaml"
           svc_api:
             - operation: ModifyReplicationGroupWithContext
               output_fixture: "replication_group/update/rg_cmd_engine_upgrade_initiated.json"
-            - operation: DescribeCacheClustersWithContext
+            - operation: DescribeCacheClusters
               output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: Update
         expect:

@@ -4,7 +4,6 @@ metadata:
   name: $RG_ID
 spec:
   atRestEncryptionEnabled: true
-  authToken: testplaintexttoken
   autoMinorVersionUpgrade: true
   automaticFailoverEnabled: true
   cacheNodeType: cache.t3.small

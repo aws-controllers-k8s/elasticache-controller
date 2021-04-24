@@ -143,6 +143,30 @@ func (rm *resourceManager) customSetOutput(
 		ko.Status.AllowedScaleDownModifications = nil
 		ko.Status.AllowedScaleUpModifications = nil
 	}
+
+	// populate relevant ko.Spec fields with observed state of respRG.NodeGroups
+	if respRG.NodeGroups != nil {
+		// if this is specified, all node groups should have the same # replicas so use the first
+		if ko.Spec.ReplicasPerNodeGroup != nil {
+			nodeGroup := respRG.NodeGroups[0]
+			if nodeGroup != nil && nodeGroup.NodeGroupMembers != nil {
+				if len(nodeGroup.NodeGroupMembers) > 0 {
+					*ko.Spec.ReplicasPerNodeGroup = int64(len(nodeGroup.NodeGroupMembers) - 1)
+				}
+			}
+		}
+
+		//TODO: set node group configuration in else if block
+	}
+
+	// updating some Spec fields requires a DescribeCacheClusters call
+	latestCacheCluster, err := rm.describeCacheCluster(ko)
+	if err == nil && latestCacheCluster != nil {
+		// only update EngineVersion if it's specified, and if latest state has a non-nil EngineVersion
+		if ko.Spec.EngineVersion != nil && latestCacheCluster.EngineVersion != nil {
+			*ko.Spec.EngineVersion = *latestCacheCluster.EngineVersion
+		}
+	}
 }
 
 // newListAllowedNodeTypeModificationsPayLoad returns an SDK-specific struct for the HTTP request
