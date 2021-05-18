@@ -1,0 +1,13 @@
+# Basic CMD replication group for testing Update behavior
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  cacheNodeType: cache.t3.micro
+  engine: redis
+  engineVersion: $ENGINE_VERSION
+  numNodeGroups: $NUM_NODE_GROUPS
+  replicasPerNodeGroup: $REPLICAS_PER_NODE_GROUP
+  replicationGroupDescription: cluster-mode disabled RG
+  replicationGroupID: $RG_ID
