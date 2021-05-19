@@ -34,5 +34,4 @@ func TestCreateAWSError(t *testing.T) {
 		assert.Equal("ReplicationGroup rg-cmd not found", awsErr.Message())
 	})
 
-
 }

@@ -3,7 +3,6 @@ kind: ReplicationGroup
 # omitted metadata
 spec:
   cacheNodeType: cache.t3.micro
-  cacheSubnetGroupName: default
   engine: redis
   nodeGroupConfiguration:
     - nodeGroupID: "1111"

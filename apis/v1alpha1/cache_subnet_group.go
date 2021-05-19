@@ -22,10 +22,17 @@ import (
 
 // CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup
 type CacheSubnetGroupSpec struct {
+	// A description for the cache subnet group.
 	// +kubebuilder:validation:Required
 	CacheSubnetGroupDescription *string `json:"cacheSubnetGroupDescription"`
+	// A name for the cache subnet group. This value is stored as a lowercase string.
+	//
+	// Constraints: Must contain no more than 255 alphanumeric characters or hyphens.
+	//
+	// Example: mysubnetgroup
 	// +kubebuilder:validation:Required
 	CacheSubnetGroupName *string `json:"cacheSubnetGroupName"`
+	// A list of VPC subnet IDs for the cache subnet group.
 	// +kubebuilder:validation:Required
 	SubnetIDs []*string `json:"subnetIDs"`
 }
@@ -41,9 +48,14 @@ type CacheSubnetGroupStatus struct {
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
-	Events     []*Event                 `json:"events,omitempty"`
-	Subnets    []*Subnet                `json:"subnets,omitempty"`
-	VPCID      *string                  `json:"vpcID,omitempty"`
+	// A list of events. Each element in the list contains detailed information
+	// about one event.
+	Events []*Event `json:"events,omitempty"`
+	// A list of subnets associated with the cache subnet group.
+	Subnets []*Subnet `json:"subnets,omitempty"`
+	// The Amazon Virtual Private Cloud identifier (VPC ID) of the cache subnet
+	// group.
+	VPCID *string `json:"vpcID,omitempty"`
 }
 
 // CacheSubnetGroup is the Schema for the CacheSubnetGroups API

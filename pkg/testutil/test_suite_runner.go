@@ -101,16 +101,16 @@ func (runner *TestSuiteRunner) runTestScenario(scenarioName string, fixtureCxt *
 }
 
 /* assertExpectations validates the actual outcome against the expected outcome.
-	There are two components to the expected outcome, corresponding to the return values of the resource manager's CRUD operation:
-		1) the actual return value of type AWSResource ("expect.latest_state" in test_suite.yaml)
-		2) the error ("expect.error" in test_suite.yaml)
-	With each of these components, there are three possibilities in test_suite.yaml, which are interpreted as follows:
-		1) the key does not exist, or was provided with no value: no explicit expectations, don't assert anything
-		2) the key was provided with value "nil": explicit expectation; assert that the error or return value is nil
-		3) the key was provided with value other than "nil": explicit expectation; assert that the value matches the
-			expected value
-	However, if neither expect.latest_state nor error are provided, assertExpectations will fail the test case.
- */
+There are two components to the expected outcome, corresponding to the return values of the resource manager's CRUD operation:
+	1) the actual return value of type AWSResource ("expect.latest_state" in test_suite.yaml)
+	2) the error ("expect.error" in test_suite.yaml)
+With each of these components, there are three possibilities in test_suite.yaml, which are interpreted as follows:
+	1) the key does not exist, or was provided with no value: no explicit expectations, don't assert anything
+	2) the key was provided with value "nil": explicit expectation; assert that the error or return value is nil
+	3) the key was provided with value other than "nil": explicit expectation; assert that the value matches the
+		expected value
+However, if neither expect.latest_state nor error are provided, assertExpectations will fail the test case.
+*/
 func (runner *TestSuiteRunner) assertExpectations(assert *assert.Assertions, expectation *Expect, actual acktypes.AWSResource, err error) {
 	if expectation.LatestState == "" && expectation.Error == "" {
 		fmt.Println("Invalid test case: no expectation given for either latest_state or error")

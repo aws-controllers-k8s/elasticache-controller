@@ -37,10 +37,15 @@ spec:
             description: CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup
             properties:
               cacheSubnetGroupDescription:
+                description: A description for the cache subnet group.
                 type: string
               cacheSubnetGroupName:
+                description: "A name for the cache subnet group. This value is stored
+                  as a lowercase string. \n Constraints: Must contain no more than
+                  255 alphanumeric characters or hyphens. \n Example: mysubnetgroup"
                 type: string
               subnetIDs:
+                description: A list of VPC subnet IDs for the cache subnet group.
                 items:
                   type: string
                 type: array
@@ -109,7 +114,12 @@ spec:
                   type: object
                 type: array
               events:
+                description: A list of events. Each element in the list contains detailed
+                  information about one event.
                 items:
+                  description: Represents a single occurrence of something interesting
+                    within the system. Some examples of events are creating a cluster,
+                    adding or removing a cache node, or rebooting a node.
                   properties:
                     date:
                       format: date-time
@@ -121,9 +131,15 @@ spec:
                   type: object
                 type: array
               subnets:
+                description: A list of subnets associated with the cache subnet group.
                 items:
+                  description: Represents the subnet associated with a cluster. This
+                    parameter refers to subnets defined in Amazon Virtual Private
+                    Cloud (Amazon VPC) and used with ElastiCache.
                   properties:
                     subnetAvailabilityZone:
+                      description: Describes an Availability Zone in which the cluster
+                        is launched.
                       properties:
                         name:
                           type: string
@@ -131,6 +147,7 @@ spec:
                     subnetIdentifier:
                       type: string
                     subnetOutpost:
+                      description: The ID of the outpost subnet.
                       properties:
                         subnetOutpostARN:
                           type: string
@@ -138,6 +155,8 @@ spec:
                   type: object
                 type: array
               vpcID:
+                description: The Amazon Virtual Private Cloud identifier (VPC ID)
+                  of the cache subnet group.
                 type: string
             required:
             - ackResourceMetadata

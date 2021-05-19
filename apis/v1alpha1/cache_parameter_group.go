@@ -22,12 +22,22 @@ import (
 
 // CacheParameterGroupSpec defines the desired state of CacheParameterGroup
 type CacheParameterGroupSpec struct {
+	// The name of the cache parameter group family that the cache parameter group
+	// can be used with.
+	//
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	// +kubebuilder:validation:Required
 	CacheParameterGroupFamily *string `json:"cacheParameterGroupFamily"`
+	// A user-specified name for the cache parameter group.
 	// +kubebuilder:validation:Required
 	CacheParameterGroupName *string `json:"cacheParameterGroupName"`
+	// A user-specified description for the cache parameter group.
 	// +kubebuilder:validation:Required
-	Description         *string               `json:"description"`
+	Description *string `json:"description"`
+	// An array of parameter names and values for the parameter update. You must
+	// supply at least one parameter name and value; subsequent arguments are optional.
+	// A maximum of 20 parameters may be modified per request.
 	ParameterNameValues []*ParameterNameValue `json:"parameterNameValues,omitempty"`
 }
 
@@ -42,9 +52,13 @@ type CacheParameterGroupStatus struct {
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
-	Events     []*Event                 `json:"events,omitempty"`
-	IsGlobal   *bool                    `json:"isGlobal,omitempty"`
-	Parameters []*Parameter             `json:"parameters,omitempty"`
+	// A list of events. Each element in the list contains detailed information
+	// about one event.
+	Events []*Event `json:"events,omitempty"`
+	// Indicates whether the parameter group is associated with a Global Datastore
+	IsGlobal *bool `json:"isGlobal,omitempty"`
+	// A list of Parameter instances.
+	Parameters []*Parameter `json:"parameters,omitempty"`
 }
 
 // CacheParameterGroup is the Schema for the CacheParameterGroups API

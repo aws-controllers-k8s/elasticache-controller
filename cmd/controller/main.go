@@ -28,6 +28,7 @@ import (
 
 	svctypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	svcresource "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource"
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_parameter_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_subnet_group"
@@ -45,6 +46,7 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = svctypes.AddToScheme(scheme)
+	_ = ackv1alpha1.AddToScheme(scheme)
 }
 
 func main() {
@@ -67,6 +69,7 @@ func main() {
 		MetricsBindAddress: ackCfg.MetricsAddr,
 		LeaderElection:     ackCfg.EnableLeaderElection,
 		LeaderElectionID:   awsServiceAPIGroup,
+		Namespace:          ackCfg.WatchNamespace,
 	})
 	if err != nil {
 		setupLog.Error(
