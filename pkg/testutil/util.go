@@ -53,5 +53,5 @@ func LoadFromFixture(
 // can be added in the future if needed
 func CreateAWSError(awsError ServiceAPIError) awserr.RequestFailure {
 	error := awserr.New(awsError.Code, awsError.Message, nil)
-	return awserr.NewRequestFailure(error, 0,"")
+	return awserr.NewRequestFailure(error, 0, "")
 }

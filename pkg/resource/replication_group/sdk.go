@@ -75,21 +75,33 @@ func (rm *resourceManager) sdkFind(
 		}
 		if elem.AtRestEncryptionEnabled != nil {
 			ko.Spec.AtRestEncryptionEnabled = elem.AtRestEncryptionEnabled
+		} else {
+			ko.Spec.AtRestEncryptionEnabled = nil
 		}
 		if elem.AuthTokenEnabled != nil {
 			ko.Status.AuthTokenEnabled = elem.AuthTokenEnabled
+		} else {
+			ko.Status.AuthTokenEnabled = nil
 		}
 		if elem.AuthTokenLastModifiedDate != nil {
 			ko.Status.AuthTokenLastModifiedDate = &metav1.Time{*elem.AuthTokenLastModifiedDate}
+		} else {
+			ko.Status.AuthTokenLastModifiedDate = nil
 		}
 		if elem.AutomaticFailover != nil {
 			ko.Status.AutomaticFailover = elem.AutomaticFailover
+		} else {
+			ko.Status.AutomaticFailover = nil
 		}
 		if elem.CacheNodeType != nil {
 			ko.Spec.CacheNodeType = elem.CacheNodeType
+		} else {
+			ko.Spec.CacheNodeType = nil
 		}
 		if elem.ClusterEnabled != nil {
 			ko.Status.ClusterEnabled = elem.ClusterEnabled
+		} else {
+			ko.Status.ClusterEnabled = nil
 		}
 		if elem.ConfigurationEndpoint != nil {
 			f7 := &svcapitypes.Endpoint{}
@@ -100,9 +112,13 @@ func (rm *resourceManager) sdkFind(
 				f7.Port = elem.ConfigurationEndpoint.Port
 			}
 			ko.Status.ConfigurationEndpoint = f7
+		} else {
+			ko.Status.ConfigurationEndpoint = nil
 		}
 		if elem.Description != nil {
 			ko.Status.Description = elem.Description
+		} else {
+			ko.Status.Description = nil
 		}
 		if elem.GlobalReplicationGroupInfo != nil {
 			f9 := &svcapitypes.GlobalReplicationGroupInfo{}
@@ -113,9 +129,13 @@ func (rm *resourceManager) sdkFind(
 				f9.GlobalReplicationGroupMemberRole = elem.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 			}
 			ko.Status.GlobalReplicationGroupInfo = f9
+		} else {
+			ko.Status.GlobalReplicationGroupInfo = nil
 		}
 		if elem.KmsKeyId != nil {
 			ko.Spec.KMSKeyID = elem.KmsKeyId
+		} else {
+			ko.Spec.KMSKeyID = nil
 		}
 		if elem.MemberClusters != nil {
 			f11 := []*string{}
@@ -125,6 +145,8 @@ func (rm *resourceManager) sdkFind(
 				f11 = append(f11, &f11elem)
 			}
 			ko.Status.MemberClusters = f11
+		} else {
+			ko.Status.MemberClusters = nil
 		}
 		if elem.MemberClustersOutpostArns != nil {
 			f12 := []*string{}
@@ -134,9 +156,13 @@ func (rm *resourceManager) sdkFind(
 				f12 = append(f12, &f12elem)
 			}
 			ko.Status.MemberClustersOutpostARNs = f12
+		} else {
+			ko.Status.MemberClustersOutpostARNs = nil
 		}
 		if elem.MultiAZ != nil {
 			ko.Status.MultiAZ = elem.MultiAZ
+		} else {
+			ko.Status.MultiAZ = nil
 		}
 		if elem.NodeGroups != nil {
 			f14 := []*svcapitypes.NodeGroup{}
@@ -207,6 +233,8 @@ func (rm *resourceManager) sdkFind(
 				f14 = append(f14, f14elem)
 			}
 			ko.Status.NodeGroups = f14
+		} else {
+			ko.Status.NodeGroups = nil
 		}
 		if elem.PendingModifiedValues != nil {
 			f15 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
@@ -253,24 +281,38 @@ func (rm *resourceManager) sdkFind(
 				f15.UserGroups = f15f4
 			}
 			ko.Status.PendingModifiedValues = f15
+		} else {
+			ko.Status.PendingModifiedValues = nil
 		}
 		if elem.ReplicationGroupId != nil {
 			ko.Spec.ReplicationGroupID = elem.ReplicationGroupId
+		} else {
+			ko.Spec.ReplicationGroupID = nil
 		}
 		if elem.SnapshotRetentionLimit != nil {
 			ko.Spec.SnapshotRetentionLimit = elem.SnapshotRetentionLimit
+		} else {
+			ko.Spec.SnapshotRetentionLimit = nil
 		}
 		if elem.SnapshotWindow != nil {
 			ko.Spec.SnapshotWindow = elem.SnapshotWindow
+		} else {
+			ko.Spec.SnapshotWindow = nil
 		}
 		if elem.SnapshottingClusterId != nil {
 			ko.Status.SnapshottingClusterID = elem.SnapshottingClusterId
+		} else {
+			ko.Status.SnapshottingClusterID = nil
 		}
 		if elem.Status != nil {
 			ko.Status.Status = elem.Status
+		} else {
+			ko.Status.Status = nil
 		}
 		if elem.TransitEncryptionEnabled != nil {
 			ko.Spec.TransitEncryptionEnabled = elem.TransitEncryptionEnabled
+		} else {
+			ko.Spec.TransitEncryptionEnabled = nil
 		}
 		if elem.UserGroupIds != nil {
 			f22 := []*string{}
@@ -280,6 +322,8 @@ func (rm *resourceManager) sdkFind(
 				f22 = append(f22, &f22elem)
 			}
 			ko.Spec.UserGroupIDs = f22
+		} else {
+			ko.Spec.UserGroupIDs = nil
 		}
 		found = true
 		break
@@ -342,15 +386,23 @@ func (rm *resourceManager) sdkCreate(
 	}
 	if resp.ReplicationGroup.AuthTokenEnabled != nil {
 		ko.Status.AuthTokenEnabled = resp.ReplicationGroup.AuthTokenEnabled
+	} else {
+		ko.Status.AuthTokenEnabled = nil
 	}
 	if resp.ReplicationGroup.AuthTokenLastModifiedDate != nil {
 		ko.Status.AuthTokenLastModifiedDate = &metav1.Time{*resp.ReplicationGroup.AuthTokenLastModifiedDate}
+	} else {
+		ko.Status.AuthTokenLastModifiedDate = nil
 	}
 	if resp.ReplicationGroup.AutomaticFailover != nil {
 		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
+	} else {
+		ko.Status.AutomaticFailover = nil
 	}
 	if resp.ReplicationGroup.ClusterEnabled != nil {
 		ko.Status.ClusterEnabled = resp.ReplicationGroup.ClusterEnabled
+	} else {
+		ko.Status.ClusterEnabled = nil
 	}
 	if resp.ReplicationGroup.ConfigurationEndpoint != nil {
 		f7 := &svcapitypes.Endpoint{}
@@ -361,9 +413,13 @@ func (rm *resourceManager) sdkCreate(
 			f7.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
 		}
 		ko.Status.ConfigurationEndpoint = f7
+	} else {
+		ko.Status.ConfigurationEndpoint = nil
 	}
 	if resp.ReplicationGroup.Description != nil {
 		ko.Status.Description = resp.ReplicationGroup.Description
+	} else {
+		ko.Status.Description = nil
 	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
@@ -374,6 +430,8 @@ func (rm *resourceManager) sdkCreate(
 			f9.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 		}
 		ko.Status.GlobalReplicationGroupInfo = f9
+	} else {
+		ko.Status.GlobalReplicationGroupInfo = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
 		f11 := []*string{}
@@ -383,6 +441,8 @@ func (rm *resourceManager) sdkCreate(
 			f11 = append(f11, &f11elem)
 		}
 		ko.Status.MemberClusters = f11
+	} else {
+		ko.Status.MemberClusters = nil
 	}
 	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
 		f12 := []*string{}
@@ -392,9 +452,13 @@ func (rm *resourceManager) sdkCreate(
 			f12 = append(f12, &f12elem)
 		}
 		ko.Status.MemberClustersOutpostARNs = f12
+	} else {
+		ko.Status.MemberClustersOutpostARNs = nil
 	}
 	if resp.ReplicationGroup.MultiAZ != nil {
 		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
+	} else {
+		ko.Status.MultiAZ = nil
 	}
 	if resp.ReplicationGroup.NodeGroups != nil {
 		f14 := []*svcapitypes.NodeGroup{}
@@ -465,6 +529,8 @@ func (rm *resourceManager) sdkCreate(
 			f14 = append(f14, f14elem)
 		}
 		ko.Status.NodeGroups = f14
+	} else {
+		ko.Status.NodeGroups = nil
 	}
 	if resp.ReplicationGroup.PendingModifiedValues != nil {
 		f15 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
@@ -511,12 +577,18 @@ func (rm *resourceManager) sdkCreate(
 			f15.UserGroups = f15f4
 		}
 		ko.Status.PendingModifiedValues = f15
+	} else {
+		ko.Status.PendingModifiedValues = nil
 	}
 	if resp.ReplicationGroup.SnapshottingClusterId != nil {
 		ko.Status.SnapshottingClusterID = resp.ReplicationGroup.SnapshottingClusterId
+	} else {
+		ko.Status.SnapshottingClusterID = nil
 	}
 	if resp.ReplicationGroup.Status != nil {
 		ko.Status.Status = resp.ReplicationGroup.Status
+	} else {
+		ko.Status.Status = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -757,15 +829,23 @@ func (rm *resourceManager) sdkUpdate(
 	}
 	if resp.ReplicationGroup.AuthTokenEnabled != nil {
 		ko.Status.AuthTokenEnabled = resp.ReplicationGroup.AuthTokenEnabled
+	} else {
+		ko.Status.AuthTokenEnabled = nil
 	}
 	if resp.ReplicationGroup.AuthTokenLastModifiedDate != nil {
 		ko.Status.AuthTokenLastModifiedDate = &metav1.Time{*resp.ReplicationGroup.AuthTokenLastModifiedDate}
+	} else {
+		ko.Status.AuthTokenLastModifiedDate = nil
 	}
 	if resp.ReplicationGroup.AutomaticFailover != nil {
 		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
+	} else {
+		ko.Status.AutomaticFailover = nil
 	}
 	if resp.ReplicationGroup.ClusterEnabled != nil {
 		ko.Status.ClusterEnabled = resp.ReplicationGroup.ClusterEnabled
+	} else {
+		ko.Status.ClusterEnabled = nil
 	}
 	if resp.ReplicationGroup.ConfigurationEndpoint != nil {
 		f7 := &svcapitypes.Endpoint{}
@@ -776,9 +856,13 @@ func (rm *resourceManager) sdkUpdate(
 			f7.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
 		}
 		ko.Status.ConfigurationEndpoint = f7
+	} else {
+		ko.Status.ConfigurationEndpoint = nil
 	}
 	if resp.ReplicationGroup.Description != nil {
 		ko.Status.Description = resp.ReplicationGroup.Description
+	} else {
+		ko.Status.Description = nil
 	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
@@ -789,6 +873,8 @@ func (rm *resourceManager) sdkUpdate(
 			f9.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 		}
 		ko.Status.GlobalReplicationGroupInfo = f9
+	} else {
+		ko.Status.GlobalReplicationGroupInfo = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
 		f11 := []*string{}
@@ -798,6 +884,8 @@ func (rm *resourceManager) sdkUpdate(
 			f11 = append(f11, &f11elem)
 		}
 		ko.Status.MemberClusters = f11
+	} else {
+		ko.Status.MemberClusters = nil
 	}
 	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
 		f12 := []*string{}
@@ -807,9 +895,13 @@ func (rm *resourceManager) sdkUpdate(
 			f12 = append(f12, &f12elem)
 		}
 		ko.Status.MemberClustersOutpostARNs = f12
+	} else {
+		ko.Status.MemberClustersOutpostARNs = nil
 	}
 	if resp.ReplicationGroup.MultiAZ != nil {
 		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
+	} else {
+		ko.Status.MultiAZ = nil
 	}
 	if resp.ReplicationGroup.NodeGroups != nil {
 		f14 := []*svcapitypes.NodeGroup{}
@@ -880,6 +972,8 @@ func (rm *resourceManager) sdkUpdate(
 			f14 = append(f14, f14elem)
 		}
 		ko.Status.NodeGroups = f14
+	} else {
+		ko.Status.NodeGroups = nil
 	}
 	if resp.ReplicationGroup.PendingModifiedValues != nil {
 		f15 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
@@ -926,12 +1020,18 @@ func (rm *resourceManager) sdkUpdate(
 			f15.UserGroups = f15f4
 		}
 		ko.Status.PendingModifiedValues = f15
+	} else {
+		ko.Status.PendingModifiedValues = nil
 	}
 	if resp.ReplicationGroup.SnapshottingClusterId != nil {
 		ko.Status.SnapshottingClusterID = resp.ReplicationGroup.SnapshottingClusterId
+	} else {
+		ko.Status.SnapshottingClusterID = nil
 	}
 	if resp.ReplicationGroup.Status != nil {
 		ko.Status.Status = resp.ReplicationGroup.Status
+	} else {
+		ko.Status.Status = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -1070,10 +1170,13 @@ func (rm *resourceManager) updateConditions(
 
 	// Terminal condition
 	var terminalCondition *ackv1alpha1.Condition = nil
+	var recoverableCondition *ackv1alpha1.Condition = nil
 	for _, condition := range ko.Status.Conditions {
 		if condition.Type == ackv1alpha1.ConditionTypeTerminal {
 			terminalCondition = condition
-			break
+		}
+		if condition.Type == ackv1alpha1.ConditionTypeRecoverable {
+			recoverableCondition = condition
 		}
 	}
 
@@ -1088,13 +1191,36 @@ func (rm *resourceManager) updateConditions(
 		awsErr, _ := ackerr.AWSError(err)
 		errorMessage := awsErr.Message()
 		terminalCondition.Message = &errorMessage
-	} else if terminalCondition != nil {
-		terminalCondition.Status = corev1.ConditionFalse
-		terminalCondition.Message = nil
+	} else {
+		// Clear the terminal condition if no longer present
+		if terminalCondition != nil {
+			terminalCondition.Status = corev1.ConditionFalse
+			terminalCondition.Message = nil
+		}
+		// Handling Recoverable Conditions
+		if err != nil {
+			if recoverableCondition == nil {
+				// Add a new Condition containing a non-terminal error
+				recoverableCondition = &ackv1alpha1.Condition{
+					Type: ackv1alpha1.ConditionTypeRecoverable,
+				}
+				ko.Status.Conditions = append(ko.Status.Conditions, recoverableCondition)
+			}
+			recoverableCondition.Status = corev1.ConditionTrue
+			awsErr, _ := ackerr.AWSError(err)
+			errorMessage := err.Error()
+			if awsErr != nil {
+				errorMessage = awsErr.Message()
+			}
+			recoverableCondition.Message = &errorMessage
+		} else if recoverableCondition != nil {
+			recoverableCondition.Status = corev1.ConditionFalse
+			recoverableCondition.Message = nil
+		}
 	}
 	// custom update conditions
 	customUpdate := rm.CustomUpdateConditions(ko, r, err)
-	if terminalCondition != nil || customUpdate {
+	if terminalCondition != nil || recoverableCondition != nil || customUpdate {
 		return &resource{ko}, true // updated
 	}
 	return nil, false // not updated

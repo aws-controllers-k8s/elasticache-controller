@@ -20,6 +20,7 @@ from time import sleep
 
 ec = boto3.client("elasticache")
 
+
 def wait_usergroup_active(usergroup_id: str,
                            wait_periods: int = 10,
                            period_length: int = 60) -> bool:
@@ -40,6 +41,7 @@ def wait_usergroup_active(usergroup_id: str,
 
     logging.error(f"Wait for User Group {usergroup_id} to be active timed out")
     return False
+
 
 def wait_snapshot_available(snapshot_name: str,
                             wait_periods: int = 10,
@@ -62,6 +64,7 @@ def wait_snapshot_available(snapshot_name: str,
     logging.error(f"Wait for snapshot {snapshot_name} to be available timed out")
     return False
 
+
 def wait_snapshot_deleted(snapshot_name: str,
                           wait_periods: int = 10,
                           period_length: int = 60) -> bool:
@@ -77,9 +80,23 @@ def wait_snapshot_deleted(snapshot_name: str,
     logging.error(f"Wait for snapshot {snapshot_name} to be deleted timed out")
     return False
 
+
 # provide a basic nodeGroupConfiguration object of desired size
 def provide_node_group_configuration(size: int):
     ngc = []
     for i in range(1, size+1):
         ngc.append({"nodeGroupID": str(i).rjust(4, '0')})
     return ngc
+
+
+# retrieve first cache cluster found from specified replication group
+def retrieve_cache_cluster(rg_id: str):
+    rg_response = ec.describe_replication_groups(ReplicationGroupId=rg_id)
+
+    rg = rg_response['ReplicationGroups'][0]
+    if len(rg['MemberClusters']) == 0:
+        logging.debug(f"No member clusters found for replication group {rg_id}")
+        return None
+
+    cc_response = ec.describe_cache_clusters(CacheClusterId=rg['MemberClusters'][0])
+    return cc_response['CacheClusters'][0]

@@ -75,33 +75,53 @@ func (rm *resourceManager) sdkFind(
 		}
 		if elem.AutoMinorVersionUpgrade != nil {
 			ko.Status.AutoMinorVersionUpgrade = elem.AutoMinorVersionUpgrade
+		} else {
+			ko.Status.AutoMinorVersionUpgrade = nil
 		}
 		if elem.AutomaticFailover != nil {
 			ko.Status.AutomaticFailover = elem.AutomaticFailover
+		} else {
+			ko.Status.AutomaticFailover = nil
 		}
 		if elem.CacheClusterCreateTime != nil {
 			ko.Status.CacheClusterCreateTime = &metav1.Time{*elem.CacheClusterCreateTime}
+		} else {
+			ko.Status.CacheClusterCreateTime = nil
 		}
 		if elem.CacheClusterId != nil {
 			ko.Spec.CacheClusterID = elem.CacheClusterId
+		} else {
+			ko.Spec.CacheClusterID = nil
 		}
 		if elem.CacheNodeType != nil {
 			ko.Status.CacheNodeType = elem.CacheNodeType
+		} else {
+			ko.Status.CacheNodeType = nil
 		}
 		if elem.CacheParameterGroupName != nil {
 			ko.Status.CacheParameterGroupName = elem.CacheParameterGroupName
+		} else {
+			ko.Status.CacheParameterGroupName = nil
 		}
 		if elem.CacheSubnetGroupName != nil {
 			ko.Status.CacheSubnetGroupName = elem.CacheSubnetGroupName
+		} else {
+			ko.Status.CacheSubnetGroupName = nil
 		}
 		if elem.Engine != nil {
 			ko.Status.Engine = elem.Engine
+		} else {
+			ko.Status.Engine = nil
 		}
 		if elem.EngineVersion != nil {
 			ko.Status.EngineVersion = elem.EngineVersion
+		} else {
+			ko.Status.EngineVersion = nil
 		}
 		if elem.KmsKeyId != nil {
 			ko.Spec.KMSKeyID = elem.KmsKeyId
+		} else {
+			ko.Spec.KMSKeyID = nil
 		}
 		if elem.NodeSnapshots != nil {
 			f11 := []*svcapitypes.NodeSnapshot{}
@@ -165,51 +185,83 @@ func (rm *resourceManager) sdkFind(
 				f11 = append(f11, f11elem)
 			}
 			ko.Status.NodeSnapshots = f11
+		} else {
+			ko.Status.NodeSnapshots = nil
 		}
 		if elem.NumCacheNodes != nil {
 			ko.Status.NumCacheNodes = elem.NumCacheNodes
+		} else {
+			ko.Status.NumCacheNodes = nil
 		}
 		if elem.NumNodeGroups != nil {
 			ko.Status.NumNodeGroups = elem.NumNodeGroups
+		} else {
+			ko.Status.NumNodeGroups = nil
 		}
 		if elem.Port != nil {
 			ko.Status.Port = elem.Port
+		} else {
+			ko.Status.Port = nil
 		}
 		if elem.PreferredAvailabilityZone != nil {
 			ko.Status.PreferredAvailabilityZone = elem.PreferredAvailabilityZone
+		} else {
+			ko.Status.PreferredAvailabilityZone = nil
 		}
 		if elem.PreferredMaintenanceWindow != nil {
 			ko.Status.PreferredMaintenanceWindow = elem.PreferredMaintenanceWindow
+		} else {
+			ko.Status.PreferredMaintenanceWindow = nil
 		}
 		if elem.PreferredOutpostArn != nil {
 			ko.Status.PreferredOutpostARN = elem.PreferredOutpostArn
+		} else {
+			ko.Status.PreferredOutpostARN = nil
 		}
 		if elem.ReplicationGroupDescription != nil {
 			ko.Status.ReplicationGroupDescription = elem.ReplicationGroupDescription
+		} else {
+			ko.Status.ReplicationGroupDescription = nil
 		}
 		if elem.ReplicationGroupId != nil {
 			ko.Spec.ReplicationGroupID = elem.ReplicationGroupId
+		} else {
+			ko.Spec.ReplicationGroupID = nil
 		}
 		if elem.SnapshotName != nil {
 			ko.Spec.SnapshotName = elem.SnapshotName
+		} else {
+			ko.Spec.SnapshotName = nil
 		}
 		if elem.SnapshotRetentionLimit != nil {
 			ko.Status.SnapshotRetentionLimit = elem.SnapshotRetentionLimit
+		} else {
+			ko.Status.SnapshotRetentionLimit = nil
 		}
 		if elem.SnapshotSource != nil {
 			ko.Status.SnapshotSource = elem.SnapshotSource
+		} else {
+			ko.Status.SnapshotSource = nil
 		}
 		if elem.SnapshotStatus != nil {
 			ko.Status.SnapshotStatus = elem.SnapshotStatus
+		} else {
+			ko.Status.SnapshotStatus = nil
 		}
 		if elem.SnapshotWindow != nil {
 			ko.Status.SnapshotWindow = elem.SnapshotWindow
+		} else {
+			ko.Status.SnapshotWindow = nil
 		}
 		if elem.TopicArn != nil {
 			ko.Status.TopicARN = elem.TopicArn
+		} else {
+			ko.Status.TopicARN = nil
 		}
 		if elem.VpcId != nil {
 			ko.Status.VPCID = elem.VpcId
+		} else {
+			ko.Status.VPCID = nil
 		}
 		found = true
 		break
@@ -276,27 +328,43 @@ func (rm *resourceManager) sdkCreate(
 	}
 	if resp.Snapshot.AutoMinorVersionUpgrade != nil {
 		ko.Status.AutoMinorVersionUpgrade = resp.Snapshot.AutoMinorVersionUpgrade
+	} else {
+		ko.Status.AutoMinorVersionUpgrade = nil
 	}
 	if resp.Snapshot.AutomaticFailover != nil {
 		ko.Status.AutomaticFailover = resp.Snapshot.AutomaticFailover
+	} else {
+		ko.Status.AutomaticFailover = nil
 	}
 	if resp.Snapshot.CacheClusterCreateTime != nil {
 		ko.Status.CacheClusterCreateTime = &metav1.Time{*resp.Snapshot.CacheClusterCreateTime}
+	} else {
+		ko.Status.CacheClusterCreateTime = nil
 	}
 	if resp.Snapshot.CacheNodeType != nil {
 		ko.Status.CacheNodeType = resp.Snapshot.CacheNodeType
+	} else {
+		ko.Status.CacheNodeType = nil
 	}
 	if resp.Snapshot.CacheParameterGroupName != nil {
 		ko.Status.CacheParameterGroupName = resp.Snapshot.CacheParameterGroupName
+	} else {
+		ko.Status.CacheParameterGroupName = nil
 	}
 	if resp.Snapshot.CacheSubnetGroupName != nil {
 		ko.Status.CacheSubnetGroupName = resp.Snapshot.CacheSubnetGroupName
+	} else {
+		ko.Status.CacheSubnetGroupName = nil
 	}
 	if resp.Snapshot.Engine != nil {
 		ko.Status.Engine = resp.Snapshot.Engine
+	} else {
+		ko.Status.Engine = nil
 	}
 	if resp.Snapshot.EngineVersion != nil {
 		ko.Status.EngineVersion = resp.Snapshot.EngineVersion
+	} else {
+		ko.Status.EngineVersion = nil
 	}
 	if resp.Snapshot.NodeSnapshots != nil {
 		f11 := []*svcapitypes.NodeSnapshot{}
@@ -360,45 +428,73 @@ func (rm *resourceManager) sdkCreate(
 			f11 = append(f11, f11elem)
 		}
 		ko.Status.NodeSnapshots = f11
+	} else {
+		ko.Status.NodeSnapshots = nil
 	}
 	if resp.Snapshot.NumCacheNodes != nil {
 		ko.Status.NumCacheNodes = resp.Snapshot.NumCacheNodes
+	} else {
+		ko.Status.NumCacheNodes = nil
 	}
 	if resp.Snapshot.NumNodeGroups != nil {
 		ko.Status.NumNodeGroups = resp.Snapshot.NumNodeGroups
+	} else {
+		ko.Status.NumNodeGroups = nil
 	}
 	if resp.Snapshot.Port != nil {
 		ko.Status.Port = resp.Snapshot.Port
+	} else {
+		ko.Status.Port = nil
 	}
 	if resp.Snapshot.PreferredAvailabilityZone != nil {
 		ko.Status.PreferredAvailabilityZone = resp.Snapshot.PreferredAvailabilityZone
+	} else {
+		ko.Status.PreferredAvailabilityZone = nil
 	}
 	if resp.Snapshot.PreferredMaintenanceWindow != nil {
 		ko.Status.PreferredMaintenanceWindow = resp.Snapshot.PreferredMaintenanceWindow
+	} else {
+		ko.Status.PreferredMaintenanceWindow = nil
 	}
 	if resp.Snapshot.PreferredOutpostArn != nil {
 		ko.Status.PreferredOutpostARN = resp.Snapshot.PreferredOutpostArn
+	} else {
+		ko.Status.PreferredOutpostARN = nil
 	}
 	if resp.Snapshot.ReplicationGroupDescription != nil {
 		ko.Status.ReplicationGroupDescription = resp.Snapshot.ReplicationGroupDescription
+	} else {
+		ko.Status.ReplicationGroupDescription = nil
 	}
 	if resp.Snapshot.SnapshotRetentionLimit != nil {
 		ko.Status.SnapshotRetentionLimit = resp.Snapshot.SnapshotRetentionLimit
+	} else {
+		ko.Status.SnapshotRetentionLimit = nil
 	}
 	if resp.Snapshot.SnapshotSource != nil {
 		ko.Status.SnapshotSource = resp.Snapshot.SnapshotSource
+	} else {
+		ko.Status.SnapshotSource = nil
 	}
 	if resp.Snapshot.SnapshotStatus != nil {
 		ko.Status.SnapshotStatus = resp.Snapshot.SnapshotStatus
+	} else {
+		ko.Status.SnapshotStatus = nil
 	}
 	if resp.Snapshot.SnapshotWindow != nil {
 		ko.Status.SnapshotWindow = resp.Snapshot.SnapshotWindow
+	} else {
+		ko.Status.SnapshotWindow = nil
 	}
 	if resp.Snapshot.TopicArn != nil {
 		ko.Status.TopicARN = resp.Snapshot.TopicArn
+	} else {
+		ko.Status.TopicARN = nil
 	}
 	if resp.Snapshot.VpcId != nil {
 		ko.Status.VPCID = resp.Snapshot.VpcId
+	} else {
+		ko.Status.VPCID = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -502,10 +598,13 @@ func (rm *resourceManager) updateConditions(
 
 	// Terminal condition
 	var terminalCondition *ackv1alpha1.Condition = nil
+	var recoverableCondition *ackv1alpha1.Condition = nil
 	for _, condition := range ko.Status.Conditions {
 		if condition.Type == ackv1alpha1.ConditionTypeTerminal {
 			terminalCondition = condition
-			break
+		}
+		if condition.Type == ackv1alpha1.ConditionTypeRecoverable {
+			recoverableCondition = condition
 		}
 	}
 
@@ -520,13 +619,36 @@ func (rm *resourceManager) updateConditions(
 		awsErr, _ := ackerr.AWSError(err)
 		errorMessage := awsErr.Message()
 		terminalCondition.Message = &errorMessage
-	} else if terminalCondition != nil {
-		terminalCondition.Status = corev1.ConditionFalse
-		terminalCondition.Message = nil
+	} else {
+		// Clear the terminal condition if no longer present
+		if terminalCondition != nil {
+			terminalCondition.Status = corev1.ConditionFalse
+			terminalCondition.Message = nil
+		}
+		// Handling Recoverable Conditions
+		if err != nil {
+			if recoverableCondition == nil {
+				// Add a new Condition containing a non-terminal error
+				recoverableCondition = &ackv1alpha1.Condition{
+					Type: ackv1alpha1.ConditionTypeRecoverable,
+				}
+				ko.Status.Conditions = append(ko.Status.Conditions, recoverableCondition)
+			}
+			recoverableCondition.Status = corev1.ConditionTrue
+			awsErr, _ := ackerr.AWSError(err)
+			errorMessage := err.Error()
+			if awsErr != nil {
+				errorMessage = awsErr.Message()
+			}
+			recoverableCondition.Message = &errorMessage
+		} else if recoverableCondition != nil {
+			recoverableCondition.Status = corev1.ConditionFalse
+			recoverableCondition.Message = nil
+		}
 	}
 	// custom update conditions
 	customUpdate := rm.CustomUpdateConditions(ko, r, err)
-	if terminalCondition != nil || customUpdate {
+	if terminalCondition != nil || recoverableCondition != nil || customUpdate {
 		return &resource{ko}, true // updated
 	}
 	return nil, false // not updated

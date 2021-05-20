@@ -96,5 +96,12 @@ func (d *testRunnerDelegate) Equal(a acktypes.AWSResource, b acktypes.AWSResourc
 	ac := a.(*resource)
 	bc := b.(*resource)
 	opts := []cmp.Option{cmpopts.EquateEmpty()}
-	return cmp.Equal(ac.ko.Status, bc.ko.Status, opts...)
+
+	if cmp.Equal(ac.ko.Status, bc.ko.Status, opts...) {
+		return true
+	} else {
+		fmt.Printf("Difference (-expected +actual):\n\n")
+		fmt.Println(cmp.Diff(ac.ko.Status, bc.ko.Status, opts...))
+		return false
+	}
 }

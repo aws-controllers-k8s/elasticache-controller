@@ -716,7 +716,7 @@ from the latest observed engine version. Inputs:
 desired: the resource representing the desired state
 latestCacheCluster: a CacheCluster object representing one cache node in the replication group, which
 	reveals the currently used engine version for the entire replication group
- */
+*/
 func (rm *resourceManager) engineVersionsDiffer(
 	desired *resource,
 	latestCacheCluster *svcsdk.CacheCluster,
