@@ -4,7 +4,7 @@ kind: ReplicationGroup
 spec:
   cacheNodeType: cache.t3.micro
   engine: redis
-  engineVersion: 5.0.6
+  engineVersion: 5.0.6 # resource has 5.0.0 but custom modify code copies desired EV to latest and doesn't overwrite it
   numNodeGroups: 1
   replicasPerNodeGroup: 1
   replicationGroupDescription: cluster-mode disabled RG
