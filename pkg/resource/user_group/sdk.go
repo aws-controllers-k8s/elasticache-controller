@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -41,7 +40,6 @@ var (
 	_ = &svcapitypes.UserGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
-	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -56,7 +54,7 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
-	var resp *svcsdkapi.DescribeUserGroupsOutput
+	var resp *svcsdk.DescribeUserGroupsOutput
 	resp, err = rm.sdkapi.DescribeUserGroupsWithContext(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeUserGroups", err)
 	if err != nil {
@@ -185,7 +183,8 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.CreateUserGroupOutput
+	var resp *svcsdk.CreateUserGroupOutput
+	_ = resp
 	resp, err = rm.sdkapi.CreateUserGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateUserGroup", err)
 	if err != nil {

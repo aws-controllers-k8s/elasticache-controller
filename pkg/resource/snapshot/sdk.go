@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -41,7 +40,6 @@ var (
 	_ = &svcapitypes.Snapshot{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
-	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -56,7 +54,7 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
-	var resp *svcsdkapi.DescribeSnapshotsOutput
+	var resp *svcsdk.DescribeSnapshotsOutput
 	resp, err = rm.sdkapi.DescribeSnapshotsWithContext(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeSnapshots", err)
 	if err != nil {
@@ -318,7 +316,8 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.CreateSnapshotOutput
+	var resp *svcsdk.CreateSnapshotOutput
+	_ = resp
 	resp, err = rm.sdkapi.CreateSnapshotWithContext(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateSnapshot", err)
 	if err != nil {
@@ -534,20 +533,6 @@ func (rm *resourceManager) newCreateRequestPayload(
 	}
 	if r.ko.Spec.SnapshotName != nil {
 		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
-	}
-	if r.ko.Spec.Tags != nil {
-		f4 := []*svcsdk.Tag{}
-		for _, f4iter := range r.ko.Spec.Tags {
-			f4elem := &svcsdk.Tag{}
-			if f4iter.Key != nil {
-				f4elem.SetKey(*f4iter.Key)
-			}
-			if f4iter.Value != nil {
-				f4elem.SetValue(*f4iter.Value)
-			}
-			f4 = append(f4, f4elem)
-		}
-		res.SetTags(f4)
 	}
 
 	return res, nil

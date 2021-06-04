@@ -356,27 +356,6 @@ spec:
                   05:00-09:00 \n If you do not specify this parameter, ElastiCache
                   automatically chooses an appropriate time range."
                 type: string
-              tags:
-                description: 'A list of tags to be added to this resource. Tags are
-                  comma-separated key,value pairs (e.g. Key=myKey, Value=myKeyValue.
-                  You can include multiple tags as shown following: Key=myKey, Value=myKeyValue
-                  Key=mySecondKey, Value=mySecondKeyValue. Tags on replication groups
-                  will be replicated to all nodes.'
-                items:
-                  description: A tag that can be added to an ElastiCache cluster or
-                    replication group. Tags are composed of a Key/Value pair. You
-                    can use tags to categorize and track all your ElastiCache resources,
-                    with the exception of global replication group. When you add or
-                    remove tags on replication groups, those actions will be replicated
-                    to all nodes in the replication group. A tag with a null Value
-                    is permitted.
-                  properties:
-                    key:
-                      type: string
-                    value:
-                      type: string
-                  type: object
-                type: array
               transitEncryptionEnabled:
                 description: "A flag that enables in-transit encryption when set to
                   true. \n You cannot modify the value of TransitEncryptionEnabled
@@ -534,6 +513,42 @@ spec:
                   globalReplicationGroupMemberRole:
                     type: string
                 type: object
+              logDeliveryConfigurations:
+                description: Returns the destination, format and type of the logs.
+                items:
+                  description: Returns the destination, format and type of the logs.
+                  properties:
+                    destinationDetails:
+                      description: Configuration details of either a CloudWatch Logs
+                        destination or Kinesis Data Firehose destination.
+                      properties:
+                        cloudWatchLogsDetails:
+                          description: The configuration details of the CloudWatch
+                            Logs destination.
+                          properties:
+                            logGroup:
+                              type: string
+                          type: object
+                        kinesisFirehoseDetails:
+                          description: The configuration details of the Kinesis Data
+                            Firehose destination.
+                          properties:
+                            deliveryStream:
+                              type: string
+                          type: object
+                      type: object
+                    destinationType:
+                      type: string
+                    logFormat:
+                      type: string
+                    logType:
+                      type: string
+                    message:
+                      type: string
+                    status:
+                      type: string
+                  type: object
+                type: array
               memberClusters:
                 description: The names of all the cache clusters that are part of
                   this replication group.

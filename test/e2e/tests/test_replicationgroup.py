@@ -75,7 +75,8 @@ def rg_input_coverage(bootstrap_resources, make_rg_name, make_replication_group,
         "KMS_KEY_ID": bootstrap_resources.KmsKeyID,
         "SNS_TOPIC_ARN": bootstrap_resources.SnsTopicARN,
         "SG_ID": bootstrap_resources.SecurityGroupID,
-        "USERGROUP_ID": bootstrap_resources.UserGroupID
+        "USERGROUP_ID": bootstrap_resources.UserGroupID,
+        "LOG_GROUP": bootstrap_resources.CWLogGroup
     }
 
     (reference, resource) = make_replication_group("replicationgroup_input_coverage", input_dict, input_dict["RG_ID"])

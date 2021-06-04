@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -41,7 +40,6 @@ var (
 	_ = &svcapitypes.ReplicationGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
-	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -56,7 +54,7 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
-	var resp *svcsdkapi.DescribeReplicationGroupsOutput
+	var resp *svcsdk.DescribeReplicationGroupsOutput
 	resp, err = rm.sdkapi.DescribeReplicationGroupsWithContext(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeReplicationGroups", err)
 	if err != nil {
@@ -449,7 +447,8 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.CreateReplicationGroupOutput
+	var resp *svcsdk.CreateReplicationGroupOutput
+	_ = resp
 	resp, err = rm.sdkapi.CreateReplicationGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateReplicationGroup", err)
 	if err != nil {
@@ -915,31 +914,17 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.SnapshotWindow != nil {
 		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
 	}
-	if r.ko.Spec.Tags != nil {
-		f29 := []*svcsdk.Tag{}
-		for _, f29iter := range r.ko.Spec.Tags {
-			f29elem := &svcsdk.Tag{}
-			if f29iter.Key != nil {
-				f29elem.SetKey(*f29iter.Key)
-			}
-			if f29iter.Value != nil {
-				f29elem.SetValue(*f29iter.Value)
-			}
-			f29 = append(f29, f29elem)
-		}
-		res.SetTags(f29)
-	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
 		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
 	}
 	if r.ko.Spec.UserGroupIDs != nil {
-		f31 := []*string{}
-		for _, f31iter := range r.ko.Spec.UserGroupIDs {
-			var f31elem string
-			f31elem = *f31iter
-			f31 = append(f31, &f31elem)
+		f30 := []*string{}
+		for _, f30iter := range r.ko.Spec.UserGroupIDs {
+			var f30elem string
+			f30elem = *f30iter
+			f30 = append(f30, &f30elem)
 		}
-		res.SetUserGroupIds(f31)
+		res.SetUserGroupIds(f30)
 	}
 
 	return res, nil
@@ -964,8 +949,59 @@ func (rm *resourceManager) sdkUpdate(
 	if err != nil {
 		return nil, err
 	}
+	if delta.DifferentAt("UserGroupIDs") {
+		for _, diff := range delta.Differences {
+			if diff.Path.Contains("UserGroupIDs") {
+				existingUserGroups := diff.B.([]*string)
+				requiredUserGroups := diff.A.([]*string)
 
-	var resp *svcsdkapi.ModifyReplicationGroupOutput
+				// User groups to add
+				{
+					var userGroupsToAdd []*string
+
+					for _, requiredUserGroup := range requiredUserGroups {
+						found := false
+						for _, existingUserGroup := range existingUserGroups {
+							if requiredUserGroup == existingUserGroup {
+								found = true
+								break
+							}
+						}
+
+						if !found {
+							userGroupsToAdd = append(userGroupsToAdd, requiredUserGroup)
+						}
+					}
+
+					input.SetUserGroupIdsToAdd(userGroupsToAdd)
+				}
+
+				// User groups to remove
+				{
+					var userGroupsToRemove []*string
+
+					for _, existingUserGroup := range existingUserGroups {
+						found := false
+						for _, requiredUserGroup := range requiredUserGroups {
+							if requiredUserGroup == existingUserGroup {
+								found = true
+								break
+							}
+						}
+
+						if !found {
+							userGroupsToRemove = append(userGroupsToRemove, existingUserGroup)
+						}
+					}
+
+					input.SetUserGroupIdsToRemove(userGroupsToRemove)
+				}
+			}
+		}
+	}
+
+	var resp *svcsdk.ModifyReplicationGroupOutput
+	_ = resp
 	resp, err = rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", err)
 	if err != nil {
