@@ -41,6 +41,9 @@ type CacheParameterGroupSpec struct {
 	// supply at least one parameter name and value; subsequent arguments are optional.
 	// A maximum of 20 parameters may be modified per request.
 	ParameterNameValues []*ParameterNameValue `json:"parameterNameValues,omitempty"`
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `json:"tags,omitempty"`
 }
 
 // CacheParameterGroupStatus defines the observed state of CacheParameterGroup
@@ -57,7 +60,7 @@ type CacheParameterGroupStatus struct {
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
 	Events []*Event `json:"events,omitempty"`
-	// Indicates whether the parameter group is associated with a Global Datastore
+	// Indicates whether the parameter group is associated with a Global datastore
 	IsGlobal *bool `json:"isGlobal,omitempty"`
 	// A list of Parameter instances.
 	Parameters []*Parameter `json:"parameters,omitempty"`

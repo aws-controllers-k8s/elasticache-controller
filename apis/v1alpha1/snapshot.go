@@ -38,6 +38,9 @@ type SnapshotSpec struct {
 	SnapshotName *string `json:"snapshotName"`
 	// The name of an existing snapshot from which to make a copy.
 	SourceSnapshotName *string `json:"sourceSnapshotName,omitempty"`
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `json:"tags,omitempty"`
 }
 
 // SnapshotStatus defines the observed state of Snapshot
@@ -117,7 +120,7 @@ type SnapshotStatus struct {
 	// The number of cache nodes in the source cluster.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 20.
+	// this value must be between 1 and 40.
 	NumCacheNodes *int64 `json:"numCacheNodes,omitempty"`
 	// The number of node groups (shards) in this snapshot. When restoring from
 	// a snapshot, the number of node groups (shards) in the snapshot and in the

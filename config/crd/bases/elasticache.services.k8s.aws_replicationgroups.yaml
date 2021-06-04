@@ -149,7 +149,7 @@ spec:
                 type: string
               engine:
                 description: The name of the cache engine to be used for the clusters
-                  in this replication group.
+                  in this replication group. Must be Redis.
                 type: string
               engineVersion:
                 description: "The version number of the cache engine to be used for
@@ -166,6 +166,40 @@ spec:
                 description: The ID of the KMS key used to encrypt the disk in the
                   cluster.
                 type: string
+              logDeliveryConfigurations:
+                description: Specifies the destination, format and type of the logs.
+                items:
+                  description: Specifies the destination, format and type of the logs.
+                  properties:
+                    destinationDetails:
+                      description: Configuration details of either a CloudWatch Logs
+                        destination or Kinesis Data Firehose destination.
+                      properties:
+                        cloudWatchLogsDetails:
+                          description: The configuration details of the CloudWatch
+                            Logs destination.
+                          properties:
+                            logGroup:
+                              type: string
+                          type: object
+                        kinesisFirehoseDetails:
+                          description: The configuration details of the Kinesis Data
+                            Firehose destination.
+                          properties:
+                            deliveryStream:
+                              type: string
+                          type: object
+                      type: object
+                    destinationType:
+                      type: string
+                    enabled:
+                      type: boolean
+                    logFormat:
+                      type: string
+                    logType:
+                      type: string
+                  type: object
+                type: array
               multiAZEnabled:
                 description: 'A flag indicating if you have Multi-AZ enabled to enhance
                   fault tolerance. For more information, see Minimizing Downtime:
@@ -323,14 +357,19 @@ spec:
                   automatically chooses an appropriate time range."
                 type: string
               tags:
-                description: 'A list of cost allocation tags to be added to this resource.
-                  Tags are comma-separated key,value pairs (e.g. Key=myKey, Value=myKeyValue.
+                description: 'A list of tags to be added to this resource. Tags are
+                  comma-separated key,value pairs (e.g. Key=myKey, Value=myKeyValue.
                   You can include multiple tags as shown following: Key=myKey, Value=myKeyValue
-                  Key=mySecondKey, Value=mySecondKeyValue.'
+                  Key=mySecondKey, Value=mySecondKeyValue. Tags on replication groups
+                  will be replicated to all nodes.'
                 items:
-                  description: A cost allocation Tag that can be added to an ElastiCache
-                    cluster or replication group. Tags are composed of a Key/Value
-                    pair. A tag with a null Value is permitted.
+                  description: A tag that can be added to an ElastiCache cluster or
+                    replication group. Tags are composed of a Key/Value pair. You
+                    can use tags to categorize and track all your ElastiCache resources,
+                    with the exception of global replication group. When you add or
+                    remove tags on replication groups, those actions will be replicated
+                    to all nodes in the replication group. A tag with a null Value
+                    is permitted.
                   properties:
                     key:
                       type: string
@@ -353,8 +392,7 @@ spec:
                   specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup."
                 type: boolean
               userGroupIDs:
-                description: The list of user groups to associate with the replication
-                  group.
+                description: The user group to associate with the replication group.
                 items:
                   type: string
                 type: array
@@ -488,8 +526,8 @@ spec:
                   type: object
                 type: array
               globalReplicationGroupInfo:
-                description: The name of the Global Datastore and role of this replication
-                  group in the Global Datastore.
+                description: The name of the Global datastore and role of this replication
+                  group in the Global datastore.
                 properties:
                   globalReplicationGroupID:
                     type: string
@@ -585,6 +623,37 @@ spec:
                     type: string
                   automaticFailoverStatus:
                     type: string
+                  logDeliveryConfigurations:
+                    items:
+                      description: The log delivery configurations being modified
+                      properties:
+                        destinationDetails:
+                          description: Configuration details of either a CloudWatch
+                            Logs destination or Kinesis Data Firehose destination.
+                          properties:
+                            cloudWatchLogsDetails:
+                              description: The configuration details of the CloudWatch
+                                Logs destination.
+                              properties:
+                                logGroup:
+                                  type: string
+                              type: object
+                            kinesisFirehoseDetails:
+                              description: The configuration details of the Kinesis
+                                Data Firehose destination.
+                              properties:
+                                deliveryStream:
+                                  type: string
+                              type: object
+                          type: object
+                        destinationType:
+                          type: string
+                        logFormat:
+                          type: string
+                        logType:
+                          type: string
+                      type: object
+                    type: array
                   primaryClusterID:
                     type: string
                   resharding:

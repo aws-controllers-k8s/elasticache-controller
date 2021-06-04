@@ -134,7 +134,7 @@ type ReplicationGroupSpec struct {
 	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SubnetGroups.html).
 	CacheSubnetGroupName *string `json:"cacheSubnetGroupName,omitempty"`
 	// The name of the cache engine to be used for the clusters in this replication
-	// group.
+	// group. Must be Redis.
 	Engine *string `json:"engine,omitempty"`
 	// The version number of the cache engine to be used for the clusters in this
 	// replication group. To view the supported cache engine versions, use the DescribeCacheEngineVersions
@@ -149,6 +149,8 @@ type ReplicationGroupSpec struct {
 	EngineVersion *string `json:"engineVersion,omitempty"`
 	// The ID of the KMS key used to encrypt the disk in the cluster.
 	KMSKeyID *string `json:"kmsKeyID,omitempty"`
+	// Specifies the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `json:"logDeliveryConfigurations,omitempty"`
 	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
 	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/AutoFailover.html).
 	MultiAZEnabled *bool `json:"multiAZEnabled,omitempty"`
@@ -288,9 +290,10 @@ type ReplicationGroupSpec struct {
 	// If you do not specify this parameter, ElastiCache automatically chooses an
 	// appropriate time range.
 	SnapshotWindow *string `json:"snapshotWindow,omitempty"`
-	// A list of cost allocation tags to be added to this resource. Tags are comma-separated
-	// key,value pairs (e.g. Key=myKey, Value=myKeyValue. You can include multiple
-	// tags as shown following: Key=myKey, Value=myKeyValue Key=mySecondKey, Value=mySecondKeyValue.
+	// A list of tags to be added to this resource. Tags are comma-separated key,value
+	// pairs (e.g. Key=myKey, Value=myKeyValue. You can include multiple tags as
+	// shown following: Key=myKey, Value=myKeyValue Key=mySecondKey, Value=mySecondKeyValue.
+	// Tags on replication groups will be replicated to all nodes.
 	Tags []*Tag `json:"tags,omitempty"`
 	// A flag that enables in-transit encryption when set to true.
 	//
@@ -312,7 +315,7 @@ type ReplicationGroupSpec struct {
 	// For HIPAA compliance, you must specify TransitEncryptionEnabled as true,
 	// an AuthToken, and a CacheSubnetGroup.
 	TransitEncryptionEnabled *bool `json:"transitEncryptionEnabled,omitempty"`
-	// The list of user groups to associate with the replication group.
+	// The user group to associate with the replication group.
 	UserGroupIDs []*string `json:"userGroupIDs,omitempty"`
 }
 
@@ -361,8 +364,8 @@ type ReplicationGroupStatus struct {
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
 	Events []*Event `json:"events,omitempty"`
-	// The name of the Global Datastore and role of this replication group in the
-	// Global Datastore.
+	// The name of the Global datastore and role of this replication group in the
+	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
 	// The names of all the cache clusters that are part of this replication group.
 	MemberClusters []*string `json:"memberClusters,omitempty"`

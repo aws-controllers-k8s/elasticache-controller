@@ -56,6 +56,25 @@ spec:
                 description: The name of an existing snapshot from which to make a
                   copy.
                 type: string
+              tags:
+                description: A list of tags to be added to this resource. A tag is
+                  a key-value pair. A tag key must be accompanied by a tag value,
+                  although null is accepted.
+                items:
+                  description: A tag that can be added to an ElastiCache cluster or
+                    replication group. Tags are composed of a Key/Value pair. You
+                    can use tags to categorize and track all your ElastiCache resources,
+                    with the exception of global replication group. When you add or
+                    remove tags on replication groups, those actions will be replicated
+                    to all nodes in the replication group. A tag with a null Value
+                    is permitted.
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
             required:
             - snapshotName
             type: object
@@ -236,7 +255,7 @@ spec:
               numCacheNodes:
                 description: "The number of cache nodes in the source cluster. \n
                   For clusters running Redis, this value must be 1. For clusters running
-                  Memcached, this value must be between 1 and 20."
+                  Memcached, this value must be between 1 and 40."
                 format: int64
                 type: integer
               numNodeGroups:
