@@ -100,6 +100,39 @@ resources:
           path: Events
     update_operation:
       custom_method_name: customUpdateCacheParameterGroup
+  User:
+    exceptions:
+      terminal_codes:
+        - UserAlreadyExists
+        - UserQuotaExceeded
+        - DuplicateUserName
+        - InvalidParameterValue
+        - InvalidParameterCombination
+        - InvalidUserState
+        - UserNotFound
+        - DefaultUserAssociatedToUserGroup
+    fields:
+      LastRequestedAccessString:
+        is_read_only: true
+        from:
+          operation: CreateUser
+          path: AccessString
+      ExpandedAccessString:
+        is_read_only: true
+        from:
+          operation: CreateUser
+          path: AccessString
+    hooks:
+      sdk_read_many_post_set_output:
+        code: "rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})"
+      sdk_create_post_set_output:
+        code: "rm.setSyncedCondition(resp.Status, &resource{ko})"
+      sdk_update_post_build_request:
+        code: "rm.populateUpdatePayload(input, desired, delta)"
+      sdk_update_post_set_output:
+        code: "rm.setSyncedCondition(resp.Status, &resource{ko})"
+      delta_post_compare:
+        code: "filterDelta(delta, a, b)"
 operations:
   DescribeCacheSubnetGroups:
     set_output_custom_method_name: CustomDescribeCacheSubnetGroupsSetOutput
@@ -121,17 +154,26 @@ operations:
     set_output_custom_method_name: CustomCreateCacheParameterGroupSetOutput
   DescribeCacheParameterGroups:
     set_output_custom_method_name: CustomDescribeCacheParameterGroupsSetOutput
+  CreateUser:
+    set_output_custom_method_name: CustomCreateUserSetOutput
+  ModifyUser:
+    custom_implementation: CustomModifyUser
+    set_output_custom_method_name: CustomModifyUserSetOutput
 ignore:
   resource_names:
     - GlobalReplicationGroup
     - CacheCluster
     - CacheSecurityGroup
-    - User
     - UserGroup
   field_paths:
     - DescribeSnapshotsInput.CacheClusterId
     - DescribeSnapshotsInput.ReplicationGroupId
     - DescribeSnapshotsInput.SnapshotSource
+    - DescribeUsersInput.Engine
+    - CreateUserInput.Passwords #TODO: remove this once we have support for k8s secrets within slices
+    - ModifyUserInput.AccessString
+    - ModifyUserInput.NoPasswordRequired
+    - ModifyUserInput.Passwords
     - ModifyReplicationGroupInput.SecurityGroupIds
     - ModifyReplicationGroupInput.EngineVersion
     - CreateReplicationGroupInput.GlobalReplicationGroupId

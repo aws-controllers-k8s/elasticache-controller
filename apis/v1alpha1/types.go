@@ -30,7 +30,8 @@ var (
 
 // Indicates whether the user requires a password to authenticate.
 type Authentication struct {
-	PasswordCount *int64 `json:"passwordCount,omitempty"`
+	PasswordCount *int64  `json:"passwordCount,omitempty"`
+	Type          *string `json:"type_,omitempty"`
 }
 
 // Describes an Availability Zone in which the cluster is launched.
@@ -253,6 +254,12 @@ type Event struct {
 	Date             *metav1.Time `json:"date,omitempty"`
 	Message          *string      `json:"message,omitempty"`
 	SourceIdentifier *string      `json:"sourceIdentifier,omitempty"`
+}
+
+// Used to streamline results of a search based on the property being filtered.
+type Filter struct {
+	Name   *string   `json:"name,omitempty"`
+	Values []*string `json:"values,omitempty"`
 }
 
 // Indicates the slot configuration and global identifier for a slice group.
@@ -622,17 +629,9 @@ type UpdateAction struct {
 	UpdateActionStatusModifiedDate      *metav1.Time `json:"updateActionStatusModifiedDate,omitempty"`
 }
 
-type User struct {
-	ARN          *string   `json:"arn,omitempty"`
-	AccessString *string   `json:"accessString,omitempty"`
-	Status       *string   `json:"status,omitempty"`
-	UserGroupIDs []*string `json:"userGroupIDs,omitempty"`
-	UserID       *string   `json:"userID,omitempty"`
-	UserName     *string   `json:"userName,omitempty"`
-}
-
 type UserGroup struct {
 	ARN         *string `json:"arn,omitempty"`
+	Engine      *string `json:"engine,omitempty"`
 	Status      *string `json:"status,omitempty"`
 	UserGroupID *string `json:"userGroupID,omitempty"`
 }
@@ -641,4 +640,16 @@ type UserGroup struct {
 type UserGroupsUpdateStatus struct {
 	UserGroupIDsToAdd    []*string `json:"userGroupIDsToAdd,omitempty"`
 	UserGroupIDsToRemove []*string `json:"userGroupIDsToRemove,omitempty"`
+}
+
+type User_SDK struct {
+	ARN          *string `json:"arn,omitempty"`
+	AccessString *string `json:"accessString,omitempty"`
+	// Indicates whether the user requires a password to authenticate.
+	Authentication *Authentication `json:"authentication,omitempty"`
+	Engine         *string         `json:"engine,omitempty"`
+	Status         *string         `json:"status,omitempty"`
+	UserGroupIDs   []*string       `json:"userGroupIDs,omitempty"`
+	UserID         *string         `json:"userID,omitempty"`
+	UserName       *string         `json:"userName,omitempty"`
 }

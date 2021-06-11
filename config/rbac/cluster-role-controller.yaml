@@ -103,6 +103,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - elasticache.services.k8s.aws
+  resources:
+  - users
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - elasticache.services.k8s.aws
+  resources:
+  - users/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - services.k8s.aws
   resources:
   - adoptedresources
