@@ -19,6 +19,7 @@ from acktest import k8s
 
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
+    parser.addoption("--runblocked", action="store_true", default=False, help="run blocked tests")
 
 
 def pytest_configure(config):
@@ -31,14 +32,23 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: mark test as slow to run"
     )
+    config.addinivalue_line(
+        "markers", "blocked: mark test as failing due to unresolved issue"
+    )
+
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        return
+    # create skip markers
     skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    skip_blocked = pytest.mark.skip(reason="need --runblocked option to run")
+
+    # add skip markers to tests if the relevant command line option was not specified
     for item in items:
-        if "slow" in item.keywords:
+        if "slow" in item.keywords and not config.getoption("--runslow"):
             item.add_marker(skip_slow)
+        if "blocked" in item.keywords and not config.getoption("--runblocked"):
+            item.add_marker(skip_blocked)
+
 
 # Provide a k8s client to interact with the integration test cluster
 @pytest.fixture(scope='class')

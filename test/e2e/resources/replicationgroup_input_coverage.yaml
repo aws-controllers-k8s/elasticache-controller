@@ -4,7 +4,6 @@ metadata:
   name: $RG_ID
 spec:
   atRestEncryptionEnabled: true
-  authToken: testplaintexttoken
   autoMinorVersionUpgrade: true
   automaticFailoverEnabled: true
   cacheNodeType: cache.t3.small
@@ -16,17 +15,17 @@ spec:
   multiAZEnabled: true
   nodeGroupConfiguration:
     - nodeGroupID: "1111"
-      primaryAvailabilityZone: us-east-1a
+      primaryAvailabilityZone: us-west-2a
       replicaAvailabilityZones:
-        - us-east-1b
+        - us-west-2b
       replicaCount: 1
       slots: 0-5999
     - nodeGroupID: "2222"
-      primaryAvailabilityZone: us-east-1c
+      primaryAvailabilityZone: us-west-2c
       replicaAvailabilityZones:
-        - us-east-1d
-        - us-east-1a
-        - us-east-1b
+        - us-west-2a
+        - us-west-2c
+        - us-west-2b
       replicaCount: 3
       slots: 6000-16383
   notificationTopicARN: $SNS_TOPIC_ARN
@@ -43,7 +42,7 @@ spec:
     - key: service
       value: elasticache
     - key: region
-      value: us-east-1
+      value: us-west-2
   transitEncryptionEnabled: true
   userGroupIDs:
     - $USERGROUP_ID
