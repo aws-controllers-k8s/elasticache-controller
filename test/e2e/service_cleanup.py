@@ -59,6 +59,13 @@ def delete_snapshot(snapshot_name: str):
         ec.delete_replication_group(ReplicationGroupId=snapshot['ReplicationGroupId'])
         logging.info(f"Deleted replication group {snapshot['ReplicationGroupId']}")
 
+
+def delete_non_default_user(user_id: str):
+    ec = boto3.client("elasticache")
+    ec.delete_user(UserId=user_id)
+    logging.info(f"Deleted non default user {user_id}")
+
+
 def service_cleanup(config: dict):
     logging.getLogger().setLevel(logging.INFO)
 
@@ -90,6 +97,11 @@ def service_cleanup(config: dict):
         delete_snapshot(resources.SnapshotName)
     except:
         logging.exception(f"Unable to delete snapshot {resources.SnapshotName}")
+
+    try:
+        delete_non_default_user(resources.NonDefaultUser)
+    except:
+        logging.exception(f"Unable to delete user {resources.NonDefaultUser}")
 
 if __name__ == "__main__":   
     bootstrap_config = resources.read_bootstrap_config(bootstrap_directory)

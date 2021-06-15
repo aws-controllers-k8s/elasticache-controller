@@ -629,11 +629,21 @@ type UpdateAction struct {
 	UpdateActionStatusModifiedDate      *metav1.Time `json:"updateActionStatusModifiedDate,omitempty"`
 }
 
-type UserGroup struct {
-	ARN         *string `json:"arn,omitempty"`
-	Engine      *string `json:"engine,omitempty"`
-	Status      *string `json:"status,omitempty"`
-	UserGroupID *string `json:"userGroupID,omitempty"`
+// Returns the updates being applied to the user group.
+type UserGroupPendingChanges struct {
+	UserIDsToAdd    []*string `json:"userIDsToAdd,omitempty"`
+	UserIDsToRemove []*string `json:"userIDsToRemove,omitempty"`
+}
+
+type UserGroup_SDK struct {
+	ARN    *string `json:"arn,omitempty"`
+	Engine *string `json:"engine,omitempty"`
+	// Returns the updates being applied to the user group.
+	PendingChanges    *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
+	ReplicationGroups []*string                `json:"replicationGroups,omitempty"`
+	Status            *string                  `json:"status,omitempty"`
+	UserGroupID       *string                  `json:"userGroupID,omitempty"`
+	UserIDs           []*string                `json:"userIDs,omitempty"`
 }
 
 // The status of the user group update.
