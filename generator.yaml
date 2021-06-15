@@ -136,6 +136,19 @@ resources:
         code: "rm.setSyncedCondition(resp.Status, &resource{ko})"
       delta_post_compare:
         code: "filterDelta(delta, a, b)"
+  UserGroup:
+    exceptions:
+      terminal_codes:
+        - DuplicateUserNameFault
+        - UserGroupAlreadyExistsFault
+        - InvalidParameterCombination
+        - InvalidParameterValueException
+        - DefaultUserRequired
+        - UserGroupQuotaExceededFault
+        - TagQuotaPerResourceExceeded
+        - UserNotFoundFault
+    update_operation:
+      custom_method_name: customUpdateUserGroup
 operations:
   DescribeCacheSubnetGroups:
     set_output_custom_method_name: CustomDescribeCacheSubnetGroupsSetOutput
@@ -162,12 +175,15 @@ operations:
   ModifyUser:
     custom_implementation: CustomModifyUser
     set_output_custom_method_name: CustomModifyUserSetOutput
+  CreateUserGroup:
+    set_output_custom_method_name: CustomCreateUserGroupSetOutput
+  DescribeUserGroups:
+    set_output_custom_method_name: CustomDescribeUserGroupsSetOutput
 ignore:
   resource_names:
     - GlobalReplicationGroup
     - CacheCluster
     - CacheSecurityGroup
-    - UserGroup
   field_paths:
     - DescribeSnapshotsInput.CacheClusterId
     - DescribeSnapshotsInput.ReplicationGroupId

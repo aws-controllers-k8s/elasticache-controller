@@ -96,6 +96,21 @@ def create_cc_snapshot():
 
     return snapshot_name
 
+
+def create_non_default_user() -> str:
+    ec = boto3.client("elasticache")
+    user_id = random_suffix_name("ackecuser", 32)
+
+    _ = ec.create_user(UserId=user_id,
+                       UserName="ACKNonDefaultUser",
+                       Engine="Redis",
+                       NoPasswordRequired=True,
+                       AccessString="on -@all")
+
+    logging.info(f"Creating ElastiCache non default User {user_id}")
+    return user_id
+
+
 def service_bootstrap() -> dict:
     logging.getLogger().setLevel(logging.INFO)
 
@@ -104,7 +119,8 @@ def service_bootstrap() -> dict:
         create_security_group(),
         create_user_group(),
         create_kms_key(),
-        create_cc_snapshot()
+        create_cc_snapshot(),
+        create_non_default_user()
     ).__dict__
 
 if __name__ == "__main__":

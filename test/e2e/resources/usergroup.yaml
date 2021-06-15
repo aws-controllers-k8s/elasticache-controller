@@ -1,0 +1,9 @@
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: UserGroup
+metadata:
+  name: $USER_GROUP_ID
+spec:
+  engine: redis
+  userGroupID: $USER_GROUP_ID
+  userIDs:
+    - default

@@ -26,6 +26,7 @@ class TestBootstrapResources:
     UserGroupID: str
     KmsKeyID: str
     SnapshotName: str
+    NonDefaultUser: str
 
 _bootstrap_resources = None
 
