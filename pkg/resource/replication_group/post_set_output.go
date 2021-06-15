@@ -30,7 +30,9 @@ func (rm *resourceManager) updateSpecFields(
 	respRG *svcsdk.ReplicationGroup,
 	resource *resource,
 ) {
-
+	if isDeleting(resource) {
+		return
+	}
 	// populate relevant ko.Spec fields with observed state of respRG.NodeGroups
 	setReplicasPerNodeGroup(respRG, resource)
 
