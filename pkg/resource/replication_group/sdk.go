@@ -340,6 +340,7 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 
+	rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})
 	return &resource{ko}, nil
 }
 

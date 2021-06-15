@@ -134,7 +134,7 @@ func (rm *resourceManager) modifyReplicationGroup(
 
 	// SecurityGroupIds, EngineVersion
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
-		rm.engineVersionsDiffer(desired, latestCacheCluster) {
+		rm.engineVersionsDiffer(desired, latest) {
 		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster)
 		resp, respErr := rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
 		rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
@@ -168,49 +168,14 @@ func (rm *resourceManager) replicaCountDifference(
 	//   of NodeGroupConfiguration structs that each have a ReplicaCount non-nil-value integer pointer field
 	//   that contains the number of replicas for that particular node group.
 	if desiredSpec.ReplicasPerNodeGroup != nil {
-		return rm.diffReplicasPerNodeGroup(desired, latest)
+		return int(*desiredSpec.ReplicasPerNodeGroup - *latest.ko.Spec.ReplicasPerNodeGroup)
 	} else if desiredSpec.NodeGroupConfiguration != nil {
 		return rm.diffReplicasNodeGroupConfiguration(desired, latest)
 	}
 	return 0
 }
 
-// diffReplicasPerNodeGroup takes desired Spec.ReplicasPerNodeGroup field into account to return
-// positive number if desired replica count is greater than latest replica count
-// negative number if desired replica count is less than latest replica count
-// 0 otherwise
-func (rm *resourceManager) diffReplicasPerNodeGroup(
-	desired *resource,
-	latest *resource,
-) int {
-	desiredSpec := desired.ko.Spec
-	latestStatus := latest.ko.Status
-
-	for _, latestShard := range latestStatus.NodeGroups {
-		latestReplicaCount := 0
-		if latestShard.NodeGroupMembers != nil {
-			if len(latestShard.NodeGroupMembers) > 0 {
-				latestReplicaCount = len(latestShard.NodeGroupMembers) - 1
-			}
-		}
-		if desiredReplicaCount := int(*desiredSpec.ReplicasPerNodeGroup); desiredReplicaCount != latestReplicaCount {
-			nodeGroupID := ""
-			if latestShard.NodeGroupID != nil {
-				nodeGroupID = *latestShard.NodeGroupID
-			}
-			rm.log.V(1).Info(
-				"ReplicasPerNodeGroup differs",
-				"NodeGroup", nodeGroupID,
-				"desired", int(*desiredSpec.ReplicasPerNodeGroup),
-				"latest", latestReplicaCount,
-			)
-			return desiredReplicaCount - latestReplicaCount
-		}
-	}
-	return 0
-}
-
-// diffReplicasPerNodeGroup takes desired Spec.NodeGroupConfiguration slice field into account to return
+// diffReplicasNodeGroupConfiguration takes desired Spec.NodeGroupConfiguration slice field into account to return
 // positive number if desired replica count is greater than latest replica count
 // negative number if desired replica count is less than latest replica count
 // 0 otherwise
@@ -593,11 +558,12 @@ func (rm *resourceManager) getAnyCacheClusterIDFromNodeGroups(
 // it invokes DescribeCacheClusters API to do so
 func (rm *resourceManager) describeCacheCluster(
 	ctx context.Context,
-	latest *resource,
+	resource *resource,
 ) (*svcsdk.CacheCluster, error) {
 	input := &svcsdk.DescribeCacheClustersInput{}
 
-	latestStatus := latest.ko.Status
+	ko := resource.ko
+	latestStatus := ko.Status
 	if latestStatus.NodeGroups == nil {
 		return nil, nil
 	}
@@ -701,7 +667,7 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 		input.SetSecurityGroupIds(ids)
 	}
 
-	if rm.engineVersionsDiffer(desired, latestCacheCluster) &&
+	if rm.engineVersionsDiffer(desired, latest) &&
 		desired.ko.Spec.EngineVersion != nil {
 		input.SetEngineVersion(*desired.ko.Spec.EngineVersion)
 	}
@@ -711,27 +677,25 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 
 /*
 engineVersionsDiffer returns true if the desired engine version is different
-from the latest observed engine version. Inputs:
-
-desired: the resource representing the desired state
-latestCacheCluster: a CacheCluster object representing one cache node in the replication group, which
-	reveals the currently used engine version for the entire replication group
+from the latest observed engine version, and false if they differ or if
+the desired EngineVersion is nil
 */
 func (rm *resourceManager) engineVersionsDiffer(
 	desired *resource,
-	latestCacheCluster *svcsdk.CacheCluster,
+	latest *resource,
 ) bool {
 	if desired.ko.Spec.EngineVersion == nil {
 		return false
 	}
-	desiredEV := *desired.ko.Spec.EngineVersion
 
-	var latestEV string = ""
-	if latestCacheCluster != nil && latestCacheCluster.EngineVersion != nil {
-		latestEV = *latestCacheCluster.EngineVersion
+	latestEV := ""
+	if latest.ko.Spec.EngineVersion != nil {
+		latestEV = *latest.ko.Spec.EngineVersion
 	}
 
-	return desiredEV != latestEV
+	return *desired.ko.Spec.EngineVersion != latestEV
+
+	//TODO: should Delta be used in this function?
 }
 
 // This method copies the data from given replicationGroup by populating it into copy of supplied resource

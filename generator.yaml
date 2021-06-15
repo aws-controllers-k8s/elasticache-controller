@@ -55,6 +55,9 @@ resources:
           path: Events
       AuthToken:
         is_secret: true
+    hooks:
+      sdk_read_many_post_set_output:
+        code: "rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})"
   Snapshot:
     update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:

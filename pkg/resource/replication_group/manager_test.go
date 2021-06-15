@@ -25,7 +25,8 @@ import (
 )
 
 // TestReadOne_Exists runs resource manager ReadOne test scenario
-// TODO: Declarative Tests make this method redundant;remove this test when Declarative Test runner is checked in.
+// Declarative tests make this test redundant, but it remains to demonstrate the difference between a declarative
+// test (as specified in test_suite.yaml) and a regular imperative test.
 func TestReadOne_Exists(t *testing.T) {
 	assert := assert.New(t)
 
@@ -51,6 +52,10 @@ func TestReadOne_Exists(t *testing.T) {
 	var mockDescribeEventsOutput svcsdk.DescribeEventsOutput
 	testutil.LoadFromFixture(filepath.Join("testdata", "events", "read_many", "rg_cmd_events.json"), &mockDescribeEventsOutput)
 	mocksdkapi.On("DescribeEventsWithContext", mock.Anything, mock.Anything).Return(&mockDescribeEventsOutput, nil)
+	// DescribeCacheClusters
+	var mockDescribeCacheClusterOutput svcsdk.DescribeCacheClustersOutput
+	testutil.LoadFromFixture(filepath.Join("testdata", "cache_clusters", "read_many", "rg_cmd_primary_cache_node.json"), &mockDescribeCacheClusterOutput)
+	mocksdkapi.On("DescribeCacheClustersWithContext", mock.Anything, mock.Anything).Return(&mockDescribeCacheClusterOutput, nil)
 
 	var delegate = testRunnerDelegate{t: t}
 
