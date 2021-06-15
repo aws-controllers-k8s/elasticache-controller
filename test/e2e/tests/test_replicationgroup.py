@@ -211,6 +211,8 @@ class TestReplicationGroup:
         assert cc is not None
         assert cc['EngineVersion'] == desired_engine_version
 
+    # TODO: remove annotation once https://github.com/aws-controllers-k8s/community/issues/745 is resolved
+    @pytest.mark.blocked
     def test_rg_auth_token(self, rg_auth_token):
         (reference, _) = rg_auth_token
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
