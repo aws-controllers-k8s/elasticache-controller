@@ -110,17 +110,47 @@ tests:
         expect:
           latest_state: "replication_group/cr/rg_cmd_engine_upgrade_initiated.yaml"
           error: nil
-      - name: "Delete"
-        description: "Delete cluster mode-disabled RG"
+      - name: "DeleteImmediate"
+        description: "Delete cluster mode-disabled RG. Immediately deleted."
         given:
           desired_state: "replication_group/cr/rg_cmd_create_completed.yaml"
           svc_api:
             - operation: DeleteReplicationGroupWithContext
               output_fixture: "replication_group/delete/rg_cmd_delete_initiated.json"
+            - operation: DescribeReplicationGroupsWithContext
+              error:
+                code: ReplicationGroupNotFoundFault
+                message: "ReplicationGroup rg-cmd not found"
         invoke: Delete
         expect: # for the delete case we don't expect a new latest state or a non-nil error
           latest_state: nil
           error: nil
+      - name: "DeleteInitiated"
+        description: "Delete cluster mode-disabled RG. RG moves from available to deleting state."
+        given:
+          desired_state: "replication_group/cr/rg_cmd_create_completed.yaml"
+          svc_api:
+            - operation: DeleteReplicationGroupWithContext
+              output_fixture: "replication_group/delete/rg_cmd_delete_initiated.json"
+            - operation: DescribeReplicationGroupsWithContext
+              output_fixture: "replication_group/read_one/rg_cmd_delete_initiated.json"
+            - operation: ListAllowedNodeTypeModifications
+              output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types.json"
+            - operation: DescribeEventsWithContext
+              output_fixture: "events/read_many/rg_cmd_events.json"
+        invoke: Delete
+        expect: # for the delete case we don't expect a new latest state or a non-nil error
+          latest_state: nil
+          error: "Delete is in progress."
+      - name: "Deleting"
+        description: "Delete cluster mode-disabled RG. Retry scenario, RG is in deleting state."
+        given:
+          desired_state: "replication_group/cr/rg_cmd_delete_initiated.yaml"
+          svc_api:
+        invoke: Delete
+        expect: # for the delete case we don't expect a new latest state or a non-nil error
+          latest_state: nil
+          error: "Delete is in progress."
   - name: Cluster mode enabled replication group
     description: Cluster mode enabled replication group CRUD tests
     scenarios:

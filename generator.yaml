@@ -58,6 +58,10 @@ resources:
     hooks:
       sdk_read_many_post_set_output:
         code: "rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})"
+      sdk_delete_pre_build_request:
+        template_path: hooks/sdk_delete_pre_build_request.go.tpl
+      sdk_delete_post_request:
+        template_path: hooks/sdk_delete_post_request.go.tpl
   Snapshot:
     update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:

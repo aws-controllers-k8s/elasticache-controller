@@ -228,3 +228,23 @@ class TestReplicationGroup:
 
         k8s.patch_custom_resource(reference, updated_spec)
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+
+    def test_rg_delete(self, rg_cmd_update_input, rg_deletion_waiter):
+        input_dict = rg_cmd_update_input
+        (reference, _) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict["RG_ID"])
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+
+        # assertions after initial creation
+        resource = k8s.get_resource(reference)
+        assert resource['status']['status'] == "available"
+
+        # delete
+        k8s.delete_custom_resource(reference)
+        sleep(DEFAULT_WAIT_SECS)
+
+        resource = k8s.get_resource(reference)
+        assert resource['metadata']['deletionTimestamp'] is not None
+        # uncomment when reconciler->cleanup() invokes patchResource()
+        # assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "False", wait_periods=1)
+
+        rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])

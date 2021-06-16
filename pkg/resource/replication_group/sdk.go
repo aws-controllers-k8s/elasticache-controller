@@ -1121,6 +1121,9 @@ func (rm *resourceManager) sdkDelete(
 	ctx context.Context,
 	r *resource,
 ) error {
+	if isDeleting(r) {
+		return requeueWaitWhileDeleting
+	}
 
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
@@ -1128,6 +1131,14 @@ func (rm *resourceManager) sdkDelete(
 	}
 	_, respErr := rm.sdkapi.DeleteReplicationGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteReplicationGroup", respErr)
+	if respErr == nil {
+		if foundResource, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
+			if isDeleting(foundResource) {
+				return requeueWaitWhileDeleting
+			}
+			return err
+		}
+	}
 	return respErr
 }
 
