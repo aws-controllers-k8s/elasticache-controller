@@ -14,8 +14,8 @@
 package replication_group
 
 import (
-	"strings"
 	"regexp"
+	"strings"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 

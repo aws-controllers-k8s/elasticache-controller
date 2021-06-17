@@ -71,6 +71,10 @@ resources:
         template_path: hooks/sdk_update_post_build_request.go.tpl
       delta_post_compare:
         code: "filterDelta(delta, a, b)"
+      sdk_file_end:
+        template_path: hooks/sdk_file_end.go.tpl
+      sdk_file_end_set_output_post_populate:
+        code: "rm.customSetOutput(obj, ko) // custom set output from obj"
   Snapshot:
     update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:
