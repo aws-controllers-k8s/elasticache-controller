@@ -20,7 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReplicationGroupSpec defines the desired state of ReplicationGroup
+// ReplicationGroupSpec defines the desired state of ReplicationGroup.
+//
+// Contains all of the attributes of a specific Redis replication group.
 type ReplicationGroupSpec struct {
 	// A flag that enables encryption at rest when set to true.
 	//

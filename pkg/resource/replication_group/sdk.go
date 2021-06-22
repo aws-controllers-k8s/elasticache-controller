@@ -22,12 +22,14 @@ import (
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -39,25 +41,29 @@ var (
 	_ = &svcapitypes.ReplicationGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
+	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
 func (rm *resourceManager) sdkFind(
 	ctx context.Context,
 	r *resource,
-) (*resource, error) {
+) (latest *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkFind")
+	defer exit(err)
 	input, err := rm.newListRequestPayload(r)
 	if err != nil {
 		return nil, err
 	}
-
-	resp, respErr := rm.sdkapi.DescribeReplicationGroupsWithContext(ctx, input)
-	rm.metrics.RecordAPICall("READ_MANY", "DescribeReplicationGroups", respErr)
-	if respErr != nil {
-		if awsErr, ok := ackerr.AWSError(respErr); ok && awsErr.Code() == "ReplicationGroupNotFoundFault" {
+	var resp *svcsdkapi.DescribeReplicationGroupsOutput
+	resp, err = rm.sdkapi.DescribeReplicationGroupsWithContext(ctx, input)
+	rm.metrics.RecordAPICall("READ_MANY", "DescribeReplicationGroups", err)
+	if err != nil {
+		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "ReplicationGroupNotFoundFault" {
 			return nil, ackerr.NotFound
 		}
-		return nil, respErr
+		return nil, err
 	}
 
 	// Merge in the information we read from the API call above to the copy of
@@ -333,13 +339,11 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	rm.setStatusDefaults(ko)
-
 	// custom set output from response
 	ko, err = rm.CustomDescribeReplicationGroupsSetOutput(ctx, r, resp, ko)
 	if err != nil {
 		return nil, err
 	}
-
 	rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})
 	return &resource{ko}, nil
 }
@@ -359,463 +363,25 @@ func (rm *resourceManager) newListRequestPayload(
 }
 
 // sdkCreate creates the supplied resource in the backend AWS service API and
-// returns a new resource with any fields in the Status field filled in
+// returns a copy of the resource with resource fields (in both Spec and
+// Status) filled in with values from the CREATE API operation's Output shape.
 func (rm *resourceManager) sdkCreate(
 	ctx context.Context,
-	r *resource,
-) (*resource, error) {
-	input, err := rm.newCreateRequestPayload(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, respErr := rm.sdkapi.CreateReplicationGroupWithContext(ctx, input)
-	rm.metrics.RecordAPICall("CREATE", "CreateReplicationGroup", respErr)
-	if respErr != nil {
-		return nil, respErr
-	}
-	// Merge in the information we read from the API call above to the copy of
-	// the original Kubernetes object we passed to the function
-	ko := r.ko.DeepCopy()
-
-	if ko.Status.ACKResourceMetadata == nil {
-		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
-	}
-	if resp.ReplicationGroup.ARN != nil {
-		arn := ackv1alpha1.AWSResourceName(*resp.ReplicationGroup.ARN)
-		ko.Status.ACKResourceMetadata.ARN = &arn
-	}
-	if resp.ReplicationGroup.AuthTokenEnabled != nil {
-		ko.Status.AuthTokenEnabled = resp.ReplicationGroup.AuthTokenEnabled
-	} else {
-		ko.Status.AuthTokenEnabled = nil
-	}
-	if resp.ReplicationGroup.AuthTokenLastModifiedDate != nil {
-		ko.Status.AuthTokenLastModifiedDate = &metav1.Time{*resp.ReplicationGroup.AuthTokenLastModifiedDate}
-	} else {
-		ko.Status.AuthTokenLastModifiedDate = nil
-	}
-	if resp.ReplicationGroup.AutomaticFailover != nil {
-		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
-	} else {
-		ko.Status.AutomaticFailover = nil
-	}
-	if resp.ReplicationGroup.ClusterEnabled != nil {
-		ko.Status.ClusterEnabled = resp.ReplicationGroup.ClusterEnabled
-	} else {
-		ko.Status.ClusterEnabled = nil
-	}
-	if resp.ReplicationGroup.ConfigurationEndpoint != nil {
-		f7 := &svcapitypes.Endpoint{}
-		if resp.ReplicationGroup.ConfigurationEndpoint.Address != nil {
-			f7.Address = resp.ReplicationGroup.ConfigurationEndpoint.Address
-		}
-		if resp.ReplicationGroup.ConfigurationEndpoint.Port != nil {
-			f7.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
-		}
-		ko.Status.ConfigurationEndpoint = f7
-	} else {
-		ko.Status.ConfigurationEndpoint = nil
-	}
-	if resp.ReplicationGroup.Description != nil {
-		ko.Status.Description = resp.ReplicationGroup.Description
-	} else {
-		ko.Status.Description = nil
-	}
-	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
-		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
-		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
-			f9.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
-		}
-		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
-			f9.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
-		}
-		ko.Status.GlobalReplicationGroupInfo = f9
-	} else {
-		ko.Status.GlobalReplicationGroupInfo = nil
-	}
-	if resp.ReplicationGroup.MemberClusters != nil {
-		f11 := []*string{}
-		for _, f11iter := range resp.ReplicationGroup.MemberClusters {
-			var f11elem string
-			f11elem = *f11iter
-			f11 = append(f11, &f11elem)
-		}
-		ko.Status.MemberClusters = f11
-	} else {
-		ko.Status.MemberClusters = nil
-	}
-	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
-		f12 := []*string{}
-		for _, f12iter := range resp.ReplicationGroup.MemberClustersOutpostArns {
-			var f12elem string
-			f12elem = *f12iter
-			f12 = append(f12, &f12elem)
-		}
-		ko.Status.MemberClustersOutpostARNs = f12
-	} else {
-		ko.Status.MemberClustersOutpostARNs = nil
-	}
-	if resp.ReplicationGroup.MultiAZ != nil {
-		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
-	} else {
-		ko.Status.MultiAZ = nil
-	}
-	if resp.ReplicationGroup.NodeGroups != nil {
-		f14 := []*svcapitypes.NodeGroup{}
-		for _, f14iter := range resp.ReplicationGroup.NodeGroups {
-			f14elem := &svcapitypes.NodeGroup{}
-			if f14iter.NodeGroupId != nil {
-				f14elem.NodeGroupID = f14iter.NodeGroupId
-			}
-			if f14iter.NodeGroupMembers != nil {
-				f14elemf1 := []*svcapitypes.NodeGroupMember{}
-				for _, f14elemf1iter := range f14iter.NodeGroupMembers {
-					f14elemf1elem := &svcapitypes.NodeGroupMember{}
-					if f14elemf1iter.CacheClusterId != nil {
-						f14elemf1elem.CacheClusterID = f14elemf1iter.CacheClusterId
-					}
-					if f14elemf1iter.CacheNodeId != nil {
-						f14elemf1elem.CacheNodeID = f14elemf1iter.CacheNodeId
-					}
-					if f14elemf1iter.CurrentRole != nil {
-						f14elemf1elem.CurrentRole = f14elemf1iter.CurrentRole
-					}
-					if f14elemf1iter.PreferredAvailabilityZone != nil {
-						f14elemf1elem.PreferredAvailabilityZone = f14elemf1iter.PreferredAvailabilityZone
-					}
-					if f14elemf1iter.PreferredOutpostArn != nil {
-						f14elemf1elem.PreferredOutpostARN = f14elemf1iter.PreferredOutpostArn
-					}
-					if f14elemf1iter.ReadEndpoint != nil {
-						f14elemf1elemf5 := &svcapitypes.Endpoint{}
-						if f14elemf1iter.ReadEndpoint.Address != nil {
-							f14elemf1elemf5.Address = f14elemf1iter.ReadEndpoint.Address
-						}
-						if f14elemf1iter.ReadEndpoint.Port != nil {
-							f14elemf1elemf5.Port = f14elemf1iter.ReadEndpoint.Port
-						}
-						f14elemf1elem.ReadEndpoint = f14elemf1elemf5
-					}
-					f14elemf1 = append(f14elemf1, f14elemf1elem)
-				}
-				f14elem.NodeGroupMembers = f14elemf1
-			}
-			if f14iter.PrimaryEndpoint != nil {
-				f14elemf2 := &svcapitypes.Endpoint{}
-				if f14iter.PrimaryEndpoint.Address != nil {
-					f14elemf2.Address = f14iter.PrimaryEndpoint.Address
-				}
-				if f14iter.PrimaryEndpoint.Port != nil {
-					f14elemf2.Port = f14iter.PrimaryEndpoint.Port
-				}
-				f14elem.PrimaryEndpoint = f14elemf2
-			}
-			if f14iter.ReaderEndpoint != nil {
-				f14elemf3 := &svcapitypes.Endpoint{}
-				if f14iter.ReaderEndpoint.Address != nil {
-					f14elemf3.Address = f14iter.ReaderEndpoint.Address
-				}
-				if f14iter.ReaderEndpoint.Port != nil {
-					f14elemf3.Port = f14iter.ReaderEndpoint.Port
-				}
-				f14elem.ReaderEndpoint = f14elemf3
-			}
-			if f14iter.Slots != nil {
-				f14elem.Slots = f14iter.Slots
-			}
-			if f14iter.Status != nil {
-				f14elem.Status = f14iter.Status
-			}
-			f14 = append(f14, f14elem)
-		}
-		ko.Status.NodeGroups = f14
-	} else {
-		ko.Status.NodeGroups = nil
-	}
-	if resp.ReplicationGroup.PendingModifiedValues != nil {
-		f15 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
-		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != nil {
-			f15.AuthTokenStatus = resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus
-		}
-		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != nil {
-			f15.AutomaticFailoverStatus = resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus
-		}
-		if resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId != nil {
-			f15.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
-		}
-		if resp.ReplicationGroup.PendingModifiedValues.Resharding != nil {
-			f15f3 := &svcapitypes.ReshardingStatus{}
-			if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration != nil {
-				f15f3f0 := &svcapitypes.SlotMigration{}
-				if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
-					f15f3f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
-				}
-				f15f3.SlotMigration = f15f3f0
-			}
-			f15.Resharding = f15f3
-		}
-		if resp.ReplicationGroup.PendingModifiedValues.UserGroups != nil {
-			f15f4 := &svcapitypes.UserGroupsUpdateStatus{}
-			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd != nil {
-				f15f4f0 := []*string{}
-				for _, f15f4f0iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd {
-					var f15f4f0elem string
-					f15f4f0elem = *f15f4f0iter
-					f15f4f0 = append(f15f4f0, &f15f4f0elem)
-				}
-				f15f4.UserGroupIDsToAdd = f15f4f0
-			}
-			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove != nil {
-				f15f4f1 := []*string{}
-				for _, f15f4f1iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove {
-					var f15f4f1elem string
-					f15f4f1elem = *f15f4f1iter
-					f15f4f1 = append(f15f4f1, &f15f4f1elem)
-				}
-				f15f4.UserGroupIDsToRemove = f15f4f1
-			}
-			f15.UserGroups = f15f4
-		}
-		ko.Status.PendingModifiedValues = f15
-	} else {
-		ko.Status.PendingModifiedValues = nil
-	}
-	if resp.ReplicationGroup.SnapshottingClusterId != nil {
-		ko.Status.SnapshottingClusterID = resp.ReplicationGroup.SnapshottingClusterId
-	} else {
-		ko.Status.SnapshottingClusterID = nil
-	}
-	if resp.ReplicationGroup.Status != nil {
-		ko.Status.Status = resp.ReplicationGroup.Status
-	} else {
-		ko.Status.Status = nil
-	}
-
-	rm.setStatusDefaults(ko)
-
-	// custom set output from response
-	ko, err = rm.CustomCreateReplicationGroupSetOutput(ctx, r, resp, ko)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resource{ko}, nil
-}
-
-// newCreateRequestPayload returns an SDK-specific struct for the HTTP request
-// payload of the Create API call for the resource
-func (rm *resourceManager) newCreateRequestPayload(
-	ctx context.Context,
-	r *resource,
-) (*svcsdk.CreateReplicationGroupInput, error) {
-	res := &svcsdk.CreateReplicationGroupInput{}
-
-	if r.ko.Spec.AtRestEncryptionEnabled != nil {
-		res.SetAtRestEncryptionEnabled(*r.ko.Spec.AtRestEncryptionEnabled)
-	}
-	if r.ko.Spec.AuthToken != nil {
-		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
-		if err != nil {
-			return nil, err
-		}
-		if tmpSecret != "" {
-			res.SetAuthToken(tmpSecret)
-		}
-	}
-	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
-		res.SetAutoMinorVersionUpgrade(*r.ko.Spec.AutoMinorVersionUpgrade)
-	}
-	if r.ko.Spec.AutomaticFailoverEnabled != nil {
-		res.SetAutomaticFailoverEnabled(*r.ko.Spec.AutomaticFailoverEnabled)
-	}
-	if r.ko.Spec.CacheNodeType != nil {
-		res.SetCacheNodeType(*r.ko.Spec.CacheNodeType)
-	}
-	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
-	}
-	if r.ko.Spec.CacheSecurityGroupNames != nil {
-		f6 := []*string{}
-		for _, f6iter := range r.ko.Spec.CacheSecurityGroupNames {
-			var f6elem string
-			f6elem = *f6iter
-			f6 = append(f6, &f6elem)
-		}
-		res.SetCacheSecurityGroupNames(f6)
-	}
-	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
-	}
-	if r.ko.Spec.Engine != nil {
-		res.SetEngine(*r.ko.Spec.Engine)
-	}
-	if r.ko.Spec.EngineVersion != nil {
-		res.SetEngineVersion(*r.ko.Spec.EngineVersion)
-	}
-	if r.ko.Spec.KMSKeyID != nil {
-		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
-	}
-	if r.ko.Spec.MultiAZEnabled != nil {
-		res.SetMultiAZEnabled(*r.ko.Spec.MultiAZEnabled)
-	}
-	if r.ko.Spec.NodeGroupConfiguration != nil {
-		f12 := []*svcsdk.NodeGroupConfiguration{}
-		for _, f12iter := range r.ko.Spec.NodeGroupConfiguration {
-			f12elem := &svcsdk.NodeGroupConfiguration{}
-			if f12iter.NodeGroupID != nil {
-				f12elem.SetNodeGroupId(*f12iter.NodeGroupID)
-			}
-			if f12iter.PrimaryAvailabilityZone != nil {
-				f12elem.SetPrimaryAvailabilityZone(*f12iter.PrimaryAvailabilityZone)
-			}
-			if f12iter.PrimaryOutpostARN != nil {
-				f12elem.SetPrimaryOutpostArn(*f12iter.PrimaryOutpostARN)
-			}
-			if f12iter.ReplicaAvailabilityZones != nil {
-				f12elemf3 := []*string{}
-				for _, f12elemf3iter := range f12iter.ReplicaAvailabilityZones {
-					var f12elemf3elem string
-					f12elemf3elem = *f12elemf3iter
-					f12elemf3 = append(f12elemf3, &f12elemf3elem)
-				}
-				f12elem.SetReplicaAvailabilityZones(f12elemf3)
-			}
-			if f12iter.ReplicaCount != nil {
-				f12elem.SetReplicaCount(*f12iter.ReplicaCount)
-			}
-			if f12iter.ReplicaOutpostARNs != nil {
-				f12elemf5 := []*string{}
-				for _, f12elemf5iter := range f12iter.ReplicaOutpostARNs {
-					var f12elemf5elem string
-					f12elemf5elem = *f12elemf5iter
-					f12elemf5 = append(f12elemf5, &f12elemf5elem)
-				}
-				f12elem.SetReplicaOutpostArns(f12elemf5)
-			}
-			if f12iter.Slots != nil {
-				f12elem.SetSlots(*f12iter.Slots)
-			}
-			f12 = append(f12, f12elem)
-		}
-		res.SetNodeGroupConfiguration(f12)
-	}
-	if r.ko.Spec.NotificationTopicARN != nil {
-		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
-	}
-	if r.ko.Spec.NumCacheClusters != nil {
-		res.SetNumCacheClusters(*r.ko.Spec.NumCacheClusters)
-	}
-	if r.ko.Spec.NumNodeGroups != nil {
-		res.SetNumNodeGroups(*r.ko.Spec.NumNodeGroups)
-	}
-	if r.ko.Spec.Port != nil {
-		res.SetPort(*r.ko.Spec.Port)
-	}
-	if r.ko.Spec.PreferredCacheClusterAZs != nil {
-		f17 := []*string{}
-		for _, f17iter := range r.ko.Spec.PreferredCacheClusterAZs {
-			var f17elem string
-			f17elem = *f17iter
-			f17 = append(f17, &f17elem)
-		}
-		res.SetPreferredCacheClusterAZs(f17)
-	}
-	if r.ko.Spec.PreferredMaintenanceWindow != nil {
-		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
-	}
-	if r.ko.Spec.PrimaryClusterID != nil {
-		res.SetPrimaryClusterId(*r.ko.Spec.PrimaryClusterID)
-	}
-	if r.ko.Spec.ReplicasPerNodeGroup != nil {
-		res.SetReplicasPerNodeGroup(*r.ko.Spec.ReplicasPerNodeGroup)
-	}
-	if r.ko.Spec.ReplicationGroupDescription != nil {
-		res.SetReplicationGroupDescription(*r.ko.Spec.ReplicationGroupDescription)
-	}
-	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
-	}
-	if r.ko.Spec.SecurityGroupIDs != nil {
-		f23 := []*string{}
-		for _, f23iter := range r.ko.Spec.SecurityGroupIDs {
-			var f23elem string
-			f23elem = *f23iter
-			f23 = append(f23, &f23elem)
-		}
-		res.SetSecurityGroupIds(f23)
-	}
-	if r.ko.Spec.SnapshotARNs != nil {
-		f24 := []*string{}
-		for _, f24iter := range r.ko.Spec.SnapshotARNs {
-			var f24elem string
-			f24elem = *f24iter
-			f24 = append(f24, &f24elem)
-		}
-		res.SetSnapshotArns(f24)
-	}
-	if r.ko.Spec.SnapshotName != nil {
-		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
-	}
-	if r.ko.Spec.SnapshotRetentionLimit != nil {
-		res.SetSnapshotRetentionLimit(*r.ko.Spec.SnapshotRetentionLimit)
-	}
-	if r.ko.Spec.SnapshotWindow != nil {
-		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
-	}
-	if r.ko.Spec.Tags != nil {
-		f28 := []*svcsdk.Tag{}
-		for _, f28iter := range r.ko.Spec.Tags {
-			f28elem := &svcsdk.Tag{}
-			if f28iter.Key != nil {
-				f28elem.SetKey(*f28iter.Key)
-			}
-			if f28iter.Value != nil {
-				f28elem.SetValue(*f28iter.Value)
-			}
-			f28 = append(f28, f28elem)
-		}
-		res.SetTags(f28)
-	}
-	if r.ko.Spec.TransitEncryptionEnabled != nil {
-		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
-	}
-	if r.ko.Spec.UserGroupIDs != nil {
-		f30 := []*string{}
-		for _, f30iter := range r.ko.Spec.UserGroupIDs {
-			var f30elem string
-			f30elem = *f30iter
-			f30 = append(f30, &f30elem)
-		}
-		res.SetUserGroupIds(f30)
-	}
-
-	return res, nil
-}
-
-// sdkUpdate patches the supplied resource in the backend AWS service API and
-// returns a new resource with updated fields.
-func (rm *resourceManager) sdkUpdate(
-	ctx context.Context,
 	desired *resource,
-	latest *resource,
-	delta *ackcompare.Delta,
-) (*resource, error) {
-
-	customResp, customRespErr := rm.CustomModifyReplicationGroup(ctx, desired, latest, delta)
-	if customResp != nil || customRespErr != nil {
-		return customResp, customRespErr
-	}
-
-	input, err := rm.newUpdateRequestPayload(ctx, desired)
+) (created *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkCreate")
+	defer exit(err)
+	input, err := rm.newCreateRequestPayload(ctx, desired)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, respErr := rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
-	rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
-	if respErr != nil {
-		return nil, respErr
+	var resp *svcsdkapi.CreateReplicationGroupOutput
+	resp, err = rm.sdkapi.CreateReplicationGroupWithContext(ctx, input)
+	rm.metrics.RecordAPICall("CREATE", "CreateReplicationGroup", err)
+	if err != nil {
+		return nil, err
 	}
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
@@ -1036,13 +602,454 @@ func (rm *resourceManager) sdkUpdate(
 	}
 
 	rm.setStatusDefaults(ko)
+	// custom set output from response
+	ko, err = rm.CustomCreateReplicationGroupSetOutput(ctx, desired, resp, ko)
+	if err != nil {
+		return nil, err
+	}
+	return &resource{ko}, nil
+}
 
+// newCreateRequestPayload returns an SDK-specific struct for the HTTP request
+// payload of the Create API call for the resource
+func (rm *resourceManager) newCreateRequestPayload(
+	ctx context.Context,
+	r *resource,
+) (*svcsdk.CreateReplicationGroupInput, error) {
+	res := &svcsdk.CreateReplicationGroupInput{}
+
+	if r.ko.Spec.AtRestEncryptionEnabled != nil {
+		res.SetAtRestEncryptionEnabled(*r.ko.Spec.AtRestEncryptionEnabled)
+	}
+	if r.ko.Spec.AuthToken != nil {
+		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
+		if err != nil {
+			return nil, err
+		}
+		if tmpSecret != "" {
+			res.SetAuthToken(tmpSecret)
+		}
+	}
+	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
+		res.SetAutoMinorVersionUpgrade(*r.ko.Spec.AutoMinorVersionUpgrade)
+	}
+	if r.ko.Spec.AutomaticFailoverEnabled != nil {
+		res.SetAutomaticFailoverEnabled(*r.ko.Spec.AutomaticFailoverEnabled)
+	}
+	if r.ko.Spec.CacheNodeType != nil {
+		res.SetCacheNodeType(*r.ko.Spec.CacheNodeType)
+	}
+	if r.ko.Spec.CacheParameterGroupName != nil {
+		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+	}
+	if r.ko.Spec.CacheSecurityGroupNames != nil {
+		f6 := []*string{}
+		for _, f6iter := range r.ko.Spec.CacheSecurityGroupNames {
+			var f6elem string
+			f6elem = *f6iter
+			f6 = append(f6, &f6elem)
+		}
+		res.SetCacheSecurityGroupNames(f6)
+	}
+	if r.ko.Spec.CacheSubnetGroupName != nil {
+		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+	}
+	if r.ko.Spec.Engine != nil {
+		res.SetEngine(*r.ko.Spec.Engine)
+	}
+	if r.ko.Spec.EngineVersion != nil {
+		res.SetEngineVersion(*r.ko.Spec.EngineVersion)
+	}
+	if r.ko.Spec.KMSKeyID != nil {
+		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
+	}
+	if r.ko.Spec.MultiAZEnabled != nil {
+		res.SetMultiAZEnabled(*r.ko.Spec.MultiAZEnabled)
+	}
+	if r.ko.Spec.NodeGroupConfiguration != nil {
+		f12 := []*svcsdk.NodeGroupConfiguration{}
+		for _, f12iter := range r.ko.Spec.NodeGroupConfiguration {
+			f12elem := &svcsdk.NodeGroupConfiguration{}
+			if f12iter.NodeGroupID != nil {
+				f12elem.SetNodeGroupId(*f12iter.NodeGroupID)
+			}
+			if f12iter.PrimaryAvailabilityZone != nil {
+				f12elem.SetPrimaryAvailabilityZone(*f12iter.PrimaryAvailabilityZone)
+			}
+			if f12iter.PrimaryOutpostARN != nil {
+				f12elem.SetPrimaryOutpostArn(*f12iter.PrimaryOutpostARN)
+			}
+			if f12iter.ReplicaAvailabilityZones != nil {
+				f12elemf3 := []*string{}
+				for _, f12elemf3iter := range f12iter.ReplicaAvailabilityZones {
+					var f12elemf3elem string
+					f12elemf3elem = *f12elemf3iter
+					f12elemf3 = append(f12elemf3, &f12elemf3elem)
+				}
+				f12elem.SetReplicaAvailabilityZones(f12elemf3)
+			}
+			if f12iter.ReplicaCount != nil {
+				f12elem.SetReplicaCount(*f12iter.ReplicaCount)
+			}
+			if f12iter.ReplicaOutpostARNs != nil {
+				f12elemf5 := []*string{}
+				for _, f12elemf5iter := range f12iter.ReplicaOutpostARNs {
+					var f12elemf5elem string
+					f12elemf5elem = *f12elemf5iter
+					f12elemf5 = append(f12elemf5, &f12elemf5elem)
+				}
+				f12elem.SetReplicaOutpostArns(f12elemf5)
+			}
+			if f12iter.Slots != nil {
+				f12elem.SetSlots(*f12iter.Slots)
+			}
+			f12 = append(f12, f12elem)
+		}
+		res.SetNodeGroupConfiguration(f12)
+	}
+	if r.ko.Spec.NotificationTopicARN != nil {
+		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
+	}
+	if r.ko.Spec.NumCacheClusters != nil {
+		res.SetNumCacheClusters(*r.ko.Spec.NumCacheClusters)
+	}
+	if r.ko.Spec.NumNodeGroups != nil {
+		res.SetNumNodeGroups(*r.ko.Spec.NumNodeGroups)
+	}
+	if r.ko.Spec.Port != nil {
+		res.SetPort(*r.ko.Spec.Port)
+	}
+	if r.ko.Spec.PreferredCacheClusterAZs != nil {
+		f17 := []*string{}
+		for _, f17iter := range r.ko.Spec.PreferredCacheClusterAZs {
+			var f17elem string
+			f17elem = *f17iter
+			f17 = append(f17, &f17elem)
+		}
+		res.SetPreferredCacheClusterAZs(f17)
+	}
+	if r.ko.Spec.PreferredMaintenanceWindow != nil {
+		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
+	}
+	if r.ko.Spec.PrimaryClusterID != nil {
+		res.SetPrimaryClusterId(*r.ko.Spec.PrimaryClusterID)
+	}
+	if r.ko.Spec.ReplicasPerNodeGroup != nil {
+		res.SetReplicasPerNodeGroup(*r.ko.Spec.ReplicasPerNodeGroup)
+	}
+	if r.ko.Spec.ReplicationGroupDescription != nil {
+		res.SetReplicationGroupDescription(*r.ko.Spec.ReplicationGroupDescription)
+	}
+	if r.ko.Spec.ReplicationGroupID != nil {
+		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+	}
+	if r.ko.Spec.SecurityGroupIDs != nil {
+		f23 := []*string{}
+		for _, f23iter := range r.ko.Spec.SecurityGroupIDs {
+			var f23elem string
+			f23elem = *f23iter
+			f23 = append(f23, &f23elem)
+		}
+		res.SetSecurityGroupIds(f23)
+	}
+	if r.ko.Spec.SnapshotARNs != nil {
+		f24 := []*string{}
+		for _, f24iter := range r.ko.Spec.SnapshotARNs {
+			var f24elem string
+			f24elem = *f24iter
+			f24 = append(f24, &f24elem)
+		}
+		res.SetSnapshotArns(f24)
+	}
+	if r.ko.Spec.SnapshotName != nil {
+		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+	}
+	if r.ko.Spec.SnapshotRetentionLimit != nil {
+		res.SetSnapshotRetentionLimit(*r.ko.Spec.SnapshotRetentionLimit)
+	}
+	if r.ko.Spec.SnapshotWindow != nil {
+		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
+	}
+	if r.ko.Spec.Tags != nil {
+		f28 := []*svcsdk.Tag{}
+		for _, f28iter := range r.ko.Spec.Tags {
+			f28elem := &svcsdk.Tag{}
+			if f28iter.Key != nil {
+				f28elem.SetKey(*f28iter.Key)
+			}
+			if f28iter.Value != nil {
+				f28elem.SetValue(*f28iter.Value)
+			}
+			f28 = append(f28, f28elem)
+		}
+		res.SetTags(f28)
+	}
+	if r.ko.Spec.TransitEncryptionEnabled != nil {
+		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
+	}
+	if r.ko.Spec.UserGroupIDs != nil {
+		f30 := []*string{}
+		for _, f30iter := range r.ko.Spec.UserGroupIDs {
+			var f30elem string
+			f30elem = *f30iter
+			f30 = append(f30, &f30elem)
+		}
+		res.SetUserGroupIds(f30)
+	}
+
+	return res, nil
+}
+
+// sdkUpdate patches the supplied resource in the backend AWS service API and
+// returns a new resource with updated fields.
+func (rm *resourceManager) sdkUpdate(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) (updated *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkUpdate")
+	defer exit(err)
+	updated, err = rm.CustomModifyReplicationGroup(ctx, desired, latest, delta)
+	if updated != nil || err != nil {
+		return updated, err
+	}
+	input, err := rm.newUpdateRequestPayload(ctx, desired)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp *svcsdkapi.ModifyReplicationGroupOutput
+	resp, err = rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
+	rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", err)
+	if err != nil {
+		return nil, err
+	}
+	// Merge in the information we read from the API call above to the copy of
+	// the original Kubernetes object we passed to the function
+	ko := desired.ko.DeepCopy()
+
+	if ko.Status.ACKResourceMetadata == nil {
+		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
+	}
+	if resp.ReplicationGroup.ARN != nil {
+		arn := ackv1alpha1.AWSResourceName(*resp.ReplicationGroup.ARN)
+		ko.Status.ACKResourceMetadata.ARN = &arn
+	}
+	if resp.ReplicationGroup.AuthTokenEnabled != nil {
+		ko.Status.AuthTokenEnabled = resp.ReplicationGroup.AuthTokenEnabled
+	} else {
+		ko.Status.AuthTokenEnabled = nil
+	}
+	if resp.ReplicationGroup.AuthTokenLastModifiedDate != nil {
+		ko.Status.AuthTokenLastModifiedDate = &metav1.Time{*resp.ReplicationGroup.AuthTokenLastModifiedDate}
+	} else {
+		ko.Status.AuthTokenLastModifiedDate = nil
+	}
+	if resp.ReplicationGroup.AutomaticFailover != nil {
+		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
+	} else {
+		ko.Status.AutomaticFailover = nil
+	}
+	if resp.ReplicationGroup.ClusterEnabled != nil {
+		ko.Status.ClusterEnabled = resp.ReplicationGroup.ClusterEnabled
+	} else {
+		ko.Status.ClusterEnabled = nil
+	}
+	if resp.ReplicationGroup.ConfigurationEndpoint != nil {
+		f7 := &svcapitypes.Endpoint{}
+		if resp.ReplicationGroup.ConfigurationEndpoint.Address != nil {
+			f7.Address = resp.ReplicationGroup.ConfigurationEndpoint.Address
+		}
+		if resp.ReplicationGroup.ConfigurationEndpoint.Port != nil {
+			f7.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
+		}
+		ko.Status.ConfigurationEndpoint = f7
+	} else {
+		ko.Status.ConfigurationEndpoint = nil
+	}
+	if resp.ReplicationGroup.Description != nil {
+		ko.Status.Description = resp.ReplicationGroup.Description
+	} else {
+		ko.Status.Description = nil
+	}
+	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
+		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
+		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
+			f9.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
+		}
+		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
+			f9.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
+		}
+		ko.Status.GlobalReplicationGroupInfo = f9
+	} else {
+		ko.Status.GlobalReplicationGroupInfo = nil
+	}
+	if resp.ReplicationGroup.MemberClusters != nil {
+		f11 := []*string{}
+		for _, f11iter := range resp.ReplicationGroup.MemberClusters {
+			var f11elem string
+			f11elem = *f11iter
+			f11 = append(f11, &f11elem)
+		}
+		ko.Status.MemberClusters = f11
+	} else {
+		ko.Status.MemberClusters = nil
+	}
+	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
+		f12 := []*string{}
+		for _, f12iter := range resp.ReplicationGroup.MemberClustersOutpostArns {
+			var f12elem string
+			f12elem = *f12iter
+			f12 = append(f12, &f12elem)
+		}
+		ko.Status.MemberClustersOutpostARNs = f12
+	} else {
+		ko.Status.MemberClustersOutpostARNs = nil
+	}
+	if resp.ReplicationGroup.MultiAZ != nil {
+		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
+	} else {
+		ko.Status.MultiAZ = nil
+	}
+	if resp.ReplicationGroup.NodeGroups != nil {
+		f14 := []*svcapitypes.NodeGroup{}
+		for _, f14iter := range resp.ReplicationGroup.NodeGroups {
+			f14elem := &svcapitypes.NodeGroup{}
+			if f14iter.NodeGroupId != nil {
+				f14elem.NodeGroupID = f14iter.NodeGroupId
+			}
+			if f14iter.NodeGroupMembers != nil {
+				f14elemf1 := []*svcapitypes.NodeGroupMember{}
+				for _, f14elemf1iter := range f14iter.NodeGroupMembers {
+					f14elemf1elem := &svcapitypes.NodeGroupMember{}
+					if f14elemf1iter.CacheClusterId != nil {
+						f14elemf1elem.CacheClusterID = f14elemf1iter.CacheClusterId
+					}
+					if f14elemf1iter.CacheNodeId != nil {
+						f14elemf1elem.CacheNodeID = f14elemf1iter.CacheNodeId
+					}
+					if f14elemf1iter.CurrentRole != nil {
+						f14elemf1elem.CurrentRole = f14elemf1iter.CurrentRole
+					}
+					if f14elemf1iter.PreferredAvailabilityZone != nil {
+						f14elemf1elem.PreferredAvailabilityZone = f14elemf1iter.PreferredAvailabilityZone
+					}
+					if f14elemf1iter.PreferredOutpostArn != nil {
+						f14elemf1elem.PreferredOutpostARN = f14elemf1iter.PreferredOutpostArn
+					}
+					if f14elemf1iter.ReadEndpoint != nil {
+						f14elemf1elemf5 := &svcapitypes.Endpoint{}
+						if f14elemf1iter.ReadEndpoint.Address != nil {
+							f14elemf1elemf5.Address = f14elemf1iter.ReadEndpoint.Address
+						}
+						if f14elemf1iter.ReadEndpoint.Port != nil {
+							f14elemf1elemf5.Port = f14elemf1iter.ReadEndpoint.Port
+						}
+						f14elemf1elem.ReadEndpoint = f14elemf1elemf5
+					}
+					f14elemf1 = append(f14elemf1, f14elemf1elem)
+				}
+				f14elem.NodeGroupMembers = f14elemf1
+			}
+			if f14iter.PrimaryEndpoint != nil {
+				f14elemf2 := &svcapitypes.Endpoint{}
+				if f14iter.PrimaryEndpoint.Address != nil {
+					f14elemf2.Address = f14iter.PrimaryEndpoint.Address
+				}
+				if f14iter.PrimaryEndpoint.Port != nil {
+					f14elemf2.Port = f14iter.PrimaryEndpoint.Port
+				}
+				f14elem.PrimaryEndpoint = f14elemf2
+			}
+			if f14iter.ReaderEndpoint != nil {
+				f14elemf3 := &svcapitypes.Endpoint{}
+				if f14iter.ReaderEndpoint.Address != nil {
+					f14elemf3.Address = f14iter.ReaderEndpoint.Address
+				}
+				if f14iter.ReaderEndpoint.Port != nil {
+					f14elemf3.Port = f14iter.ReaderEndpoint.Port
+				}
+				f14elem.ReaderEndpoint = f14elemf3
+			}
+			if f14iter.Slots != nil {
+				f14elem.Slots = f14iter.Slots
+			}
+			if f14iter.Status != nil {
+				f14elem.Status = f14iter.Status
+			}
+			f14 = append(f14, f14elem)
+		}
+		ko.Status.NodeGroups = f14
+	} else {
+		ko.Status.NodeGroups = nil
+	}
+	if resp.ReplicationGroup.PendingModifiedValues != nil {
+		f15 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
+		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != nil {
+			f15.AuthTokenStatus = resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus
+		}
+		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != nil {
+			f15.AutomaticFailoverStatus = resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus
+		}
+		if resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId != nil {
+			f15.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
+		}
+		if resp.ReplicationGroup.PendingModifiedValues.Resharding != nil {
+			f15f3 := &svcapitypes.ReshardingStatus{}
+			if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration != nil {
+				f15f3f0 := &svcapitypes.SlotMigration{}
+				if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
+					f15f3f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
+				}
+				f15f3.SlotMigration = f15f3f0
+			}
+			f15.Resharding = f15f3
+		}
+		if resp.ReplicationGroup.PendingModifiedValues.UserGroups != nil {
+			f15f4 := &svcapitypes.UserGroupsUpdateStatus{}
+			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd != nil {
+				f15f4f0 := []*string{}
+				for _, f15f4f0iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd {
+					var f15f4f0elem string
+					f15f4f0elem = *f15f4f0iter
+					f15f4f0 = append(f15f4f0, &f15f4f0elem)
+				}
+				f15f4.UserGroupIDsToAdd = f15f4f0
+			}
+			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove != nil {
+				f15f4f1 := []*string{}
+				for _, f15f4f1iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove {
+					var f15f4f1elem string
+					f15f4f1elem = *f15f4f1iter
+					f15f4f1 = append(f15f4f1, &f15f4f1elem)
+				}
+				f15f4.UserGroupIDsToRemove = f15f4f1
+			}
+			f15.UserGroups = f15f4
+		}
+		ko.Status.PendingModifiedValues = f15
+	} else {
+		ko.Status.PendingModifiedValues = nil
+	}
+	if resp.ReplicationGroup.SnapshottingClusterId != nil {
+		ko.Status.SnapshottingClusterID = resp.ReplicationGroup.SnapshottingClusterId
+	} else {
+		ko.Status.SnapshottingClusterID = nil
+	}
+	if resp.ReplicationGroup.Status != nil {
+		ko.Status.Status = resp.ReplicationGroup.Status
+	} else {
+		ko.Status.Status = nil
+	}
+
+	rm.setStatusDefaults(ko)
 	// custom set output from response
 	ko, err = rm.CustomModifyReplicationGroupSetOutput(ctx, desired, resp, ko)
 	if err != nil {
 		return nil, err
 	}
-
 	return &resource{ko}, nil
 }
 
@@ -1120,7 +1127,10 @@ func (rm *resourceManager) newUpdateRequestPayload(
 func (rm *resourceManager) sdkDelete(
 	ctx context.Context,
 	r *resource,
-) error {
+) (err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkDelete")
+	defer exit(err)
 	if isDeleting(r) {
 		return requeueWaitWhileDeleting
 	}
@@ -1129,9 +1139,9 @@ func (rm *resourceManager) sdkDelete(
 	if err != nil {
 		return err
 	}
-	_, respErr := rm.sdkapi.DeleteReplicationGroupWithContext(ctx, input)
-	rm.metrics.RecordAPICall("DELETE", "DeleteReplicationGroup", respErr)
-	if respErr == nil {
+	_, err = rm.sdkapi.DeleteReplicationGroupWithContext(ctx, input)
+	rm.metrics.RecordAPICall("DELETE", "DeleteReplicationGroup", err)
+	if err == nil {
 		if foundResource, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
 			if isDeleting(foundResource) {
 				return requeueWaitWhileDeleting
@@ -1139,7 +1149,7 @@ func (rm *resourceManager) sdkDelete(
 			return err
 		}
 	}
-	return respErr
+	return err
 }
 
 // newDeleteRequestPayload returns an SDK-specific struct for the HTTP request

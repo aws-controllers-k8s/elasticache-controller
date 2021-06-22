@@ -35,7 +35,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: CacheParameterGroupSpec defines the desired state of CacheParameterGroup
+            description: "CacheParameterGroupSpec defines the desired state of CacheParameterGroup.
+              \n Represents the output of a CreateCacheParameterGroup operation."
             properties:
               cacheParameterGroupFamily:
                 description: "The name of the cache parameter group family that the

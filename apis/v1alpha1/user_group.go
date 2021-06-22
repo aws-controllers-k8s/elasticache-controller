@@ -20,7 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// UserGroupSpec defines the desired state of UserGroup
+// UserGroupSpec defines the desired state of UserGroup.
+//
+
 type UserGroupSpec struct {
 	// The current supported value is Redis.
 	// +kubebuilder:validation:Required

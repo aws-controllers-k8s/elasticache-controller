@@ -20,7 +20,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SnapshotSpec defines the desired state of Snapshot
+// SnapshotSpec defines the desired state of Snapshot.
+//
+// Represents a copy of an entire Redis cluster as of the time when the snapshot
+// was taken.
 type SnapshotSpec struct {
 	// The identifier of an existing cluster. The snapshot is created from this
 	// cluster.

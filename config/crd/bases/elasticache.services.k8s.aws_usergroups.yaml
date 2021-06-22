@@ -34,7 +34,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: UserGroupSpec defines the desired state of UserGroup
             properties:
               engine:
                 description: The current supported value is Redis.

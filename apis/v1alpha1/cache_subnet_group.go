@@ -20,7 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup
+// CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup.
+//
+// Represents the output of one of the following operations:
+//
+//    * CreateCacheSubnetGroup
+//
+//    * ModifyCacheSubnetGroup
 type CacheSubnetGroupSpec struct {
 	// A description for the cache subnet group.
 	// +kubebuilder:validation:Required
