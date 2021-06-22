@@ -34,7 +34,9 @@ spec:
           metadata:
             type: object
           spec:
-            description: SnapshotSpec defines the desired state of Snapshot
+            description: "SnapshotSpec defines the desired state of Snapshot. \n Represents
+              a copy of an entire Redis cluster as of the time when the snapshot was
+              taken."
             properties:
               cacheClusterID:
                 description: The identifier of an existing cluster. The snapshot is

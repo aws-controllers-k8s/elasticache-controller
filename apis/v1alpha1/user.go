@@ -20,7 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// UserSpec defines the desired state of User
+// UserSpec defines the desired state of User.
+//
+
 type UserSpec struct {
 	// Access permissions string used for this user.
 	// +kubebuilder:validation:Required

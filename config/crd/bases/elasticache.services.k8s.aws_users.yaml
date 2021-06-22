@@ -34,7 +34,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: UserSpec defines the desired state of User
             properties:
               accessString:
                 description: Access permissions string used for this user.

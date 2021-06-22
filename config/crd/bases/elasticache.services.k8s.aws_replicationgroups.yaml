@@ -34,7 +34,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: ReplicationGroupSpec defines the desired state of ReplicationGroup
+            description: "ReplicationGroupSpec defines the desired state of ReplicationGroup.
+              \n Contains all of the attributes of a specific Redis replication group."
             properties:
               atRestEncryptionEnabled:
                 description: "A flag that enables encryption at rest when set to true.

@@ -22,12 +22,14 @@ import (
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -39,25 +41,29 @@ var (
 	_ = &svcapitypes.UserGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
+	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
 func (rm *resourceManager) sdkFind(
 	ctx context.Context,
 	r *resource,
-) (*resource, error) {
+) (latest *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkFind")
+	defer exit(err)
 	input, err := rm.newListRequestPayload(r)
 	if err != nil {
 		return nil, err
 	}
-
-	resp, respErr := rm.sdkapi.DescribeUserGroupsWithContext(ctx, input)
-	rm.metrics.RecordAPICall("READ_MANY", "DescribeUserGroups", respErr)
-	if respErr != nil {
-		if awsErr, ok := ackerr.AWSError(respErr); ok && awsErr.Code() == "UserGroupNotFound" {
+	var resp *svcsdkapi.DescribeUserGroupsOutput
+	resp, err = rm.sdkapi.DescribeUserGroupsWithContext(ctx, input)
+	rm.metrics.RecordAPICall("READ_MANY", "DescribeUserGroups", err)
+	if err != nil {
+		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "UserGroupNotFound" {
 			return nil, ackerr.NotFound
 		}
-		return nil, respErr
+		return nil, err
 	}
 
 	// Merge in the information we read from the API call above to the copy of
@@ -142,13 +148,11 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	rm.setStatusDefaults(ko)
-
 	// custom set output from response
 	ko, err = rm.CustomDescribeUserGroupsSetOutput(ctx, r, resp, ko)
 	if err != nil {
 		return nil, err
 	}
-
 	return &resource{ko}, nil
 }
 
@@ -167,24 +171,29 @@ func (rm *resourceManager) newListRequestPayload(
 }
 
 // sdkCreate creates the supplied resource in the backend AWS service API and
-// returns a new resource with any fields in the Status field filled in
+// returns a copy of the resource with resource fields (in both Spec and
+// Status) filled in with values from the CREATE API operation's Output shape.
 func (rm *resourceManager) sdkCreate(
 	ctx context.Context,
-	r *resource,
-) (*resource, error) {
-	input, err := rm.newCreateRequestPayload(ctx, r)
+	desired *resource,
+) (created *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkCreate")
+	defer exit(err)
+	input, err := rm.newCreateRequestPayload(ctx, desired)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, respErr := rm.sdkapi.CreateUserGroupWithContext(ctx, input)
-	rm.metrics.RecordAPICall("CREATE", "CreateUserGroup", respErr)
-	if respErr != nil {
-		return nil, respErr
+	var resp *svcsdkapi.CreateUserGroupOutput
+	resp, err = rm.sdkapi.CreateUserGroupWithContext(ctx, input)
+	rm.metrics.RecordAPICall("CREATE", "CreateUserGroup", err)
+	if err != nil {
+		return nil, err
 	}
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
-	ko := r.ko.DeepCopy()
+	ko := desired.ko.DeepCopy()
 
 	if ko.Status.ACKResourceMetadata == nil {
 		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
@@ -235,13 +244,11 @@ func (rm *resourceManager) sdkCreate(
 	}
 
 	rm.setStatusDefaults(ko)
-
 	// custom set output from response
-	ko, err = rm.CustomCreateUserGroupSetOutput(ctx, r, resp, ko)
+	ko, err = rm.CustomCreateUserGroupSetOutput(ctx, desired, resp, ko)
 	if err != nil {
 		return nil, err
 	}
-
 	return &resource{ko}, nil
 }
 
@@ -287,15 +294,17 @@ func (rm *resourceManager) sdkUpdate(
 func (rm *resourceManager) sdkDelete(
 	ctx context.Context,
 	r *resource,
-) error {
-
+) (err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkDelete")
+	defer exit(err)
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
 		return err
 	}
-	_, respErr := rm.sdkapi.DeleteUserGroupWithContext(ctx, input)
-	rm.metrics.RecordAPICall("DELETE", "DeleteUserGroup", respErr)
-	return respErr
+	_, err = rm.sdkapi.DeleteUserGroupWithContext(ctx, input)
+	rm.metrics.RecordAPICall("DELETE", "DeleteUserGroup", err)
+	return err
 }
 
 // newDeleteRequestPayload returns an SDK-specific struct for the HTTP request

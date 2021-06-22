@@ -22,12 +22,14 @@ import (
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -39,25 +41,29 @@ var (
 	_ = &svcapitypes.User{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
+	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
 func (rm *resourceManager) sdkFind(
 	ctx context.Context,
 	r *resource,
-) (*resource, error) {
+) (latest *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkFind")
+	defer exit(err)
 	input, err := rm.newListRequestPayload(r)
 	if err != nil {
 		return nil, err
 	}
-
-	resp, respErr := rm.sdkapi.DescribeUsersWithContext(ctx, input)
-	rm.metrics.RecordAPICall("READ_MANY", "DescribeUsers", respErr)
-	if respErr != nil {
-		if awsErr, ok := ackerr.AWSError(respErr); ok && awsErr.Code() == "UserNotFound" {
+	var resp *svcsdkapi.DescribeUsersOutput
+	resp, err = rm.sdkapi.DescribeUsersWithContext(ctx, input)
+	rm.metrics.RecordAPICall("READ_MANY", "DescribeUsers", err)
+	if err != nil {
+		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "UserNotFound" {
 			return nil, ackerr.NotFound
 		}
-		return nil, respErr
+		return nil, err
 	}
 
 	// Merge in the information we read from the API call above to the copy of
@@ -129,7 +135,6 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	rm.setStatusDefaults(ko)
-
 	rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})
 	return &resource{ko}, nil
 }
@@ -149,124 +154,25 @@ func (rm *resourceManager) newListRequestPayload(
 }
 
 // sdkCreate creates the supplied resource in the backend AWS service API and
-// returns a new resource with any fields in the Status field filled in
+// returns a copy of the resource with resource fields (in both Spec and
+// Status) filled in with values from the CREATE API operation's Output shape.
 func (rm *resourceManager) sdkCreate(
 	ctx context.Context,
-	r *resource,
-) (*resource, error) {
-	input, err := rm.newCreateRequestPayload(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, respErr := rm.sdkapi.CreateUserWithContext(ctx, input)
-	rm.metrics.RecordAPICall("CREATE", "CreateUser", respErr)
-	if respErr != nil {
-		return nil, respErr
-	}
-	// Merge in the information we read from the API call above to the copy of
-	// the original Kubernetes object we passed to the function
-	ko := r.ko.DeepCopy()
-
-	if ko.Status.ACKResourceMetadata == nil {
-		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
-	}
-	if resp.ARN != nil {
-		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
-		ko.Status.ACKResourceMetadata.ARN = &arn
-	}
-	if resp.Authentication != nil {
-		f2 := &svcapitypes.Authentication{}
-		if resp.Authentication.PasswordCount != nil {
-			f2.PasswordCount = resp.Authentication.PasswordCount
-		}
-		if resp.Authentication.Type != nil {
-			f2.Type = resp.Authentication.Type
-		}
-		ko.Status.Authentication = f2
-	} else {
-		ko.Status.Authentication = nil
-	}
-	if resp.Status != nil {
-		ko.Status.Status = resp.Status
-	} else {
-		ko.Status.Status = nil
-	}
-	if resp.UserGroupIds != nil {
-		f5 := []*string{}
-		for _, f5iter := range resp.UserGroupIds {
-			var f5elem string
-			f5elem = *f5iter
-			f5 = append(f5, &f5elem)
-		}
-		ko.Status.UserGroupIDs = f5
-	} else {
-		ko.Status.UserGroupIDs = nil
-	}
-
-	rm.setStatusDefaults(ko)
-
-	// custom set output from response
-	ko, err = rm.CustomCreateUserSetOutput(ctx, r, resp, ko)
-	if err != nil {
-		return nil, err
-	}
-
-	rm.setSyncedCondition(resp.Status, &resource{ko})
-	return &resource{ko}, nil
-}
-
-// newCreateRequestPayload returns an SDK-specific struct for the HTTP request
-// payload of the Create API call for the resource
-func (rm *resourceManager) newCreateRequestPayload(
-	ctx context.Context,
-	r *resource,
-) (*svcsdk.CreateUserInput, error) {
-	res := &svcsdk.CreateUserInput{}
-
-	if r.ko.Spec.AccessString != nil {
-		res.SetAccessString(*r.ko.Spec.AccessString)
-	}
-	if r.ko.Spec.Engine != nil {
-		res.SetEngine(*r.ko.Spec.Engine)
-	}
-	if r.ko.Spec.NoPasswordRequired != nil {
-		res.SetNoPasswordRequired(*r.ko.Spec.NoPasswordRequired)
-	}
-	if r.ko.Spec.UserID != nil {
-		res.SetUserId(*r.ko.Spec.UserID)
-	}
-	if r.ko.Spec.UserName != nil {
-		res.SetUserName(*r.ko.Spec.UserName)
-	}
-
-	return res, nil
-}
-
-// sdkUpdate patches the supplied resource in the backend AWS service API and
-// returns a new resource with updated fields.
-func (rm *resourceManager) sdkUpdate(
-	ctx context.Context,
 	desired *resource,
-	latest *resource,
-	delta *ackcompare.Delta,
-) (*resource, error) {
-
-	customResp, customRespErr := rm.CustomModifyUser(ctx, desired, latest, delta)
-	if customResp != nil || customRespErr != nil {
-		return customResp, customRespErr
-	}
-
-	input, err := rm.newUpdateRequestPayload(ctx, desired)
+) (created *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkCreate")
+	defer exit(err)
+	input, err := rm.newCreateRequestPayload(ctx, desired)
 	if err != nil {
 		return nil, err
 	}
-	rm.populateUpdatePayload(input, desired, delta)
 
-	resp, respErr := rm.sdkapi.ModifyUserWithContext(ctx, input)
-	rm.metrics.RecordAPICall("UPDATE", "ModifyUser", respErr)
-	if respErr != nil {
-		return nil, respErr
+	var resp *svcsdkapi.CreateUserOutput
+	resp, err = rm.sdkapi.CreateUserWithContext(ctx, input)
+	rm.metrics.RecordAPICall("CREATE", "CreateUser", err)
+	if err != nil {
+		return nil, err
 	}
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
@@ -309,13 +215,115 @@ func (rm *resourceManager) sdkUpdate(
 	}
 
 	rm.setStatusDefaults(ko)
+	// custom set output from response
+	ko, err = rm.CustomCreateUserSetOutput(ctx, desired, resp, ko)
+	if err != nil {
+		return nil, err
+	}
+	rm.setSyncedCondition(resp.Status, &resource{ko})
+	return &resource{ko}, nil
+}
 
+// newCreateRequestPayload returns an SDK-specific struct for the HTTP request
+// payload of the Create API call for the resource
+func (rm *resourceManager) newCreateRequestPayload(
+	ctx context.Context,
+	r *resource,
+) (*svcsdk.CreateUserInput, error) {
+	res := &svcsdk.CreateUserInput{}
+
+	if r.ko.Spec.AccessString != nil {
+		res.SetAccessString(*r.ko.Spec.AccessString)
+	}
+	if r.ko.Spec.Engine != nil {
+		res.SetEngine(*r.ko.Spec.Engine)
+	}
+	if r.ko.Spec.NoPasswordRequired != nil {
+		res.SetNoPasswordRequired(*r.ko.Spec.NoPasswordRequired)
+	}
+	if r.ko.Spec.UserID != nil {
+		res.SetUserId(*r.ko.Spec.UserID)
+	}
+	if r.ko.Spec.UserName != nil {
+		res.SetUserName(*r.ko.Spec.UserName)
+	}
+
+	return res, nil
+}
+
+// sdkUpdate patches the supplied resource in the backend AWS service API and
+// returns a new resource with updated fields.
+func (rm *resourceManager) sdkUpdate(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) (updated *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkUpdate")
+	defer exit(err)
+	updated, err = rm.CustomModifyUser(ctx, desired, latest, delta)
+	if updated != nil || err != nil {
+		return updated, err
+	}
+	input, err := rm.newUpdateRequestPayload(ctx, desired)
+	if err != nil {
+		return nil, err
+	}
+	rm.populateUpdatePayload(input, desired, delta)
+
+	var resp *svcsdkapi.ModifyUserOutput
+	resp, err = rm.sdkapi.ModifyUserWithContext(ctx, input)
+	rm.metrics.RecordAPICall("UPDATE", "ModifyUser", err)
+	if err != nil {
+		return nil, err
+	}
+	// Merge in the information we read from the API call above to the copy of
+	// the original Kubernetes object we passed to the function
+	ko := desired.ko.DeepCopy()
+
+	if ko.Status.ACKResourceMetadata == nil {
+		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
+	}
+	if resp.ARN != nil {
+		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
+		ko.Status.ACKResourceMetadata.ARN = &arn
+	}
+	if resp.Authentication != nil {
+		f2 := &svcapitypes.Authentication{}
+		if resp.Authentication.PasswordCount != nil {
+			f2.PasswordCount = resp.Authentication.PasswordCount
+		}
+		if resp.Authentication.Type != nil {
+			f2.Type = resp.Authentication.Type
+		}
+		ko.Status.Authentication = f2
+	} else {
+		ko.Status.Authentication = nil
+	}
+	if resp.Status != nil {
+		ko.Status.Status = resp.Status
+	} else {
+		ko.Status.Status = nil
+	}
+	if resp.UserGroupIds != nil {
+		f5 := []*string{}
+		for _, f5iter := range resp.UserGroupIds {
+			var f5elem string
+			f5elem = *f5iter
+			f5 = append(f5, &f5elem)
+		}
+		ko.Status.UserGroupIDs = f5
+	} else {
+		ko.Status.UserGroupIDs = nil
+	}
+
+	rm.setStatusDefaults(ko)
 	// custom set output from response
 	ko, err = rm.CustomModifyUserSetOutput(ctx, desired, resp, ko)
 	if err != nil {
 		return nil, err
 	}
-
 	rm.setSyncedCondition(resp.Status, &resource{ko})
 	return &resource{ko}, nil
 }
@@ -339,15 +347,17 @@ func (rm *resourceManager) newUpdateRequestPayload(
 func (rm *resourceManager) sdkDelete(
 	ctx context.Context,
 	r *resource,
-) error {
-
+) (err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkDelete")
+	defer exit(err)
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
 		return err
 	}
-	_, respErr := rm.sdkapi.DeleteUserWithContext(ctx, input)
-	rm.metrics.RecordAPICall("DELETE", "DeleteUser", respErr)
-	return respErr
+	_, err = rm.sdkapi.DeleteUserWithContext(ctx, input)
+	rm.metrics.RecordAPICall("DELETE", "DeleteUser", err)
+	return err
 }
 
 // newDeleteRequestPayload returns an SDK-specific struct for the HTTP request

@@ -20,7 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CacheParameterGroupSpec defines the desired state of CacheParameterGroup
+// CacheParameterGroupSpec defines the desired state of CacheParameterGroup.
+//
+// Represents the output of a CreateCacheParameterGroup operation.
 type CacheParameterGroupSpec struct {
 	// The name of the cache parameter group family that the cache parameter group
 	// can be used with.
