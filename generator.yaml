@@ -62,6 +62,10 @@ resources:
         template_path: hooks/sdk_delete_pre_build_request.go.tpl
       sdk_delete_post_request:
         template_path: hooks/sdk_delete_post_request.go.tpl
+      sdk_addon:
+        template_path: hooks/sdk_addon.go.tpl
+      sdk_addon_set_output_post_populate:
+        code: "rm.customSetOutput(obj, ko) // custom set output from obj"
   Snapshot:
     update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:

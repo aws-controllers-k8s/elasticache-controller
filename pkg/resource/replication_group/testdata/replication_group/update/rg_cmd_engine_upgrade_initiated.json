@@ -40,6 +40,7 @@
       }
     ],
     "AtRestEncryptionEnabled": false,
+    "AuthTokenEnabled": false,
     "ClusterEnabled": false,
     "ReplicationGroupId": "rg-cmd",
     "GlobalReplicationGroupInfo": {},
