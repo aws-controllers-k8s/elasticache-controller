@@ -154,6 +154,24 @@ def rg_cmd_update(rg_cmd_update_input, make_replication_group, rg_deletion_waite
     rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
 
 
+@pytest.fixture(scope="module")
+def rg_deletion_input(make_rg_name):
+    return {
+        "RG_ID": make_rg_name("rg-delete"),
+        "ENGINE_VERSION": "6.x",
+        "NUM_NODE_GROUPS": "1",
+        "REPLICAS_PER_NODE_GROUP": "1"
+    }
+
+
+@pytest.fixture(scope="module")
+def rg_deletion(rg_deletion_input, make_replication_group):
+    input_dict = rg_deletion_input
+
+    (reference, resource) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict["RG_ID"])
+    return (reference, resource)  # no teardown, as the teardown is part of the actual test
+
+
 @service_marker
 class TestReplicationGroup:
 
@@ -229,9 +247,8 @@ class TestReplicationGroup:
         k8s.patch_custom_resource(reference, updated_spec)
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
 
-    def test_rg_delete(self, rg_cmd_update_input, rg_deletion_waiter):
-        input_dict = rg_cmd_update_input
-        (reference, _) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict["RG_ID"])
+    def test_rg_deletion(self, rg_deletion_input, rg_deletion, rg_deletion_waiter):
+        (reference, _) = rg_deletion
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
 
         # assertions after initial creation
@@ -244,7 +261,7 @@ class TestReplicationGroup:
 
         resource = k8s.get_resource(reference)
         assert resource['metadata']['deletionTimestamp'] is not None
-        # uncomment when reconciler->cleanup() invokes patchResource()
+        # TODO: uncomment when reconciler->cleanup() invokes patchResource()
         # assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "False", wait_periods=1)
 
-        rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+        rg_deletion_waiter.wait(ReplicationGroupId=rg_deletion_input["RG_ID"])

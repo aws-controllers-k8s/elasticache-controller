@@ -23,12 +23,10 @@ func filterDelta(
 ) {
 	// the returned AccessString can be different than the specified one; as long as the last requested AccessString
 	// matches the currently desired one, remove this difference from the delta
-	//TODO: revert this call to Spec.AccessString once we have a new implementation of it
-	if delta.DifferentAt("AccessString") {
+	if delta.DifferentAt("Spec.AccessString") {
 		if *desired.ko.Spec.AccessString == *desired.ko.Status.LastRequestedAccessString {
 
-			//TODO: revert the call to Spec.AccessString once removeFromDelta implementation changes
-			removeFromDelta(delta, "AccessString")
+			removeFromDelta(delta, "Spec.AccessString")
 		}
 	}
 }
@@ -43,7 +41,7 @@ func removeFromDelta(
 	differences := delta.Differences
 
 	// identify index of Difference to remove
-	//TODO: change once we get a Path.Equals or similar method
+	//TODO: this could require a stricter Path.Equals down the road
 	var i *int = nil
 	for j, diff := range differences {
 		if diff.Path.Contains(subject) {

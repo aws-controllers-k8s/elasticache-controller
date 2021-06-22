@@ -26,13 +26,11 @@ func (rm *resourceManager) populateUpdatePayload(
 	r *resource,
 	delta *ackcompare.Delta,
 ) {
-	//TODO: change all calls to DifferentAt to include full path once the implementation is clarified
-
-	if delta.DifferentAt("AccessString") && r.ko.Spec.AccessString != nil {
+	if delta.DifferentAt("Spec.AccessString") && r.ko.Spec.AccessString != nil {
 		input.AccessString = r.ko.Spec.AccessString
 	}
 
-	if delta.DifferentAt("NoPasswordRequired") && r.ko.Spec.NoPasswordRequired != nil {
+	if delta.DifferentAt("Spec.NoPasswordRequired") && r.ko.Spec.NoPasswordRequired != nil {
 		input.NoPasswordRequired = r.ko.Spec.NoPasswordRequired
 	}
 
