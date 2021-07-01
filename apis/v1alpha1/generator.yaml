@@ -1,0 +1,202 @@
+resources:
+  CacheSubnetGroup:
+    exceptions:
+      errors:
+        404:
+          code: CacheSubnetGroupNotFoundFault
+      terminal_codes:
+        - CacheSubnetGroupQuotaExceeded
+        - CacheSubnetQuotaExceededFault
+        - SubnetInUse
+        - InvalidSubnet
+        - InvalidParameter
+        - InvalidParameterValue
+        - InvalidParameterCombination
+    fields:
+      Events:
+        is_read_only: true
+        from:
+          operation: DescribeEvents
+          path: Events
+  ReplicationGroup:
+    update_conditions_custom_method_name: CustomUpdateConditions
+    exceptions:
+      terminal_codes:
+        - InvalidParameter
+        - InvalidParameterValue
+        - InvalidParameterCombination
+        - InsufficientCacheClusterCapacity
+        - CacheSecurityGroupNotFound
+        - CacheSubnetGroupNotFoundFault
+        - ClusterQuotaForCustomerExceeded
+        - NodeQuotaForClusterExceeded
+        - NodeQuotaForCustomerExceeded
+        - InvalidVPCNetworkStateFault
+        - TagQuotaPerResourceExceeded
+        - NodeGroupsPerReplicationGroupQuotaExceeded
+        - InvalidCacheSecurityGroupState
+        - CacheParameterGroupNotFound
+        - InvalidKMSKeyFault
+    fields:
+      AllowedScaleUpModifications:
+        is_read_only: true
+        from:
+          operation: ListAllowedNodeTypeModifications
+          path: ScaleUpModifications
+      AllowedScaleDownModifications:
+        is_read_only: true
+        from:
+          operation: ListAllowedNodeTypeModifications
+          path: ScaleDownModifications
+      Events:
+        is_read_only: true
+        from:
+          operation: DescribeEvents
+          path: Events
+      AuthToken:
+        is_secret: true
+    hooks:
+      sdk_read_many_post_set_output:
+        code: "rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})"
+      sdk_delete_pre_build_request:
+        template_path: hooks/sdk_delete_pre_build_request.go.tpl
+      sdk_delete_post_request:
+        template_path: hooks/sdk_delete_post_request.go.tpl
+  Snapshot:
+    update_conditions_custom_method_name: CustomUpdateConditions
+    exceptions:
+      terminal_codes:
+        - InvalidParameter
+        - InvalidParameterValue
+        - InvalidParameterCombination
+        - SnapshotAlreadyExistsFault
+        - CacheClusterNotFound
+        - ReplicationGroupNotFoundFault
+        - SnapshotQuotaExceededFault
+        - SnapshotFeatureNotSupportedFault
+    fields:
+      SourceSnapshotName:
+        from:
+          operation: CopySnapshot
+          path: SourceSnapshotName
+    update_operation:
+      custom_method_name: customUpdateSnapshot
+  CacheParameterGroup:
+    exceptions:
+      terminal_codes:
+        - CacheParameterGroupAlreadyExists
+        - CacheParameterGroupQuotaExceeded
+        - InvalidCacheParameterGroupState
+        - InvalidGlobalReplicationGroupState
+        - InvalidParameterCombination
+        - InvalidParameterValue
+    fields:
+      ParameterNameValues:
+        from:
+          operation: ModifyCacheParameterGroup
+          path: ParameterNameValues
+      Parameters:
+        is_read_only: true
+        from:
+          operation: DescribeCacheParameters
+          path: Parameters
+      Events:
+        is_read_only: true
+        from:
+          operation: DescribeEvents
+          path: Events
+    update_operation:
+      custom_method_name: customUpdateCacheParameterGroup
+  User:
+    exceptions:
+      terminal_codes:
+        - UserAlreadyExists
+        - UserQuotaExceeded
+        - DuplicateUserName
+        - InvalidParameterValue
+        - InvalidParameterCombination
+        - InvalidUserState
+        - UserNotFound
+        - DefaultUserAssociatedToUserGroup
+    fields:
+      LastRequestedAccessString:
+        is_read_only: true
+        from:
+          operation: CreateUser
+          path: AccessString
+      ExpandedAccessString:
+        is_read_only: true
+        from:
+          operation: CreateUser
+          path: AccessString
+    hooks:
+      sdk_read_many_post_set_output:
+        code: "rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})"
+      sdk_create_post_set_output:
+        code: "rm.setSyncedCondition(resp.Status, &resource{ko})"
+      sdk_update_post_build_request:
+        code: "rm.populateUpdatePayload(input, desired, delta)"
+      sdk_update_post_set_output:
+        code: "rm.setSyncedCondition(resp.Status, &resource{ko})"
+      delta_post_compare:
+        code: "filterDelta(delta, a, b)"
+  UserGroup:
+    exceptions:
+      terminal_codes:
+        - DuplicateUserNameFault
+        - UserGroupAlreadyExistsFault
+        - InvalidParameterCombination
+        - InvalidParameterValueException
+        - DefaultUserRequired
+        - UserGroupQuotaExceededFault
+        - TagQuotaPerResourceExceeded
+        - UserNotFoundFault
+    update_operation:
+      custom_method_name: customUpdateUserGroup
+operations:
+  DescribeCacheSubnetGroups:
+    set_output_custom_method_name: CustomDescribeCacheSubnetGroupsSetOutput
+  DescribeReplicationGroups:
+    set_output_custom_method_name: CustomDescribeReplicationGroupsSetOutput
+  CreateReplicationGroup:
+    set_output_custom_method_name: CustomCreateReplicationGroupSetOutput
+  ModifyReplicationGroup:
+    custom_implementation: CustomModifyReplicationGroup
+    set_output_custom_method_name: CustomModifyReplicationGroupSetOutput
+    override_values:
+      ApplyImmediately: true
+  CreateSnapshot:
+    custom_implementation: CustomCreateSnapshot
+    set_output_custom_method_name: CustomCreateSnapshotSetOutput
+  DescribeSnapshots:
+    set_output_custom_method_name: CustomDescribeSnapshotSetOutput
+  CreateCacheParameterGroup:
+    set_output_custom_method_name: CustomCreateCacheParameterGroupSetOutput
+  DescribeCacheParameterGroups:
+    set_output_custom_method_name: CustomDescribeCacheParameterGroupsSetOutput
+  CreateUser:
+    set_output_custom_method_name: CustomCreateUserSetOutput
+  ModifyUser:
+    custom_implementation: CustomModifyUser
+    set_output_custom_method_name: CustomModifyUserSetOutput
+  CreateUserGroup:
+    set_output_custom_method_name: CustomCreateUserGroupSetOutput
+  DescribeUserGroups:
+    set_output_custom_method_name: CustomDescribeUserGroupsSetOutput
+ignore:
+  resource_names:
+    - GlobalReplicationGroup
+    - CacheCluster
+    - CacheSecurityGroup
+  field_paths:
+    - DescribeSnapshotsInput.CacheClusterId
+    - DescribeSnapshotsInput.ReplicationGroupId
+    - DescribeSnapshotsInput.SnapshotSource
+    - DescribeUsersInput.Engine
+    - CreateUserInput.Passwords #TODO: remove this once we have support for k8s secrets within slices
+    - ModifyUserInput.AccessString
+    - ModifyUserInput.NoPasswordRequired
+    - ModifyUserInput.Passwords
+    - ModifyReplicationGroupInput.SecurityGroupIds
+    - ModifyReplicationGroupInput.EngineVersion
+    - CreateReplicationGroupInput.GlobalReplicationGroupId
