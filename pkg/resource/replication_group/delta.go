@@ -106,6 +106,7 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
+
 	if ackcompare.HasNilDifference(a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled) {
 		delta.Add("Spec.MultiAZEnabled", a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled)
 	} else if a.ko.Spec.MultiAZEnabled != nil && b.ko.Spec.MultiAZEnabled != nil {
@@ -210,7 +211,6 @@ func newResourceDelta(
 			delta.Add("Spec.SnapshotWindow", a.ko.Spec.SnapshotWindow, b.ko.Spec.SnapshotWindow)
 		}
 	}
-
 	if ackcompare.HasNilDifference(a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled) {
 		delta.Add("Spec.TransitEncryptionEnabled", a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled)
 	} else if a.ko.Spec.TransitEncryptionEnabled != nil && b.ko.Spec.TransitEncryptionEnabled != nil {

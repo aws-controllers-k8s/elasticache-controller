@@ -66,6 +66,12 @@ def delete_non_default_user(user_id: str):
     logging.info(f"Deleted non default user {user_id}")
 
 
+def delete_log_group(log_group_name: str):
+    logs = boto3.client("logs")
+    logs.delete_log_group(logGroupName=log_group_name)
+    logging.info(f"Deleted CW log group {log_group_name}")
+
+
 def service_cleanup(config: dict):
     logging.getLogger().setLevel(logging.INFO)
 
@@ -102,6 +108,11 @@ def service_cleanup(config: dict):
         delete_non_default_user(resources.NonDefaultUser)
     except:
         logging.exception(f"Unable to delete user {resources.NonDefaultUser}")
+
+    try:
+        delete_log_group(resources.CWLogGroup)
+    except:
+        logging.exception(f"Unable to delete CW log group {resources.CWLogGroup}")
 
 if __name__ == "__main__":   
     bootstrap_config = resources.read_bootstrap_config(bootstrap_directory)

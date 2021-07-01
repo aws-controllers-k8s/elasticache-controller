@@ -149,7 +149,7 @@ spec:
                 type: array
               isGlobal:
                 description: Indicates whether the parameter group is associated with
-                  a Global Datastore
+                  a Global datastore
                 type: boolean
               parameters:
                 description: A list of Parameter instances.

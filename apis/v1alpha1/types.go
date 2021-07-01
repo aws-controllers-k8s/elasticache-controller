@@ -54,17 +54,19 @@ type CacheCluster struct {
 	ClientDownloadLandingPage *string      `json:"clientDownloadLandingPage,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node.
-	ConfigurationEndpoint      *Endpoint `json:"configurationEndpoint,omitempty"`
-	Engine                     *string   `json:"engine,omitempty"`
-	EngineVersion              *string   `json:"engineVersion,omitempty"`
-	NumCacheNodes              *int64    `json:"numCacheNodes,omitempty"`
-	PreferredAvailabilityZone  *string   `json:"preferredAvailabilityZone,omitempty"`
-	PreferredMaintenanceWindow *string   `json:"preferredMaintenanceWindow,omitempty"`
-	PreferredOutpostARN        *string   `json:"preferredOutpostARN,omitempty"`
-	ReplicationGroupID         *string   `json:"replicationGroupID,omitempty"`
-	SnapshotRetentionLimit     *int64    `json:"snapshotRetentionLimit,omitempty"`
-	SnapshotWindow             *string   `json:"snapshotWindow,omitempty"`
-	TransitEncryptionEnabled   *bool     `json:"transitEncryptionEnabled,omitempty"`
+	ConfigurationEndpoint              *Endpoint                   `json:"configurationEndpoint,omitempty"`
+	Engine                             *string                     `json:"engine,omitempty"`
+	EngineVersion                      *string                     `json:"engineVersion,omitempty"`
+	LogDeliveryConfigurations          []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
+	NumCacheNodes                      *int64                      `json:"numCacheNodes,omitempty"`
+	PreferredAvailabilityZone          *string                     `json:"preferredAvailabilityZone,omitempty"`
+	PreferredMaintenanceWindow         *string                     `json:"preferredMaintenanceWindow,omitempty"`
+	PreferredOutpostARN                *string                     `json:"preferredOutpostARN,omitempty"`
+	ReplicationGroupID                 *string                     `json:"replicationGroupID,omitempty"`
+	ReplicationGroupLogDeliveryEnabled *bool                       `json:"replicationGroupLogDeliveryEnabled,omitempty"`
+	SnapshotRetentionLimit             *int64                      `json:"snapshotRetentionLimit,omitempty"`
+	SnapshotWindow                     *string                     `json:"snapshotWindow,omitempty"`
+	TransitEncryptionEnabled           *bool                       `json:"transitEncryptionEnabled,omitempty"`
 }
 
 // Provides all of the details about a particular cache engine version.
@@ -213,6 +215,11 @@ type CacheSubnetGroup_SDK struct {
 	VPCID                       *string   `json:"vpcID,omitempty"`
 }
 
+// The configuration details of the CloudWatch Logs destination.
+type CloudWatchLogsDestinationDetails struct {
+	LogGroup *string `json:"logGroup,omitempty"`
+}
+
 // Node group (shard) configuration options when adding or removing replicas.
 // Each node group (shard) configuration has the following members: NodeGroupId,
 // NewReplicaCount, and PreferredAvailabilityZones.
@@ -225,6 +232,15 @@ type ConfigureShard struct {
 type CustomerNodeEndpoint struct {
 	Address *string `json:"address,omitempty"`
 	Port    *int64  `json:"port,omitempty"`
+}
+
+// Configuration details of either a CloudWatch Logs destination or Kinesis
+// Data Firehose destination.
+type DestinationDetails struct {
+	// The configuration details of the CloudWatch Logs destination.
+	CloudWatchLogsDetails *CloudWatchLogsDestinationDetails `json:"cloudWatchLogsDetails,omitempty"`
+	// The configuration details of the Kinesis Data Firehose destination.
+	KinesisFirehoseDetails *KinesisFirehoseDestinationDetails `json:"kinesisFirehoseDetails,omitempty"`
 }
 
 // Provides ownership and status information for an Amazon EC2 security group.
@@ -274,7 +290,7 @@ type GlobalNodeGroup struct {
 // cluster.
 //
 //    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-//    Datastore, which is what you use to associate a secondary cluster.
+//    datastore, which is what you use to associate a secondary cluster.
 type GlobalReplicationGroup struct {
 	ARN                               *string `json:"arn,omitempty"`
 	AtRestEncryptionEnabled           *bool   `json:"atRestEncryptionEnabled,omitempty"`
@@ -289,14 +305,14 @@ type GlobalReplicationGroup struct {
 	TransitEncryptionEnabled          *bool   `json:"transitEncryptionEnabled,omitempty"`
 }
 
-// The name of the Global Datastore and role of this replication group in the
-// Global Datastore.
+// The name of the Global datastore and role of this replication group in the
+// Global datastore.
 type GlobalReplicationGroupInfo struct {
 	GlobalReplicationGroupID         *string `json:"globalReplicationGroupID,omitempty"`
 	GlobalReplicationGroupMemberRole *string `json:"globalReplicationGroupMemberRole,omitempty"`
 }
 
-// A member of a Global Datastore. It contains the Replication Group Id, the
+// A member of a Global datastore. It contains the Replication Group Id, the
 // AWS region and the role of the replication group.
 type GlobalReplicationGroupMember struct {
 	AutomaticFailover      *string `json:"automaticFailover,omitempty"`
@@ -304,6 +320,34 @@ type GlobalReplicationGroupMember struct {
 	ReplicationGroupRegion *string `json:"replicationGroupRegion,omitempty"`
 	Role                   *string `json:"role,omitempty"`
 	Status                 *string `json:"status,omitempty"`
+}
+
+// The configuration details of the Kinesis Data Firehose destination.
+type KinesisFirehoseDestinationDetails struct {
+	DeliveryStream *string `json:"deliveryStream,omitempty"`
+}
+
+// Returns the destination, format and type of the logs.
+type LogDeliveryConfiguration struct {
+	// Configuration details of either a CloudWatch Logs destination or Kinesis
+	// Data Firehose destination.
+	DestinationDetails *DestinationDetails `json:"destinationDetails,omitempty"`
+	DestinationType    *string             `json:"destinationType,omitempty"`
+	LogFormat          *string             `json:"logFormat,omitempty"`
+	LogType            *string             `json:"logType,omitempty"`
+	Message            *string             `json:"message,omitempty"`
+	Status             *string             `json:"status,omitempty"`
+}
+
+// Specifies the destination, format and type of the logs.
+type LogDeliveryConfigurationRequest struct {
+	// Configuration details of either a CloudWatch Logs destination or Kinesis
+	// Data Firehose destination.
+	DestinationDetails *DestinationDetails `json:"destinationDetails,omitempty"`
+	DestinationType    *string             `json:"destinationType,omitempty"`
+	Enabled            *bool               `json:"enabled,omitempty"`
+	LogFormat          *string             `json:"logFormat,omitempty"`
+	LogType            *string             `json:"logType,omitempty"`
 }
 
 // Represents a collection of cache nodes in a replication group. One node in
@@ -404,13 +448,24 @@ type ParameterNameValue struct {
 	ParameterValue *string `json:"parameterValue,omitempty"`
 }
 
+// The log delivery configurations being modified
+type PendingLogDeliveryConfiguration struct {
+	// Configuration details of either a CloudWatch Logs destination or Kinesis
+	// Data Firehose destination.
+	DestinationDetails *DestinationDetails `json:"destinationDetails,omitempty"`
+	DestinationType    *string             `json:"destinationType,omitempty"`
+	LogFormat          *string             `json:"logFormat,omitempty"`
+	LogType            *string             `json:"logType,omitempty"`
+}
+
 // A group of settings that are applied to the cluster in the future, or that
 // are currently being applied.
 type PendingModifiedValues struct {
-	AuthTokenStatus *string `json:"authTokenStatus,omitempty"`
-	CacheNodeType   *string `json:"cacheNodeType,omitempty"`
-	EngineVersion   *string `json:"engineVersion,omitempty"`
-	NumCacheNodes   *int64  `json:"numCacheNodes,omitempty"`
+	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
+	CacheNodeType             *string                            `json:"cacheNodeType,omitempty"`
+	EngineVersion             *string                            `json:"engineVersion,omitempty"`
+	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
+	NumCacheNodes             *int64                             `json:"numCacheNodes,omitempty"`
 }
 
 // Update action that has been processed for the corresponding apply/stop request
@@ -436,9 +491,10 @@ type RegionalConfiguration struct {
 // The settings to be applied to the Redis replication group, either immediately
 // or during the next maintenance window.
 type ReplicationGroupPendingModifiedValues struct {
-	AuthTokenStatus         *string `json:"authTokenStatus,omitempty"`
-	AutomaticFailoverStatus *string `json:"automaticFailoverStatus,omitempty"`
-	PrimaryClusterID        *string `json:"primaryClusterID,omitempty"`
+	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
+	AutomaticFailoverStatus   *string                            `json:"automaticFailoverStatus,omitempty"`
+	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
+	PrimaryClusterID          *string                            `json:"primaryClusterID,omitempty"`
 	// The status of an online resharding operation.
 	Resharding *ReshardingStatus `json:"resharding,omitempty"`
 	// The status of the user group update.
@@ -458,10 +514,11 @@ type ReplicationGroup_SDK struct {
 	// node.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
 	Description           *string   `json:"description,omitempty"`
-	// The name of the Global Datastore and role of this replication group in the
-	// Global Datastore.
+	// The name of the Global datastore and role of this replication group in the
+	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
 	KMSKeyID                   *string                     `json:"kmsKeyID,omitempty"`
+	LogDeliveryConfigurations  []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	MemberClusters             []*string                   `json:"memberClusters,omitempty"`
 	MemberClustersOutpostARNs  []*string                   `json:"memberClustersOutpostARNs,omitempty"`
 	MultiAZ                    *string                     `json:"multiAZ,omitempty"`
@@ -590,9 +647,12 @@ type SubnetOutpost struct {
 	SubnetOutpostARN *string `json:"subnetOutpostARN,omitempty"`
 }
 
-// A cost allocation Tag that can be added to an ElastiCache cluster or replication
-// group. Tags are composed of a Key/Value pair. A tag with a null Value is
-// permitted.
+// A tag that can be added to an ElastiCache cluster or replication group. Tags
+// are composed of a Key/Value pair. You can use tags to categorize and track
+// all your ElastiCache resources, with the exception of global replication
+// group. When you add or remove tags on replication groups, those actions will
+// be replicated to all nodes in the replication group. A tag with a null Value
+// is permitted.
 type Tag struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`

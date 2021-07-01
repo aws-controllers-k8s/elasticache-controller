@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -41,7 +40,6 @@ var (
 	_ = &svcapitypes.CacheSubnetGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
-	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -56,7 +54,7 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
-	var resp *svcsdkapi.DescribeCacheSubnetGroupsOutput
+	var resp *svcsdk.DescribeCacheSubnetGroupsOutput
 	resp, err = rm.sdkapi.DescribeCacheSubnetGroupsWithContext(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheSubnetGroups", err)
 	if err != nil {
@@ -166,7 +164,8 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.CreateCacheSubnetGroupOutput
+	var resp *svcsdk.CreateCacheSubnetGroupOutput
+	_ = resp
 	resp, err = rm.sdkapi.CreateCacheSubnetGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateCacheSubnetGroup", err)
 	if err != nil {
@@ -263,7 +262,8 @@ func (rm *resourceManager) sdkUpdate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.ModifyCacheSubnetGroupOutput
+	var resp *svcsdk.ModifyCacheSubnetGroupOutput
+	_ = resp
 	resp, err = rm.sdkapi.ModifyCacheSubnetGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyCacheSubnetGroup", err)
 	if err != nil {

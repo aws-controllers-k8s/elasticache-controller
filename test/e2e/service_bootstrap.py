@@ -111,6 +111,16 @@ def create_non_default_user() -> str:
     return user_id
 
 
+def create_log_group():
+    logs = boto3.client("logs")
+    log_group_name = random_suffix_name("ack-cw-log-group", 32)
+    logs.create_log_group(logGroupName=log_group_name)
+
+    logging.info(f"Create CW log group {log_group_name}")
+
+    return log_group_name
+
+
 def service_bootstrap() -> dict:
     logging.getLogger().setLevel(logging.INFO)
 
@@ -120,7 +130,8 @@ def service_bootstrap() -> dict:
         create_user_group(),
         create_kms_key(),
         create_cc_snapshot(),
-        create_non_default_user()
+        create_non_default_user(),
+        create_log_group()
     ).__dict__
 
 if __name__ == "__main__":

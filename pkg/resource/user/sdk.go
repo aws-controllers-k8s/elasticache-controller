@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -41,7 +40,6 @@ var (
 	_ = &svcapitypes.User{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
-	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -56,7 +54,7 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
-	var resp *svcsdkapi.DescribeUsersOutput
+	var resp *svcsdk.DescribeUsersOutput
 	resp, err = rm.sdkapi.DescribeUsersWithContext(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeUsers", err)
 	if err != nil {
@@ -168,7 +166,8 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.CreateUserOutput
+	var resp *svcsdk.CreateUserOutput
+	_ = resp
 	resp, err = rm.sdkapi.CreateUserWithContext(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateUser", err)
 	if err != nil {
@@ -272,7 +271,8 @@ func (rm *resourceManager) sdkUpdate(
 	}
 	rm.populateUpdatePayload(input, desired, delta)
 
-	var resp *svcsdkapi.ModifyUserOutput
+	var resp *svcsdk.ModifyUserOutput
+	_ = resp
 	resp, err = rm.sdkapi.ModifyUserWithContext(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyUser", err)
 	if err != nil {

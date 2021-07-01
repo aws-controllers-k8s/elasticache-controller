@@ -168,6 +168,49 @@ func (rm *resourceManager) customSetOutputSupplementAPIs(
 	if err != nil {
 		return err
 	}
+	if respRG.LogDeliveryConfigurations != nil {
+		var f11 []*svcapitypes.LogDeliveryConfiguration
+		for _, f11iter := range respRG.LogDeliveryConfigurations {
+			f11elem := &svcapitypes.LogDeliveryConfiguration{}
+			if f11iter.DestinationDetails != nil {
+				f11elemf0 := &svcapitypes.DestinationDetails{}
+				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f11elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f11elemf0f0.LogGroup = f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+					}
+					f11elemf0.CloudWatchLogsDetails = f11elemf0f0
+				}
+				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f11elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f11elemf0f1.DeliveryStream = f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					}
+					f11elemf0.KinesisFirehoseDetails = f11elemf0f1
+				}
+				f11elem.DestinationDetails = f11elemf0
+			}
+			if f11iter.DestinationType != nil {
+				f11elem.DestinationType = f11iter.DestinationType
+			}
+			if f11iter.LogFormat != nil {
+				f11elem.LogFormat = f11iter.LogFormat
+			}
+			if f11iter.LogType != nil {
+				f11elem.LogType = f11iter.LogType
+			}
+			if f11iter.Status != nil {
+				f11elem.Status = f11iter.Status
+			}
+			if f11iter.Message != nil {
+				f11elem.Message = f11iter.Message
+			}
+			f11 = append(f11, f11elem)
+		}
+		ko.Status.LogDeliveryConfigurations = f11
+	} else {
+		ko.Status.LogDeliveryConfigurations = nil
+	}
 	ko.Status.Events = events
 	return nil
 }

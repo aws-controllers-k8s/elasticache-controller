@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	svcsdkapi "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
 // Hack to avoid import errors during build...
@@ -41,7 +40,6 @@ var (
 	_ = &svcapitypes.CacheParameterGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
-	_ = svcsdkapi.New
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -56,7 +54,7 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
-	var resp *svcsdkapi.DescribeCacheParameterGroupsOutput
+	var resp *svcsdk.DescribeCacheParameterGroupsOutput
 	resp, err = rm.sdkapi.DescribeCacheParameterGroupsWithContext(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheParameterGroups", err)
 	if err != nil {
@@ -144,7 +142,8 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 
-	var resp *svcsdkapi.CreateCacheParameterGroupOutput
+	var resp *svcsdk.CreateCacheParameterGroupOutput
+	_ = resp
 	resp, err = rm.sdkapi.CreateCacheParameterGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateCacheParameterGroup", err)
 	if err != nil {

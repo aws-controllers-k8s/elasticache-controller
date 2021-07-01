@@ -46,3 +46,11 @@ spec:
   transitEncryptionEnabled: true
   userGroupIDs:
     - $USERGROUP_ID
+  logDeliveryConfigurations:
+    -
+      destinationType: cloudwatch-logs
+      logFormat: json
+      logType: slow-log
+      destinationDetails:
+        cloudWatchLogsDetails:
+          logGroup: $LOG_GROUP

@@ -57,7 +57,7 @@ type CacheParameterGroupStatus struct {
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
 	Events []*Event `json:"events,omitempty"`
-	// Indicates whether the parameter group is associated with a Global Datastore
+	// Indicates whether the parameter group is associated with a Global datastore
 	IsGlobal *bool `json:"isGlobal,omitempty"`
 	// A list of Parameter instances.
 	Parameters []*Parameter `json:"parameters,omitempty"`

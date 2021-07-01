@@ -27,6 +27,7 @@ class TestBootstrapResources:
     KmsKeyID: str
     SnapshotName: str
     NonDefaultUser: str
+    CWLogGroup: str
 
 _bootstrap_resources = None
 

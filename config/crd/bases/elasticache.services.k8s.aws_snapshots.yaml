@@ -236,7 +236,7 @@ spec:
               numCacheNodes:
                 description: "The number of cache nodes in the source cluster. \n
                   For clusters running Redis, this value must be 1. For clusters running
-                  Memcached, this value must be between 1 and 20."
+                  Memcached, this value must be between 1 and 40."
                 format: int64
                 type: integer
               numNodeGroups:
