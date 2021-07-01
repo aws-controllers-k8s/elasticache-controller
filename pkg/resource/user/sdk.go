@@ -240,6 +240,23 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.NoPasswordRequired != nil {
 		res.SetNoPasswordRequired(*r.ko.Spec.NoPasswordRequired)
 	}
+	if r.ko.Spec.Passwords != nil {
+		f3 := []*string{}
+		for _, f3iter := range r.ko.Spec.Passwords {
+			var f3elem string
+			if f3iter != nil {
+				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f3iter)
+				if err != nil {
+					return nil, err
+				}
+				if tmpSecret != "" {
+					f3elem = tmpSecret
+				}
+			}
+			f3 = append(f3, &f3elem)
+		}
+		res.SetPasswords(f3)
+	}
 	if r.ko.Spec.UserID != nil {
 		res.SetUserId(*r.ko.Spec.UserID)
 	}

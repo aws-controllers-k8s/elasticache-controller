@@ -35,22 +35,20 @@ def elasticache_client():
 
 # set up input parameters for User
 @pytest.fixture(scope="module")
-def input_dict():
-    resource_name = random_suffix_name("test-user", 32)
-    input_dict = {
-        "USER_ID": resource_name,
+def user_nopass_input():
+    return {
+        "USER_ID": random_suffix_name("user-nopass", 32),
         "ACCESS_STRING": "on ~app::* -@all +@read"
     }
-    return input_dict
 
 
 @pytest.fixture(scope="module")
-def user(input_dict, elasticache_client):
+def user_nopass(user_nopass_input, elasticache_client):
 
     # inject parameters into yaml; create User in cluster
-    user = load_elasticache_resource("user", additional_replacements=input_dict)
+    user = load_elasticache_resource("user_nopass", additional_replacements=user_nopass_input)
     reference = k8s.CustomResourceReference(
-        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL, input_dict["USER_ID"], namespace="default")
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL, user_nopass_input["USER_ID"], namespace="default")
     _ = k8s.create_custom_resource(reference, user)
     resource = k8s.wait_resource_consumed_by_controller(reference)
     assert resource is not None
@@ -60,22 +58,67 @@ def user(input_dict, elasticache_client):
     k8s.delete_custom_resource(reference)
     sleep(DEFAULT_WAIT_SECS)
     with pytest.raises(botocore.exceptions.ClientError, match="UserNotFound"):
-        _ = elasticache_client.describe_users(UserId=input_dict["USER_ID"])
+        _ = elasticache_client.describe_users(UserId=user_nopass_input["USER_ID"])
+
+
+# create secrets for below user password test
+@pytest.fixture(scope="module")
+def secrets():
+    secrets = {
+        "NAME1": random_suffix_name("first", 32),
+        "NAME2": random_suffix_name("second", 32),
+        "KEY1": "secret1",
+        "KEY2": "secret2"
+    }
+    k8s.create_opaque_secret("default", secrets['NAME1'], secrets['KEY1'], random_suffix_name("password", 32))
+    k8s.create_opaque_secret("default", secrets['NAME2'], secrets['KEY2'], random_suffix_name("password", 32))
+    yield secrets
+
+    # teardown
+    k8s.delete_secret("default", secrets['NAME1'])
+    k8s.delete_secret("default", secrets['NAME2'])
+
+
+# input for test case with Passwords field
+@pytest.fixture(scope="module")
+def user_password_input(secrets):
+    inputs = {
+        "USER_ID": random_suffix_name("user-password", 32),
+        "ACCESS_STRING": "on ~app::* -@all +@read",
+    }
+    return {**secrets, **inputs}
+
+
+@pytest.fixture(scope="module")
+def user_password(user_password_input, elasticache_client):
+
+    # inject parameters into yaml; create User in cluster
+    user = load_elasticache_resource("user_password", additional_replacements=user_password_input)
+    reference = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL, user_password_input["USER_ID"], namespace="default")
+    _ = k8s.create_custom_resource(reference, user)
+    resource = k8s.wait_resource_consumed_by_controller(reference)
+    assert resource is not None
+    yield (reference, resource)
+
+    # teardown: delete in k8s, assert user does not exist in AWS
+    k8s.delete_custom_resource(reference)
+    sleep(DEFAULT_WAIT_SECS)
+    with pytest.raises(botocore.exceptions.ClientError, match="UserNotFound"):
+        _ = elasticache_client.describe_users(UserId=user_password_input["USER_ID"])
 
 
 @service_marker
 class TestUser:
 
-    # TODO: add more scenarios once the passwords field is enabled
-
     # CRUD test for User; "create" and "delete" operations implicit in "user" fixture
-    def test_CRUD(self, user, input_dict):
-        (reference, resource) = user
+    def test_user_nopass(self, user_nopass, user_nopass_input):
+        (reference, resource) = user_nopass
         assert k8s.get_resource_exists(reference)
 
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
         resource = k8s.get_resource(reference)
-        assert resource["status"]["lastRequestedAccessString"] == input_dict["ACCESS_STRING"]
+        assert resource["status"]["lastRequestedAccessString"] == user_nopass_input["ACCESS_STRING"]
 
         new_access_string = "on ~app::* -@all +@read +@write"
         user_patch = {"spec": {"accessString": new_access_string}}
@@ -87,3 +130,14 @@ class TestUser:
         assert resource["status"]["lastRequestedAccessString"] == new_access_string
 
         #TODO: add terminal condition checks
+
+    # test creation with Passwords specified (as k8s secrets)
+    def test_user_password(self, user_password, user_password_input):
+        (reference, resource) = user_password
+        assert k8s.get_resource_exists(reference)
+
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
+        resource = k8s.get_resource(reference)
+        assert resource["status"]["authentication"] is not None
+        assert resource["status"]["authentication"]["type_"] == "password"
+        assert resource["status"]["authentication"]["passwordCount"] == 2
