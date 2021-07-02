@@ -3820,6 +3820,17 @@ func (in *UserSpec) DeepCopyInto(out *UserSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Passwords != nil {
+		in, out := &in.Passwords, &out.Passwords
+		*out = make([]*corev1alpha1.SecretKeyReference, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.SecretKeyReference)
+				**out = **in
+			}
+		}
+	}
 	if in.UserID != nil {
 		in, out := &in.UserID, &out.UserID
 		*out = new(string)

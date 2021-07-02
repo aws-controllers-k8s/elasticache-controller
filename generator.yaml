@@ -136,6 +136,10 @@ resources:
         from:
           operation: CreateUser
           path: AccessString
+      Passwords:
+        is_secret: true
+        compare:
+          is_ignored: true
     hooks:
       sdk_read_many_post_set_output:
         code: "rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})"
@@ -200,7 +204,6 @@ ignore:
     - DescribeSnapshotsInput.ReplicationGroupId
     - DescribeSnapshotsInput.SnapshotSource
     - DescribeUsersInput.Engine
-    - CreateUserInput.Passwords #TODO: remove this once we have support for k8s secrets within slices
     - ModifyUserInput.AccessString
     - ModifyUserInput.NoPasswordRequired
     - ModifyUserInput.Passwords

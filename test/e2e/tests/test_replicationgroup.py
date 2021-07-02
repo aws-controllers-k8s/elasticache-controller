@@ -87,33 +87,35 @@ def rg_input_coverage(bootstrap_resources, make_rg_name, make_replication_group,
     sleep(DEFAULT_WAIT_SECS)
     rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"]) #throws exception if wait fails
 
+@pytest.fixture(scope="module")
+def secrets():
+    secrets = {
+        "NAME1": random_suffix_name("first", 32),
+        "NAME2": random_suffix_name("second", 32),
+        "KEY1": "secret1",
+        "KEY2": "secret2"
+    }
+    k8s.create_opaque_secret("default", secrets['NAME1'], secrets['KEY1'], random_suffix_name("token", 32))
+    k8s.create_opaque_secret("default", secrets['NAME2'], secrets['KEY2'], random_suffix_name("token", 32))
+    yield secrets
+
+    # teardown
+    k8s.delete_secret("default", secrets['NAME1'])
+    k8s.delete_secret("default", secrets['NAME2'])
+
 
 @pytest.fixture(scope="module")
-def first_secret():
-    k8s.create_opaque_secret("default", "first", "secret1", "securetoken123456")
-    yield
-    k8s.delete_secret("default", "first")
-
-
-@pytest.fixture(scope="module")
-def second_secret():
-    k8s.create_opaque_secret("default", "second", "secret2", "newsecuretoken123456")
-    yield
-    k8s.delete_secret("default", "second")
-
-
-@pytest.fixture(scope="module")
-def rg_auth_token(make_rg_name, make_replication_group, rg_deletion_waiter, first_secret, second_secret):
+def rg_auth_token(make_rg_name, make_replication_group, rg_deletion_waiter, secrets):
     input_dict = {
         "RG_ID": make_rg_name("rg-auth-token"),
-        "NAME": "first",
-        "KEY": "secret1"
+        "NAME": secrets['NAME1'],
+        "KEY": secrets['KEY1']
     }
     (reference, resource) = make_replication_group("replicationgroup_authtoken", input_dict, input_dict["RG_ID"])
     yield (reference, resource)
     k8s.delete_custom_resource(reference)
     sleep(DEFAULT_WAIT_SECS)
-    rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"]) #throws exception if wait fails
+    rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])  # throws exception if wait fails
 
 
 @pytest.fixture(scope="module")
@@ -230,22 +232,13 @@ class TestReplicationGroup:
         assert cc is not None
         assert cc['EngineVersion'] == desired_engine_version
 
-    # TODO: remove annotation once https://github.com/aws-controllers-k8s/community/issues/745 is resolved
-    @pytest.mark.blocked
-    def test_rg_auth_token(self, rg_auth_token):
+    def test_rg_auth_token(self, rg_auth_token, secrets):
         (reference, _) = rg_auth_token
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
 
-        update_dict = {
-            "RG_ID": reference.name,
-            "NAME": "second",
-            "KEY": "secret2"
-        }
-
-        updated_spec = load_elasticache_resource(
-            "replicationgroup_authtoken", additional_replacements=update_dict)
-
-        k8s.patch_custom_resource(reference, updated_spec)
+        patch = {"spec": {"authToken": {"name": secrets['NAME2'], "key": secrets['KEY2']}}}
+        k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
 
     def test_rg_deletion(self, rg_deletion_input, rg_deletion, rg_deletion_waiter):

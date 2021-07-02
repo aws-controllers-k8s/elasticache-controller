@@ -34,6 +34,6 @@ func (rm *resourceManager) populateUpdatePayload(
 		input.NoPasswordRequired = r.ko.Spec.NoPasswordRequired
 	}
 
-	//TODO: add the passwords field here once we have secrets support for it
+	//TODO: add update for passwords field once we have framework-level support
 
 }

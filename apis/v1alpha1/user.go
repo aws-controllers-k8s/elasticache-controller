@@ -32,6 +32,9 @@ type UserSpec struct {
 	Engine *string `json:"engine"`
 	// Indicates a password is not required for this user.
 	NoPasswordRequired *bool `json:"noPasswordRequired,omitempty"`
+	// Passwords used for this user. You can create up to two passwords for each
+	// user.
+	Passwords []*ackv1alpha1.SecretKeyReference `json:"passwords,omitempty"`
 	// The ID of the user.
 	// +kubebuilder:validation:Required
 	UserID *string `json:"userID"`
