@@ -26,6 +26,9 @@ service_marker = pytest.mark.service(arg=SERVICE_NAME)
 
 bootstrap_directory = Path(__file__).parent
 resource_directory = Path(__file__).parent / "resources"
+scenarios_directory = Path(__file__).parent / "scenarios"
+
+
 def load_elasticache_resource(resource_name: str, additional_replacements: Dict[str, Any] = {}):
     """ Overrides the default `load_resource_file` to access the specific resources
     directory for the current service.
