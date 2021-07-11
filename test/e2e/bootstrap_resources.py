@@ -29,17 +29,6 @@ class TestBootstrapResources:
     NonDefaultUser: str
     CWLogGroup: str
 
-    def replacement_dict(self):
-        return {
-            "SNS_TOPIC_ARN": self.SnsTopicARN,
-            "SG_ID": self.SecurityGroupID,
-            "USERGROUP_ID": self.UserGroupID,
-            "KMS_KEY_ID": self.KmsKeyID,
-            "SNAPSHOT_NAME": self.SnapshotName,
-            "NON_DEFAULT_USER": self.SnapshotName
-        }
-
-
 _bootstrap_resources = None
 
 

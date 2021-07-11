@@ -86,7 +86,7 @@ def create_resource(step: model.Step) -> None:
     if not step.input_data:
         return
 
-    (reference, ko) = step.resource_helper.create(step.input_data)
+    (reference, ko) = step.resource_helper.create(step.input_data, step.replacements)
     # track created reference to teardown later
     step.teardown_list.append((reference, ko))
 
@@ -96,14 +96,14 @@ def patch_resource(step: model.Step) -> None:
     if not step.input_data:
         return
 
-    (reference, ko) = step.resource_helper.patch(step.input_data)
+    (reference, ko) = step.resource_helper.patch(step.input_data, step.replacements)
     # no need to teardown patched reference, its creator should tear it down.
 
 
 def delete_resource(step: model.Step, reference: k8s.CustomResourceReference = None) -> None:
     if not reference:
         logging.debug(f"delete:  Step: {step.id()}")
-        reference = step.resource_helper.custom_resource_reference(step.input_data)
+        reference = step.resource_helper.custom_resource_reference(step.input_data, step.replacements)
 
     step.resource_helper.delete(reference)
 
@@ -114,7 +114,7 @@ def assert_expectations(step: model.Step) -> None:
         return
 
     resource_helper = step.resource_helper
-    reference = resource_helper.custom_resource_reference(step.input_data)
+    reference = resource_helper.custom_resource_reference(step.input_data, step.replacements)
     resource_helper.assert_expectations(step.expectations, reference)
 
 
