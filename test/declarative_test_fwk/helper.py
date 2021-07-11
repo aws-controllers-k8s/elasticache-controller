@@ -18,19 +18,7 @@ import logging
 from time import sleep
 from acktest.k8s import resource as k8s
 
-input_replacements_dict = dict()
 TEST_HELPERS = dict()
-
-
-def input_replacements(provider):
-    """
-    Decorator to discover input replacements
-    :param provider: function that returns input replacements
-    :return: provider
-    """
-    global input_replacements_dict
-    input_replacements_dict = provider()
-    return provider
 
 
 def resource_helper(resource_kind: str):
@@ -51,25 +39,27 @@ class ResourceHelper:
     """
     DEFAULT_WAIT_SECS = 30
 
-    def create(self, input_data: dict):
+    def create(self, input_data: dict, input_replacements: dict = {}):
         """
         Creates custom resource
         :param input_data: resource details
+        :param input_replacements: input replacements
         :return: k8s.CustomResourceReference, created custom resource
         """
-        reference = self.custom_resource_reference(input_data)
+        reference = self.custom_resource_reference(input_data, input_replacements)
         _ = k8s.create_custom_resource(reference, input_data)
         resource = k8s.wait_resource_consumed_by_controller(reference, wait_periods=10)
         assert resource is not None
         return (reference, resource)
 
-    def patch(self, input_data: dict):
+    def patch(self, input_data: dict, input_replacements: dict = {}):
         """
         Patches custom resource
         :param input_data: resource patch details
+        :param input_replacements: input replacements
         :return: k8s.CustomResourceReference, created custom resource
         """
-        reference = self.custom_resource_reference(input_data)
+        reference = self.custom_resource_reference(input_data, input_replacements)
         _ = k8s.patch_custom_resource(reference, input_data)
         sleep(self.DEFAULT_WAIT_SECS)  # required as controller has likely not placed the resource in modifying
         resource = k8s.wait_resource_consumed_by_controller(reference, wait_periods=10)
@@ -134,16 +124,17 @@ class ResourceHelper:
                 continue
             assert (property, value) == (property, state.get(property))
 
-    def custom_resource_reference(self, input_data: dict) -> k8s.CustomResourceReference:
+    def custom_resource_reference(self, input_data: dict, input_replacements: dict = {}) -> k8s.CustomResourceReference:
         """
         Helper method to provide k8s.CustomResourceReference for supplied input
         :param input_data: custom resource input data
+        :param input_replacements: input replacements
         :return: k8s.CustomResourceReference
         """
         resource_plural = self.resource_plural(input_data.get("kind"))
         resource_name = input_data.get("metadata").get("name")
-        crd_group = input_replacements_dict.get("CRD_GROUP")
-        crd_version = input_replacements_dict.get("CRD_VERSION")
+        crd_group = input_replacements.get("CRD_GROUP")
+        crd_version = input_replacements.get("CRD_VERSION")
 
         reference = k8s.CustomResourceReference(
             crd_group, crd_version, resource_plural, resource_name, namespace="default")

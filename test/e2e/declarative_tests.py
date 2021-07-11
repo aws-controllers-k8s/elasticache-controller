@@ -24,22 +24,8 @@ import pytest
 import boto3
 import logging
 
-from e2e import service_marker, scenarios_directory, CRD_VERSION, CRD_GROUP, SERVICE_NAME
-from e2e.bootstrap_resources import get_bootstrap_resources
+from e2e import service_bootstrap, service_cleanup, service_marker, scenarios_directory, CRD_VERSION, CRD_GROUP, SERVICE_NAME
 from acktest.k8s import resource as k8s
-
-
-@helper.input_replacements
-def input_replacements():
-    """
-    Input replacements for test scenarios
-    """
-    replacements = get_bootstrap_resources().replacement_dict()
-    replacements["CRD_VERSION"] = CRD_VERSION
-    replacements["CRD_GROUP"] = CRD_GROUP
-    replacements["SERVICE_NAME"] = SERVICE_NAME
-    return replacements
-
 
 @helper.resource_helper("ReplicationGroup")
 class ReplicationGroupHelper(helper.ResourceHelper):
@@ -54,16 +40,46 @@ class ReplicationGroupHelper(helper.ResourceHelper):
         waiter.wait(ReplicationGroupId=reference.name)
 
 
-@pytest.fixture(params=loader.scenarios(scenarios_directory), ids=loader.idfn)
-def scenario(request):
+@pytest.fixture(scope="session")
+def input_replacements():
+    """
+    Session scoped fixture to bootstrap service resources and teardown
+    provides input replacements for test scenarios.
+    Eliminates the need for:
+     - bootstrap.yaml and
+     - call to <service_controller_test_dir>/service_bootstrap.py from test-infra
+     - call to <service_controller_test_dir>/service_cleanup.py from test-infra
+    """
+
+    resources_dict = service_bootstrap.service_bootstrap()
+    replacements = {
+        "CRD_VERSION": CRD_VERSION,
+        "CRD_GROUP": CRD_GROUP,
+        "SERVICE_NAME": SERVICE_NAME,
+        "SNS_TOPIC_ARN": resources_dict.get("SnsTopicARN"),
+        "SG_ID": resources_dict.get("SecurityGroupID"),
+        "USERGROUP_ID": resources_dict.get("UserGroupID"),
+        "KMS_KEY_ID": resources_dict.get("KmsKeyID"),
+        "SNAPSHOT_NAME": resources_dict.get("SnapshotName"),
+        "NON_DEFAULT_USER": resources_dict.get("SnapshotName")
+    }
+
+    yield replacements
+    # teardown
+    service_cleanup.service_cleanup(resources_dict)
+
+
+@pytest.fixture(params=loader.list_scenarios(scenarios_directory), ids=loader.idfn)
+def scenario(request, input_replacements):
     """
     Parameterized fixture
     Provides scenarios to execute
     Supports parallel execution of scenarios
     """
-    s = request.param
-    yield s
-    runner.teardown(s)
+    scenario_file_path = request.param
+    scenario = loader.load_scenario(scenario_file_path, input_replacements)
+    yield scenario
+    runner.teardown(scenario)
 
 
 @service_marker

@@ -19,33 +19,47 @@ import pytest
 import os
 from typing import Iterable
 from pathlib import Path
+from os.path import isfile, join
 from acktest.resources import load_resource_file, random_suffix_name
 
 
-def scenarios(scenarios_directory: Path) -> Iterable:
+def list_scenarios(scenarios_directory: Path) -> Iterable[Path]:
     """
-    Loads scenarios from given directory
+    Lists test scenarios from given directory
     :param scenarios_directory: directory containing scenarios yaml files
     :return: Iterable scenarios
     """
+    scenarios_list = []
     for scenario_file in os.listdir(scenarios_directory):
-        if not scenario_file.endswith(".yaml"):
+        scenario_file_full_path = join(scenarios_directory, scenario_file)
+        if not isfile(scenario_file_full_path) or not scenario_file.endswith(".yaml"):
             continue
-        scenario_name = scenario_file.split(".yaml")[0]
-        replacements = helper.input_replacements_dict.copy()
-        replacements["RANDOM_SUFFIX"] = random_suffix_name("", 32)
-        scenario = model.Scenario(load_resource_file(
-            scenarios_directory, scenario_name, additional_replacements=replacements))
-        yield pytest.param(scenario, marks=marks(scenario))
+        scenarios_list.append(Path(scenario_file_full_path))
+    return scenarios_list
 
 
-def idfn(scenario: model.Scenario) -> str:
+def load_scenario(scenario_file: Path, replacements: dict = {}) -> Iterable:
     """
-    Provides scenario test id
-    :param scenario: test scenario
+    Loads scenario from given scenario_file
+    :param scenario_file: yaml file containing scenarios
+    :param replacements: input replacements
+    :return: Iterable scenarios
+    """
+    scenario_name = scenario_file.name.split(".yaml")[0]
+    replacements = replacements.copy()
+    replacements["RANDOM_SUFFIX"] = random_suffix_name("", 32)
+    scenario = model.Scenario(load_resource_file(
+        scenario_file.parent, scenario_name, additional_replacements=replacements), replacements)
+    yield pytest.param(scenario, marks=marks(scenario))
+
+
+def idfn(scenario_file_full_path: Path) -> str:
+    """
+    Provides scenario file name as scenario test id
+    :param scenario: test scenario file path
     :return: scenario test id string
     """
-    return scenario.id()
+    return scenario_file_full_path.name
 
 
 def marks(scenario: model.Scenario) -> list:

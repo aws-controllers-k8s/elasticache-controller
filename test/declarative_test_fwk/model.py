@@ -23,8 +23,9 @@ class Step:
     """
     indent = "\t\t"
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, replacements: dict = {}):
         self.config = config
+        self.replacements = replacements
 
         self.verb = None
         self.input_data = None
@@ -58,11 +59,12 @@ class Scenario:
     Represents a declarative test scenario with steps
     """
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, replacements: dict = {}):
         self.config = config
         self.test_steps = []
+        self.replacements = replacements
         for step in self.config.get("steps", []):
-            self.test_steps.append(Step(step))
+            self.test_steps.append(Step(step, replacements))
 
     def id(self) -> str:
         return self.config.get("id", "")
