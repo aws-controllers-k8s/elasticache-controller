@@ -29,6 +29,14 @@ from acktest.k8s import resource as k8s
 
 @helper.resource_helper("ReplicationGroup")
 class ReplicationGroupHelper(helper.ResourceHelper):
+    def assert_expectations(self, verb: str, input_data: dict, expectations: dict,
+                            reference: k8s.CustomResourceReference):
+        # default assertions
+        super().assert_expectations(verb, input_data, expectations, reference)
+
+        # perform custom server side checks based on:
+        # verb, input data to verb, expectations for given resource
+
     """
     Helper for replication group scenarios
     """
@@ -83,7 +91,7 @@ def scenario(request, input_replacements):
 
 
 @service_marker
-class TestSuite:
+class TestScenarios:
     """
     Declarative scenarios based test suite
     """

@@ -81,9 +81,11 @@ class ResourceHelper:
         sleep(self.DEFAULT_WAIT_SECS)
         self.wait_for_delete(reference) # throws exception if wait fails
 
-    def assert_expectations(self, expectations: dict, reference: k8s.CustomResourceReference):
+    def assert_expectations(self, verb: str, input_data: dict, expectations: dict, reference: k8s.CustomResourceReference):
         """
         Asserts custom resource reference against supplied expectations
+        :param verb: expectations after performing the verb (apply, patch, delete)
+        :param input_data: input data to verb
         :param expectations: expectations to assert
         :param reference: custom resource reference
         :return: None
