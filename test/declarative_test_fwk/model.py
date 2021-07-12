@@ -23,8 +23,9 @@ class Step:
     """
     indent = "\t\t"
 
-    def __init__(self, config: dict, replacements: dict = {}):
+    def __init__(self, config: dict, custom_resource_details: dict, replacements: dict = {}):
         self.config = config
+        self.custom_resource_details = custom_resource_details
         self.replacements = replacements
 
         self.verb = None
@@ -35,7 +36,7 @@ class Step:
         # (k8s.CustomResourceReference, ko) to teardown
         self.teardown_list = []
 
-        supported_verbs=["create", "patch", "delete"]
+        supported_verbs = ["create", "patch", "delete"]
         for verb in supported_verbs:
             if verb not in self.config:
                 continue
@@ -44,6 +45,14 @@ class Step:
             break
 
         if self.input_data:
+            if type(self.input_data) is str:
+                # consider the input as resource name
+                # confirm that self.custom_resource_details must be provided with same name
+                if self.custom_resource_details["metadata"]["name"] != self.input_data:
+                    raise ValueError(f"Unable to determine input data for '{self.verb}' at step: {self.id()}")
+                self.input_data = self.custom_resource_details
+            if self.custom_resource_details:
+                self.input_data = {**self.custom_resource_details, **self.input_data}
             self.expectations = self.config.get("expect")
             self.resource_helper = helper.get_resource_helper(self.input_data.get("kind"))
 
@@ -52,6 +61,12 @@ class Step:
 
     def description(self) -> str:
         return self.config.get("description", "")
+
+    def __str__(self) -> str:
+        return f"Step(id='{self.id()}')"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class Scenario:
@@ -63,8 +78,9 @@ class Scenario:
         self.config = config
         self.test_steps = []
         self.replacements = replacements
+        custom_resource_details = self.config.get("customResourceReference", {})
         for step in self.config.get("steps", []):
-            self.test_steps.append(Step(step, replacements))
+            self.test_steps.append(Step(step, custom_resource_details.copy(), replacements))
 
     def id(self) -> str:
         return self.config.get("id", "")
@@ -80,3 +96,9 @@ class Scenario:
 
     def steps(self):
         return self.test_steps
+
+    def __str__(self) -> str:
+        return f"Scenario(id='{self.id()}')"
+
+    def __repr__(self) -> str:
+        return str(self)

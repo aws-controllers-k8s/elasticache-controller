@@ -6,14 +6,15 @@ usecases:
 #marks:
 #  - slow
 #  - blocked
+customResourceReference:
+  apiVersion: $CRD_GROUP/$CRD_VERSION
+  kind: ReplicationGroup
+  metadata:
+    name: test$RANDOM_SUFFIX
 steps:
   - id: "create_CMD_replication_group"
     description: "Initial config"
     create:
-      apiVersion: $CRD_GROUP/$CRD_VERSION
-      kind: ReplicationGroup
-      metadata:
-        name: test$RANDOM_SUFFIX
       spec:
         engine: redis
         replicationGroupID: test$RANDOM_SUFFIX
@@ -28,10 +29,6 @@ steps:
   - id: "invalid_cacheNodeType_on_CMD_replication_group_causes_Terminal_condition"
     description: "Negative test include transitEncryptionEnabled"
     patch:
-      apiVersion: $CRD_GROUP/$CRD_VERSION
-      kind: ReplicationGroup
-      metadata:
-        name: test$RANDOM_SUFFIX
       spec:
         cacheNodeType: cache.micro # invalid value
     expect:
@@ -40,8 +37,4 @@ steps:
           ACK.Terminal: "True"
   - id: "delete_CMD_RG"
     description: "Delete cluster mode disabled replication group"
-    delete:
-      apiVersion: $CRD_GROUP/$CRD_VERSION
-      kind: ReplicationGroup
-      metadata:
-        name: test$RANDOM_SUFFIX
+    delete: test$RANDOM_SUFFIX

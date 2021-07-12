@@ -14,7 +14,7 @@
 """Test Scenarios loader for Declarative tests framework for custom resources
 """
 
-from declarative_test_fwk import model, helper
+from declarative_test_fwk import model
 import pytest
 import os
 from typing import Iterable
@@ -34,11 +34,12 @@ def list_scenarios(scenarios_directory: Path) -> Iterable[Path]:
         scenario_file_full_path = join(scenarios_directory, scenario_file)
         if not isfile(scenario_file_full_path) or not scenario_file.endswith(".yaml"):
             continue
-        scenarios_list.append(Path(scenario_file_full_path))
+        scenario = load_scenario(Path(scenario_file_full_path))
+        scenarios_list.append(pytest.param(Path(scenario_file_full_path),marks=marks(scenario)))
     return scenarios_list
 
 
-def load_scenario(scenario_file: Path, replacements: dict = {}) -> Iterable:
+def load_scenario(scenario_file: Path, replacements: dict = {}) -> model.Scenario:
     """
     Loads scenario from given scenario_file
     :param scenario_file: yaml file containing scenarios
@@ -50,7 +51,7 @@ def load_scenario(scenario_file: Path, replacements: dict = {}) -> Iterable:
     replacements["RANDOM_SUFFIX"] = random_suffix_name("", 32)
     scenario = model.Scenario(load_resource_file(
         scenario_file.parent, scenario_name, additional_replacements=replacements), replacements)
-    yield pytest.param(scenario, marks=marks(scenario))
+    return scenario
 
 
 def idfn(scenario_file_full_path: Path) -> str:
