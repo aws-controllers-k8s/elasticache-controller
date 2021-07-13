@@ -31,6 +31,7 @@ class TestBootstrapResources:
 
 _bootstrap_resources = None
 
+
 def get_bootstrap_resources(bootstrap_file_name: str = "bootstrap.yaml"):
     global _bootstrap_resources
     if _bootstrap_resources is None:
