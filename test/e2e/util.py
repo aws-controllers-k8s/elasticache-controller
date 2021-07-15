@@ -81,6 +81,17 @@ def wait_snapshot_deleted(snapshot_name: str,
     return False
 
 
+# assert that either: 1) deletion has been initiated, or 2) deletion has been completed
+#   on the service-side
+def assert_user_deletion(user_id: str):
+    try:
+        resp = ec.describe_users(UserId=user_id)
+        assert len(resp['Users']) == 1
+        assert resp['Users'][0]['Status'] == 'deleting'  # at this point, deletion is a server-side responsibility
+    except ec.exceptions.UserNotFoundFault:
+        pass  # we only expect this particular exception (if deletion has already completed)
+
+
 # provide a basic nodeGroupConfiguration object of desired size
 def provide_node_group_configuration(size: int):
     ngc = []
