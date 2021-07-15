@@ -23,9 +23,10 @@ from acktest.k8s import resource as k8s
 
 from time import sleep
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
+from e2e.util import assert_user_deletion
 
 RESOURCE_PLURAL = "users"
-DEFAULT_WAIT_SECS = 90
+DEFAULT_WAIT_SECS = 30
 
 
 @pytest.fixture(scope="module")
@@ -57,8 +58,7 @@ def user_nopass(user_nopass_input, elasticache_client):
     # teardown: delete in k8s, assert user does not exist in AWS
     k8s.delete_custom_resource(reference)
     sleep(DEFAULT_WAIT_SECS)
-    with pytest.raises(botocore.exceptions.ClientError, match="UserNotFound"):
-        _ = elasticache_client.describe_users(UserId=user_nopass_input["USER_ID"])
+    assert_user_deletion(user_nopass_input['USER_ID'])
 
 
 # create secrets for below user password test
@@ -104,8 +104,7 @@ def user_password(user_password_input, elasticache_client):
     # teardown: delete in k8s, assert user does not exist in AWS
     k8s.delete_custom_resource(reference)
     sleep(DEFAULT_WAIT_SECS)
-    with pytest.raises(botocore.exceptions.ClientError, match="UserNotFound"):
-        _ = elasticache_client.describe_users(UserId=user_password_input["USER_ID"])
+    assert_user_deletion(user_password_input['USER_ID'])
 
 
 @service_marker
