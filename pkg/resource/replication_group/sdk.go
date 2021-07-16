@@ -1381,29 +1381,29 @@ func (rm *resourceManager) newUpdateRequestPayload(
 func (rm *resourceManager) sdkDelete(
 	ctx context.Context,
 	r *resource,
-) (err error) {
+) (latest *resource, err error) {
 	rlog := ackrtlog.FromContext(ctx)
 	exit := rlog.Trace("rm.sdkDelete")
 	defer exit(err)
+	// if resource is already deleting, return requeue error; otherwise, initiate deletion
 	if isDeleting(r) {
-		return requeueWaitWhileDeleting
+		return r, requeueWaitWhileDeleting
 	}
 
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = rm.sdkapi.DeleteReplicationGroupWithContext(ctx, input)
+	var resp *svcsdk.DeleteReplicationGroupOutput
+	_ = resp
+	resp, err = rm.sdkapi.DeleteReplicationGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteReplicationGroup", err)
+	// delete call successful
 	if err == nil {
-		if foundResource, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
-			if isDeleting(foundResource) {
-				return requeueWaitWhileDeleting
-			}
-			return err
-		}
+		rp, _ := rm.provideUpdatedResource(r, resp.ReplicationGroup)
+		return rp, requeueWaitWhileDeleting
 	}
-	return err
+	return nil, err
 }
 
 // newDeleteRequestPayload returns an SDK-specific struct for the HTTP request

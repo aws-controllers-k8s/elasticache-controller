@@ -92,7 +92,7 @@ func (runner *TestSuiteRunner) runTestScenario(scenarioName string, fixtureCxt *
 			delta := runner.Delegate.ResourceDescriptor().Delta(fixtureCxt.desired, fixtureCxt.latest)
 			actual, err = rm.Update(context.Background(), fixtureCxt.desired, fixtureCxt.latest, delta)
 		case "Delete":
-			err = rm.Delete(context.Background(), fixtureCxt.desired)
+			actual, err = rm.Delete(context.Background(), fixtureCxt.desired)
 		default:
 			panic(errors.New(fmt.Sprintf("unit under test: %s not supported", unitUnderTest)))
 		}

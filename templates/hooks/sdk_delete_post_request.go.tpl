@@ -1,8 +1,5 @@
+	// delete call successful
 	if err == nil {
-		if foundResource, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
-			if isDeleting(foundResource) {
-				return requeueWaitWhileDeleting
-			}
-			return err
-		}
-	}
+		rp, _ := rm.provideUpdatedResource(r, resp.ReplicationGroup)
+		return rp, requeueWaitWhileDeleting
+    }
