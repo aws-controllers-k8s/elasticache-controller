@@ -84,13 +84,13 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	if desired.ko.Spec.AutomaticFailoverEnabled != nil && *desired.ko.Spec.AutomaticFailoverEnabled == false {
 		latestAutomaticFailoverEnabled := latest.ko.Status.AutomaticFailover != nil && *latest.ko.Status.AutomaticFailover == "enabled"
 		if latestAutomaticFailoverEnabled != *desired.ko.Spec.AutomaticFailoverEnabled {
-			return rm.modifyReplicationGroup(ctx, desired, latest)
+			return rm.modifyReplicationGroup(ctx, desired, latest, delta)
 		}
 	}
 	if desired.ko.Spec.MultiAZEnabled != nil && *desired.ko.Spec.MultiAZEnabled == false {
 		latestMultiAZEnabled := latest.ko.Status.MultiAZ != nil && *latest.ko.Status.MultiAZ == "enabled"
 		if latestMultiAZEnabled != *desired.ko.Spec.MultiAZEnabled {
-			return rm.modifyReplicationGroup(ctx, desired, latest)
+			return rm.modifyReplicationGroup(ctx, desired, latest, delta)
 		}
 	}
 
@@ -107,7 +107,7 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 		return rm.updateShardConfiguration(ctx, desired, latest)
 	}
 
-	return rm.modifyReplicationGroup(ctx, desired, latest)
+	return rm.modifyReplicationGroup(ctx, desired, latest, delta)
 }
 
 // modifyReplicationGroup updates replication group
@@ -118,6 +118,7 @@ func (rm *resourceManager) modifyReplicationGroup(
 	ctx context.Context,
 	desired *resource,
 	latest *resource,
+	delta *ackcompare.Delta,
 ) (*resource, error) {
 	// Method currently handles SecurityGroupIDs, EngineVersion
 	// Avoid making unnecessary DescribeCacheCluster API call if both fields are nil in spec.
@@ -134,8 +135,8 @@ func (rm *resourceManager) modifyReplicationGroup(
 
 	// SecurityGroupIds, EngineVersion
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
-		rm.engineVersionsDiffer(desired, latest) {
-		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster)
+		delta.DifferentAt("Spec.EngineVersion") {
+		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster, delta)
 		resp, respErr := rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
 		rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
 		if respErr != nil {
@@ -648,6 +649,7 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 	desired *resource,
 	latest *resource,
 	latestCacheCluster *svcsdk.CacheCluster,
+	delta *ackcompare.Delta,
 ) *svcsdk.ModifyReplicationGroupInput {
 	input := &svcsdk.ModifyReplicationGroupInput{}
 
@@ -667,35 +669,12 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 		input.SetSecurityGroupIds(ids)
 	}
 
-	if rm.engineVersionsDiffer(desired, latest) &&
+	if delta.DifferentAt("Spec.EngineVersion") &&
 		desired.ko.Spec.EngineVersion != nil {
 		input.SetEngineVersion(*desired.ko.Spec.EngineVersion)
 	}
 
 	return input
-}
-
-/*
-engineVersionsDiffer returns true if the desired engine version is different
-from the latest observed engine version, and false if they differ or if
-the desired EngineVersion is nil
-*/
-func (rm *resourceManager) engineVersionsDiffer(
-	desired *resource,
-	latest *resource,
-) bool {
-	if desired.ko.Spec.EngineVersion == nil {
-		return false
-	}
-
-	latestEV := ""
-	if latest.ko.Spec.EngineVersion != nil {
-		latestEV = *latest.ko.Spec.EngineVersion
-	}
-
-	return *desired.ko.Spec.EngineVersion != latestEV
-
-	//TODO: should Delta be used in this function?
 }
 
 // This method copies the data from given replicationGroup by populating it into copy of supplied resource

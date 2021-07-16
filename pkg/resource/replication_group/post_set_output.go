@@ -42,8 +42,12 @@ func (rm *resourceManager) updateSpecFields(
 	latestCacheCluster, err := rm.describeCacheCluster(ctx, resource)
 	if err == nil && latestCacheCluster != nil {
 		setEngineVersion(latestCacheCluster, resource)
+		setMaintenanceWindow(latestCacheCluster, resource)
 	}
 }
+
+//TODO: for all the fields here, reevaluate if the latest observed state should always be populated,
+// even if the corresponding field was not specified in desired
 
 // if ReplicasPerNodeGroup was given in desired.Spec, update ko.Spec with the latest observed value
 func setReplicasPerNodeGroup(
@@ -70,5 +74,17 @@ func setEngineVersion(
 	ko := resource.ko
 	if ko.Spec.EngineVersion != nil && latestCacheCluster.EngineVersion != nil {
 		*ko.Spec.EngineVersion = *latestCacheCluster.EngineVersion
+	}
+}
+
+// update maintenance window (if non-nil in API response) regardless of whether it was specified in desired
+func setMaintenanceWindow(
+	latestCacheCluster *svcsdk.CacheCluster,
+	resource *resource,
+) {
+	ko := resource.ko
+	if latestCacheCluster.PreferredMaintenanceWindow != nil {
+		pmw := *latestCacheCluster.PreferredMaintenanceWindow
+		ko.Spec.PreferredMaintenanceWindow = &pmw
 	}
 }

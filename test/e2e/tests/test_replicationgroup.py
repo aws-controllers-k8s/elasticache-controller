@@ -158,6 +158,29 @@ def rg_cmd_update(rg_cmd_update_input, make_replication_group, rg_deletion_waite
 
 
 @pytest.fixture(scope="module")
+def rg_update_pmw_input(make_rg_name):
+    return {
+        "RG_ID": make_rg_name("rg-update-pmw"),
+        "ENGINE_VERSION": "6.x",
+        "NUM_NODE_GROUPS": "1",
+        "REPLICAS_PER_NODE_GROUP": "1"
+    }
+
+
+@pytest.fixture(scope="module")
+def rg_update_pmw(rg_update_pmw_input, make_replication_group, rg_deletion_waiter):
+    input_dict = rg_update_pmw_input
+
+    (reference, resource) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict['RG_ID'])
+    yield reference, resource
+
+    # teardown
+    k8s.delete_custom_resource(reference)
+    sleep(DEFAULT_WAIT_SECS)
+    rg_deletion_waiter.wait(ReplicationGroupId=input_dict['RG_ID'])
+
+
+@pytest.fixture(scope="module")
 def rg_deletion_input(make_rg_name):
     return {
         "RG_ID": make_rg_name("rg-delete"),
@@ -186,7 +209,7 @@ class TestReplicationGroup:
         (reference, _) = rg_cmd_fromsnapshot
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
 
-    # test update behavior of controller; this test can be changed to include multiple chained updates
+    # test update behavior of controller (engine version and replica count)
     def test_rg_cmd_update(self, rg_cmd_update_input, rg_cmd_update):
         (reference, _) = rg_cmd_update
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
@@ -231,6 +254,23 @@ class TestReplicationGroup:
         cc = retrieve_cache_cluster(rg_cmd_update_input['RG_ID'])
         assert cc is not None
         assert cc['EngineVersion'] == desired_engine_version
+
+    # test that controller can update preferred maintenance window
+    def test_rg_update_pmw(self, rg_update_pmw_input, rg_update_pmw):
+        # wait for resource to sync and retrieve initial PMW
+        (reference, _) = rg_update_pmw
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+
+        # update, wait for resource to sync
+        desired_pmw = 'sun:23:39-mon:02:24'
+        patch = {"spec": {"preferredMaintenanceWindow": desired_pmw}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)  # should be immediate
+
+        # assert new state
+        cc = retrieve_cache_cluster(rg_update_pmw_input['RG_ID'])
+        assert cc['PreferredMaintenanceWindow'] == desired_pmw
 
     def test_rg_auth_token(self, rg_auth_token, secrets):
         (reference, _) = rg_auth_token

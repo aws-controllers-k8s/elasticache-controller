@@ -11,23 +11,32 @@
 // express or implied. See the License for the specific language governing
 // permissions and limitations under the License.
 
-package user
+package common
 
 import ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
-import "github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
 
-// remove differences which are not meaningful (i.e. ones that don't warrant a call to rm.Update)
-func filterDelta(
+// remove the Difference corresponding to the given subject from the delta struct
+//TODO: ideally this would have a common implementation in compare/delta.go
+func RemoveFromDelta(
 	delta *ackcompare.Delta,
-	desired *resource,
-	latest *resource,
+	subject string,
 ) {
-	// the returned AccessString can be different than the specified one; as long as the last requested AccessString
-	// matches the currently desired one, remove this difference from the delta
-	if delta.DifferentAt("Spec.AccessString") {
-		if *desired.ko.Spec.AccessString == *desired.ko.Status.LastRequestedAccessString {
+	// copy slice
+	differences := delta.Differences
 
-			common.RemoveFromDelta(delta, "Spec.AccessString")
+	// identify index of Difference to remove
+	//TODO: this could require a stricter Path.Equals down the road
+	var i *int = nil
+	for j, diff := range differences {
+		if diff.Path.Contains(subject) {
+			i = &j
+			break
 		}
+	}
+
+	// if found, create a new slice and replace the original
+	if i != nil {
+		differences = append(differences[:*i], differences[*i+1:]...)
+		delta.Differences = differences
 	}
 }

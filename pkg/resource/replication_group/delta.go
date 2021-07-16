@@ -223,5 +223,6 @@ func newResourceDelta(
 		delta.Add("Spec.UserGroupIDs", a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs)
 	}
 
+	filterDelta(delta, a, b)
 	return delta
 }
