@@ -69,6 +69,8 @@ resources:
         template_path: hooks/sdk_delete_post_request.go.tpl
       sdk_update_post_build_request:
         template_path: hooks/sdk_update_post_build_request.go.tpl
+      delta_post_compare:
+        code: "filterDelta(delta, a, b)"
   Snapshot:
     update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:
