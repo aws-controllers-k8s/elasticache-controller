@@ -16,7 +16,6 @@ package replication_group
 import (
 	"context"
 	"fmt"
-	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	"github.com/pkg/errors"
 	"sort"
@@ -24,7 +23,6 @@ import (
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Implements specialized logic for replication group updates.
@@ -144,7 +142,7 @@ func (rm *resourceManager) modifyReplicationGroup(
 			return nil, respErr
 		}
 
-		return rm.provideUpdatedResource(desired, resp.ReplicationGroup)
+		return rm.setReplicationGroupOutput(desired, resp.ReplicationGroup)
 	}
 
 	// no updates done
@@ -268,7 +266,7 @@ func (rm *resourceManager) increaseReplicaCount(
 		rm.log.V(1).Info("Error during IncreaseReplicaCount", "error", respErr)
 		return nil, respErr
 	}
-	return rm.provideUpdatedResource(desired, resp.ReplicationGroup)
+	return rm.setReplicationGroupOutput(desired, resp.ReplicationGroup)
 }
 
 func (rm *resourceManager) decreaseReplicaCount(
@@ -286,7 +284,7 @@ func (rm *resourceManager) decreaseReplicaCount(
 		rm.log.V(1).Info("Error during DecreaseReplicaCount", "error", respErr)
 		return nil, respErr
 	}
-	return rm.provideUpdatedResource(desired, resp.ReplicationGroup)
+	return rm.setReplicationGroupOutput(desired, resp.ReplicationGroup)
 }
 
 func (rm *resourceManager) updateShardConfiguration(
@@ -304,7 +302,7 @@ func (rm *resourceManager) updateShardConfiguration(
 		rm.log.V(1).Info("Error during ModifyReplicationGroupShardConfiguration", "error", respErr)
 		return nil, respErr
 	}
-	return rm.provideUpdatedResource(desired, resp.ReplicationGroup)
+	return rm.setReplicationGroupOutput(desired, resp.ReplicationGroup)
 }
 
 // newIncreaseReplicaCountRequestPayload returns an SDK-specific struct for the HTTP request
@@ -675,171 +673,4 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 	}
 
 	return input
-}
-
-// This method copies the data from given replicationGroup by populating it into copy of supplied resource
-// and returns it.
-func (rm *resourceManager) provideUpdatedResource(
-	desired *resource,
-	replicationGroup *svcsdk.ReplicationGroup,
-) (*resource, error) {
-	// Merge in the information we read from the API call above to the copy of
-	// the original Kubernetes object we passed to the function
-	ko := desired.ko.DeepCopy()
-
-	if ko.Status.ACKResourceMetadata == nil {
-		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
-	}
-	if replicationGroup.ARN != nil {
-		arn := ackv1alpha1.AWSResourceName(*replicationGroup.ARN)
-		ko.Status.ACKResourceMetadata.ARN = &arn
-	}
-	if replicationGroup.AuthTokenEnabled != nil {
-		ko.Status.AuthTokenEnabled = replicationGroup.AuthTokenEnabled
-	}
-	if replicationGroup.AuthTokenLastModifiedDate != nil {
-		ko.Status.AuthTokenLastModifiedDate = &metav1.Time{*replicationGroup.AuthTokenLastModifiedDate}
-	}
-	if replicationGroup.AutomaticFailover != nil {
-		ko.Status.AutomaticFailover = replicationGroup.AutomaticFailover
-	}
-	if replicationGroup.ClusterEnabled != nil {
-		ko.Status.ClusterEnabled = replicationGroup.ClusterEnabled
-	}
-	if replicationGroup.ConfigurationEndpoint != nil {
-		f7 := &svcapitypes.Endpoint{}
-		if replicationGroup.ConfigurationEndpoint.Address != nil {
-			f7.Address = replicationGroup.ConfigurationEndpoint.Address
-		}
-		if replicationGroup.ConfigurationEndpoint.Port != nil {
-			f7.Port = replicationGroup.ConfigurationEndpoint.Port
-		}
-		ko.Status.ConfigurationEndpoint = f7
-	}
-	if replicationGroup.Description != nil {
-		ko.Status.Description = replicationGroup.Description
-	}
-	if replicationGroup.GlobalReplicationGroupInfo != nil {
-		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
-		if replicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
-			f9.GlobalReplicationGroupID = replicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
-		}
-		if replicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
-			f9.GlobalReplicationGroupMemberRole = replicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
-		}
-		ko.Status.GlobalReplicationGroupInfo = f9
-	}
-	if replicationGroup.MemberClusters != nil {
-		f11 := []*string{}
-		for _, f11iter := range replicationGroup.MemberClusters {
-			var f11elem string
-			f11elem = *f11iter
-			f11 = append(f11, &f11elem)
-		}
-		ko.Status.MemberClusters = f11
-	}
-	if replicationGroup.MultiAZ != nil {
-		ko.Status.MultiAZ = replicationGroup.MultiAZ
-	}
-	if replicationGroup.NodeGroups != nil {
-		f13 := []*svcapitypes.NodeGroup{}
-		for _, f13iter := range replicationGroup.NodeGroups {
-			f13elem := &svcapitypes.NodeGroup{}
-			if f13iter.NodeGroupId != nil {
-				f13elem.NodeGroupID = f13iter.NodeGroupId
-			}
-			if f13iter.NodeGroupMembers != nil {
-				f13elemf1 := []*svcapitypes.NodeGroupMember{}
-				for _, f13elemf1iter := range f13iter.NodeGroupMembers {
-					f13elemf1elem := &svcapitypes.NodeGroupMember{}
-					if f13elemf1iter.CacheClusterId != nil {
-						f13elemf1elem.CacheClusterID = f13elemf1iter.CacheClusterId
-					}
-					if f13elemf1iter.CacheNodeId != nil {
-						f13elemf1elem.CacheNodeID = f13elemf1iter.CacheNodeId
-					}
-					if f13elemf1iter.CurrentRole != nil {
-						f13elemf1elem.CurrentRole = f13elemf1iter.CurrentRole
-					}
-					if f13elemf1iter.PreferredAvailabilityZone != nil {
-						f13elemf1elem.PreferredAvailabilityZone = f13elemf1iter.PreferredAvailabilityZone
-					}
-					if f13elemf1iter.ReadEndpoint != nil {
-						f13elemf1elemf4 := &svcapitypes.Endpoint{}
-						if f13elemf1iter.ReadEndpoint.Address != nil {
-							f13elemf1elemf4.Address = f13elemf1iter.ReadEndpoint.Address
-						}
-						if f13elemf1iter.ReadEndpoint.Port != nil {
-							f13elemf1elemf4.Port = f13elemf1iter.ReadEndpoint.Port
-						}
-						f13elemf1elem.ReadEndpoint = f13elemf1elemf4
-					}
-					f13elemf1 = append(f13elemf1, f13elemf1elem)
-				}
-				f13elem.NodeGroupMembers = f13elemf1
-			}
-			if f13iter.PrimaryEndpoint != nil {
-				f13elemf2 := &svcapitypes.Endpoint{}
-				if f13iter.PrimaryEndpoint.Address != nil {
-					f13elemf2.Address = f13iter.PrimaryEndpoint.Address
-				}
-				if f13iter.PrimaryEndpoint.Port != nil {
-					f13elemf2.Port = f13iter.PrimaryEndpoint.Port
-				}
-				f13elem.PrimaryEndpoint = f13elemf2
-			}
-			if f13iter.ReaderEndpoint != nil {
-				f13elemf3 := &svcapitypes.Endpoint{}
-				if f13iter.ReaderEndpoint.Address != nil {
-					f13elemf3.Address = f13iter.ReaderEndpoint.Address
-				}
-				if f13iter.ReaderEndpoint.Port != nil {
-					f13elemf3.Port = f13iter.ReaderEndpoint.Port
-				}
-				f13elem.ReaderEndpoint = f13elemf3
-			}
-			if f13iter.Slots != nil {
-				f13elem.Slots = f13iter.Slots
-			}
-			if f13iter.Status != nil {
-				f13elem.Status = f13iter.Status
-			}
-			f13 = append(f13, f13elem)
-		}
-		ko.Status.NodeGroups = f13
-	}
-	if replicationGroup.PendingModifiedValues != nil {
-		f14 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
-		if replicationGroup.PendingModifiedValues.AuthTokenStatus != nil {
-			f14.AuthTokenStatus = replicationGroup.PendingModifiedValues.AuthTokenStatus
-		}
-		if replicationGroup.PendingModifiedValues.AutomaticFailoverStatus != nil {
-			f14.AutomaticFailoverStatus = replicationGroup.PendingModifiedValues.AutomaticFailoverStatus
-		}
-		if replicationGroup.PendingModifiedValues.PrimaryClusterId != nil {
-			f14.PrimaryClusterID = replicationGroup.PendingModifiedValues.PrimaryClusterId
-		}
-		if replicationGroup.PendingModifiedValues.Resharding != nil {
-			f14f3 := &svcapitypes.ReshardingStatus{}
-			if replicationGroup.PendingModifiedValues.Resharding.SlotMigration != nil {
-				f14f3f0 := &svcapitypes.SlotMigration{}
-				if replicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
-					f14f3f0.ProgressPercentage = replicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
-				}
-				f14f3.SlotMigration = f14f3f0
-			}
-			f14.Resharding = f14f3
-		}
-		ko.Status.PendingModifiedValues = f14
-	}
-	if replicationGroup.SnapshottingClusterId != nil {
-		ko.Status.SnapshottingClusterID = replicationGroup.SnapshottingClusterId
-	}
-	if replicationGroup.Status != nil {
-		ko.Status.Status = replicationGroup.Status
-	}
-	rm.setStatusDefaults(ko)
-	// custom set output from response
-	rm.customSetOutput(desired, replicationGroup, ko)
-	return &resource{ko}, nil
 }

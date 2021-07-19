@@ -39,7 +39,7 @@ func (rm *resourceManager) CustomDescribeReplicationGroupsSetOutput(
 		return ko, nil
 	}
 	elem := resp.ReplicationGroups[0]
-	rm.customSetOutput(r, elem, ko)
+	rm.customSetOutput(elem, ko)
 	err := rm.customSetOutputSupplementAPIs(ctx, r, elem, ko)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (rm *resourceManager) CustomCreateReplicationGroupSetOutput(
 	resp *elasticache.CreateReplicationGroupOutput,
 	ko *svcapitypes.ReplicationGroup,
 ) (*svcapitypes.ReplicationGroup, error) {
-	rm.customSetOutput(r, resp.ReplicationGroup, ko)
+	rm.customSetOutput(resp.ReplicationGroup, ko)
 	return ko, nil
 }
 
@@ -63,12 +63,11 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 	resp *elasticache.ModifyReplicationGroupOutput,
 	ko *svcapitypes.ReplicationGroup,
 ) (*svcapitypes.ReplicationGroup, error) {
-	rm.customSetOutput(r, resp.ReplicationGroup, ko)
+	rm.customSetOutput(resp.ReplicationGroup, ko)
 	return ko, nil
 }
 
 func (rm *resourceManager) customSetOutput(
-	r *resource,
 	respRG *elasticache.ReplicationGroup,
 	ko *svcapitypes.ReplicationGroup,
 ) {

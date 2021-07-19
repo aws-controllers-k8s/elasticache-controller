@@ -9,6 +9,10 @@ spec:
   replicasPerNodeGroup: 1
   replicationGroupDescription: cluster-mode disabled RG
   replicationGroupID: rg-cmd
+  atRestEncryptionEnabled: false
+  snapshotRetentionLimit: 0
+  snapshotWindow: "06:30-07:30"
+  transitEncryptionEnabled: false
 status:
   ackResourceMetadata:
     arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd
