@@ -72,6 +72,12 @@ def delete_log_group(log_group_name: str):
     logging.info(f"Deleted CW log group {log_group_name}")
 
 
+def delete_cpg(cpg_name: str):
+    ec = boto3.client("elasticache")
+    ec.delete_cache_parameter_group(CacheParameterGroupName=cpg_name)
+    logging.info(f"Deleted ElastiCache cache parameter group {cpg_name}")
+
+
 def service_cleanup(config: dict):
     logging.getLogger().setLevel(logging.INFO)
 
@@ -113,6 +119,12 @@ def service_cleanup(config: dict):
         delete_log_group(resources.CWLogGroup)
     except:
         logging.exception(f"Unable to delete CW log group {resources.CWLogGroup}")
+
+    try:
+        delete_cpg(resources.CPGName)
+    except:
+        logging.exception(f"Unable to delete Elasticache cache parameter group {resources.CPGName}")
+
 
 if __name__ == "__main__":   
     bootstrap_config = resources.read_bootstrap_config(bootstrap_directory)

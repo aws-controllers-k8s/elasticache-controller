@@ -28,6 +28,7 @@ class TestBootstrapResources:
     SnapshotName: str
     NonDefaultUser: str
     CWLogGroup: str
+    CPGName: str
 
 _bootstrap_resources = None
 

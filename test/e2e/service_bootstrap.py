@@ -121,6 +121,16 @@ def create_log_group():
     return log_group_name
 
 
+def create_cpg():
+    ec = boto3.client("elasticache")
+    cpg_name = random_suffix_name("ack-cpg", 32)
+    ec.create_cache_parameter_group(CacheParameterGroupName=cpg_name,
+                                    CacheParameterGroupFamily='redis6.x', Description='ACK e2e test')
+
+    logging.info(f"Created ElastiCache cache paramter group {cpg_name}")
+    return cpg_name
+
+
 def service_bootstrap() -> dict:
     logging.getLogger().setLevel(logging.INFO)
 
@@ -131,8 +141,10 @@ def service_bootstrap() -> dict:
         create_kms_key(),
         create_cc_snapshot(),
         create_non_default_user(),
-        create_log_group()
+        create_log_group(),
+        create_cpg()
     ).__dict__
+
 
 if __name__ == "__main__":
     config = service_bootstrap()
