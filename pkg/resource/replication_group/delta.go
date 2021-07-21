@@ -46,13 +46,6 @@ func newResourceDelta(
 			delta.Add("Spec.AuthToken", a.ko.Spec.AuthToken, b.ko.Spec.AuthToken)
 		}
 	}
-	if ackcompare.HasNilDifference(a.ko.Spec.AutoMinorVersionUpgrade, b.ko.Spec.AutoMinorVersionUpgrade) {
-		delta.Add("Spec.AutoMinorVersionUpgrade", a.ko.Spec.AutoMinorVersionUpgrade, b.ko.Spec.AutoMinorVersionUpgrade)
-	} else if a.ko.Spec.AutoMinorVersionUpgrade != nil && b.ko.Spec.AutoMinorVersionUpgrade != nil {
-		if *a.ko.Spec.AutoMinorVersionUpgrade != *b.ko.Spec.AutoMinorVersionUpgrade {
-			delta.Add("Spec.AutoMinorVersionUpgrade", a.ko.Spec.AutoMinorVersionUpgrade, b.ko.Spec.AutoMinorVersionUpgrade)
-		}
-	}
 	if ackcompare.HasNilDifference(a.ko.Spec.AutomaticFailoverEnabled, b.ko.Spec.AutomaticFailoverEnabled) {
 		delta.Add("Spec.AutomaticFailoverEnabled", a.ko.Spec.AutomaticFailoverEnabled, b.ko.Spec.AutomaticFailoverEnabled)
 	} else if a.ko.Spec.AutomaticFailoverEnabled != nil && b.ko.Spec.AutomaticFailoverEnabled != nil {
@@ -120,13 +113,6 @@ func newResourceDelta(
 	} else if a.ko.Spec.NotificationTopicARN != nil && b.ko.Spec.NotificationTopicARN != nil {
 		if *a.ko.Spec.NotificationTopicARN != *b.ko.Spec.NotificationTopicARN {
 			delta.Add("Spec.NotificationTopicARN", a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN)
-		}
-	}
-	if ackcompare.HasNilDifference(a.ko.Spec.NumCacheClusters, b.ko.Spec.NumCacheClusters) {
-		delta.Add("Spec.NumCacheClusters", a.ko.Spec.NumCacheClusters, b.ko.Spec.NumCacheClusters)
-	} else if a.ko.Spec.NumCacheClusters != nil && b.ko.Spec.NumCacheClusters != nil {
-		if *a.ko.Spec.NumCacheClusters != *b.ko.Spec.NumCacheClusters {
-			delta.Add("Spec.NumCacheClusters", a.ko.Spec.NumCacheClusters, b.ko.Spec.NumCacheClusters)
 		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.NumNodeGroups, b.ko.Spec.NumNodeGroups) {

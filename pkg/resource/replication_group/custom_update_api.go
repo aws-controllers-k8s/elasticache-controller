@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/pkg/errors"
 	"sort"
 
@@ -515,8 +516,7 @@ func (rm *resourceManager) newUpdateShardConfigurationRequestPayload(
 		}
 	} else if decrease {
 		if len(shardsToRetain) == 0 {
-			return nil, fmt.Errorf("Could not determine NodeGroups to retain while preparing for decrease nodegroups. " +
-				"Consider specifying Spec.NodeGroupConfiguration details to resolve this error.")
+			return nil, awserr.New("InvalidParameterValue", "At least one node group should be present.", nil)
 		}
 		res.SetNodeGroupsToRetain(shardsToRetain)
 	}

@@ -48,19 +48,24 @@ type CacheSubnetGroupStatus struct {
 	// All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
 	// that is used to contain resource sync state, account ownership,
 	// constructed ARN for the resource
+	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
 	// All CRS managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
+	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
+	// +kubebuilder:validation:Optional
 	Events []*Event `json:"events,omitempty"`
 	// A list of subnets associated with the cache subnet group.
+	// +kubebuilder:validation:Optional
 	Subnets []*Subnet `json:"subnets,omitempty"`
 	// The Amazon Virtual Private Cloud identifier (VPC ID) of the cache subnet
 	// group.
+	// +kubebuilder:validation:Optional
 	VPCID *string `json:"vpcID,omitempty"`
 }
 

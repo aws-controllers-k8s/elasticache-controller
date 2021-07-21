@@ -8,7 +8,8 @@ spec:
   replicationGroupDescription: test replication group for input field coverage
   replicationGroupID: $RG_ID
   snapshotName: $SNAPSHOT_NAME
-  numCacheClusters: 3
+  numNodeGroups: 1
+  replicasPerNodeGroup: 2
   preferredCacheClusterAZs:
     - us-west-2a
     - us-west-2b

@@ -57,8 +57,6 @@ type ReplicationGroupSpec struct {
 	// For more information, see AUTH password (http://redis.io/commands/AUTH) at
 	// http://redis.io/commands/AUTH.
 	AuthToken *ackv1alpha1.SecretKeyReference `json:"authToken,omitempty"`
-	// This parameter is currently disabled.
-	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Specifies whether a read-only replica is automatically promoted to read/write
 	// primary if the existing primary fails.
 	//
@@ -170,18 +168,6 @@ type ReplicationGroupSpec struct {
 	//
 	// The Amazon SNS topic owner must be the same as the cluster owner.
 	NotificationTopicARN *string `json:"notificationTopicARN,omitempty"`
-	// The number of clusters this replication group initially has.
-	//
-	// This parameter is not used if there is more than one node group (shard).
-	// You should use ReplicasPerNodeGroup instead.
-	//
-	// If AutomaticFailoverEnabled is true, the value of this parameter must be
-	// at least 2. If AutomaticFailoverEnabled is false you can omit this parameter
-	// (it will default to 1), or you can explicitly set it to a value between 2
-	// and 6.
-	//
-	// The maximum permitted value for NumCacheClusters is 6 (1 primary plus 5 replicas).
-	NumCacheClusters *int64 `json:"numCacheClusters,omitempty"`
 	// An optional parameter that specifies the number of node groups (shards) for
 	// this Redis (cluster mode enabled) replication group. For Redis (cluster mode
 	// disabled) either omit this parameter or set it to 1.
@@ -319,16 +305,19 @@ type ReplicationGroupStatus struct {
 	// All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
 	// that is used to contain resource sync state, account ownership,
 	// constructed ARN for the resource
+	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
 	// All CRS managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
+	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// A string list, each element of which specifies a cache node type which you
 	// can use to scale your cluster or replication group. When scaling down a Redis
 	// cluster or replication group using ModifyCacheCluster or ModifyReplicationGroup,
 	// use a value from this list for the CacheNodeType parameter.
+	// +kubebuilder:validation:Optional
 	AllowedScaleDownModifications []*string `json:"allowedScaleDownModifications,omitempty"`
 	// A string list, each element of which specifies a cache node type which you
 	// can use to scale your cluster or replication group.
@@ -336,54 +325,71 @@ type ReplicationGroupStatus struct {
 	// When scaling up a Redis cluster or replication group using ModifyCacheCluster
 	// or ModifyReplicationGroup, use a value from this list for the CacheNodeType
 	// parameter.
+	// +kubebuilder:validation:Optional
 	AllowedScaleUpModifications []*string `json:"allowedScaleUpModifications,omitempty"`
 	// A flag that enables using an AuthToken (password) when issuing Redis commands.
 	//
 	// Default: false
+	// +kubebuilder:validation:Optional
 	AuthTokenEnabled *bool `json:"authTokenEnabled,omitempty"`
 	// The date the auth token was last modified
+	// +kubebuilder:validation:Optional
 	AuthTokenLastModifiedDate *metav1.Time `json:"authTokenLastModifiedDate,omitempty"`
 	// Indicates the status of automatic failover for this Redis replication group.
+	// +kubebuilder:validation:Optional
 	AutomaticFailover *string `json:"automaticFailover,omitempty"`
 	// A flag indicating whether or not this replication group is cluster enabled;
 	// i.e., whether its data can be partitioned across multiple shards (API/CLI:
 	// node groups).
 	//
 	// Valid values: true | false
+	// +kubebuilder:validation:Optional
 	ClusterEnabled *bool `json:"clusterEnabled,omitempty"`
 	// The configuration endpoint for this replication group. Use the configuration
 	// endpoint to connect to this replication group.
+	// +kubebuilder:validation:Optional
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
 	// The user supplied description of the replication group.
+	// +kubebuilder:validation:Optional
 	Description *string `json:"description,omitempty"`
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
+	// +kubebuilder:validation:Optional
 	Events []*Event `json:"events,omitempty"`
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
+	// +kubebuilder:validation:Optional
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
 	// Returns the destination, format and type of the logs.
+	// +kubebuilder:validation:Optional
 	LogDeliveryConfigurations []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	// The names of all the cache clusters that are part of this replication group.
+	// +kubebuilder:validation:Optional
 	MemberClusters []*string `json:"memberClusters,omitempty"`
 	// The outpost ARNs of the replication group's member clusters.
+	// +kubebuilder:validation:Optional
 	MemberClustersOutpostARNs []*string `json:"memberClustersOutpostARNs,omitempty"`
 	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
 	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/AutoFailover.html)
+	// +kubebuilder:validation:Optional
 	MultiAZ *string `json:"multiAZ,omitempty"`
 	// A list of node groups in this replication group. For Redis (cluster mode
 	// disabled) replication groups, this is a single-element list. For Redis (cluster
 	// mode enabled) replication groups, the list contains an entry for each node
 	// group (shard).
+	// +kubebuilder:validation:Optional
 	NodeGroups []*NodeGroup `json:"nodeGroups,omitempty"`
 	// A group of settings to be applied to the replication group, either immediately
 	// or during the next maintenance window.
+	// +kubebuilder:validation:Optional
 	PendingModifiedValues *ReplicationGroupPendingModifiedValues `json:"pendingModifiedValues,omitempty"`
 	// The cluster ID that is used as the daily snapshot source for the replication
 	// group.
+	// +kubebuilder:validation:Optional
 	SnapshottingClusterID *string `json:"snapshottingClusterID,omitempty"`
 	// The current state of this replication group - creating, available, modifying,
 	// deleting, create-failed, snapshotting.
+	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`
 }
 

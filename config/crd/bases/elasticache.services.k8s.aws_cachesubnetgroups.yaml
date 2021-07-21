@@ -160,9 +160,6 @@ spec:
                 description: The Amazon Virtual Private Cloud identifier (VPC ID)
                   of the cache subnet group.
                 type: string
-            required:
-            - ackResourceMetadata
-            - conditions
             type: object
         type: object
     served: true

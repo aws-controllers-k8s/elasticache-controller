@@ -39,17 +39,22 @@ type UserGroupStatus struct {
 	// All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
 	// that is used to contain resource sync state, account ownership,
 	// constructed ARN for the resource
+	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
 	// All CRS managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
+	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// A list of updates being applied to the user groups.
+	// +kubebuilder:validation:Optional
 	PendingChanges *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
 	// A list of replication groups that the user group can access.
+	// +kubebuilder:validation:Optional
 	ReplicationGroups []*string `json:"replicationGroups,omitempty"`
 	// Indicates user group status. Can be "creating", "active", "modifying", "deleting".
+	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`
 }
 

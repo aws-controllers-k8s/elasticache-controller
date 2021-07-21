@@ -222,3 +222,5 @@ ignore:
     - CreateReplicationGroupInput.Tags
     - CreateUserInput.Tags
     - CreateUserGroupInput.Tags
+    - CreateReplicationGroupInput.AutoMinorVersionUpgrade
+    - CreateReplicationGroupInput.NumCacheClusters

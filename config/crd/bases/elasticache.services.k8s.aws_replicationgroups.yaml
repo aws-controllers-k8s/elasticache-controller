@@ -73,9 +73,6 @@ spec:
                 required:
                 - key
                 type: object
-              autoMinorVersionUpgrade:
-                description: This parameter is currently disabled.
-                type: boolean
               automaticFailoverEnabled:
                 description: "Specifies whether a read-only replica is automatically
                   promoted to read/write primary if the existing primary fails. \n
@@ -247,17 +244,6 @@ spec:
                   Notification Service (SNS) topic to which notifications are sent.
                   \n The Amazon SNS topic owner must be the same as the cluster owner."
                 type: string
-              numCacheClusters:
-                description: "The number of clusters this replication group initially
-                  has. \n This parameter is not used if there is more than one node
-                  group (shard). You should use ReplicasPerNodeGroup instead. \n If
-                  AutomaticFailoverEnabled is true, the value of this parameter must
-                  be at least 2. If AutomaticFailoverEnabled is false you can omit
-                  this parameter (it will default to 1), or you can explicitly set
-                  it to a value between 2 and 6. \n The maximum permitted value for
-                  NumCacheClusters is 6 (1 primary plus 5 replicas)."
-                format: int64
-                type: integer
               numNodeGroups:
                 description: "An optional parameter that specifies the number of node
                   groups (shards) for this Redis (cluster mode enabled) replication
@@ -703,9 +689,6 @@ spec:
                 description: The current state of this replication group - creating,
                   available, modifying, deleting, create-failed, snapshotting.
                 type: string
-            required:
-            - ackResourceMetadata
-            - conditions
             type: object
         type: object
     served: true
