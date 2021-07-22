@@ -2059,11 +2059,6 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(corev1alpha1.SecretKeyReference)
 		**out = **in
 	}
-	if in.AutoMinorVersionUpgrade != nil {
-		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
-		*out = new(bool)
-		**out = **in
-	}
 	if in.AutomaticFailoverEnabled != nil {
 		in, out := &in.AutomaticFailoverEnabled, &out.AutomaticFailoverEnabled
 		*out = new(bool)
@@ -2140,11 +2135,6 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 	if in.NotificationTopicARN != nil {
 		in, out := &in.NotificationTopicARN, &out.NotificationTopicARN
 		*out = new(string)
-		**out = **in
-	}
-	if in.NumCacheClusters != nil {
-		in, out := &in.NumCacheClusters, &out.NumCacheClusters
-		*out = new(int64)
 		**out = **in
 	}
 	if in.NumNodeGroups != nil {

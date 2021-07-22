@@ -48,18 +48,23 @@ type CacheParameterGroupStatus struct {
 	// All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
 	// that is used to contain resource sync state, account ownership,
 	// constructed ARN for the resource
+	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
 	// All CRS managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
+	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
+	// +kubebuilder:validation:Optional
 	Events []*Event `json:"events,omitempty"`
 	// Indicates whether the parameter group is associated with a Global datastore
+	// +kubebuilder:validation:Optional
 	IsGlobal *bool `json:"isGlobal,omitempty"`
 	// A list of Parameter instances.
+	// +kubebuilder:validation:Optional
 	Parameters []*Parameter `json:"parameters,omitempty"`
 }
 

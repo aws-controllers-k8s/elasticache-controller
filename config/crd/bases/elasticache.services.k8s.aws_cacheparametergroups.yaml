@@ -175,9 +175,6 @@ spec:
                       type: string
                   type: object
                 type: array
-            required:
-            - ackResourceMetadata
-            - conditions
             type: object
         type: object
     served: true

@@ -736,9 +736,6 @@ func (rm *resourceManager) newCreateRequestPayload(
 			res.SetAuthToken(tmpSecret)
 		}
 	}
-	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
-		res.SetAutoMinorVersionUpgrade(*r.ko.Spec.AutoMinorVersionUpgrade)
-	}
 	if r.ko.Spec.AutomaticFailoverEnabled != nil {
 		res.SetAutomaticFailoverEnabled(*r.ko.Spec.AutomaticFailoverEnabled)
 	}
@@ -749,13 +746,13 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
 	}
 	if r.ko.Spec.CacheSecurityGroupNames != nil {
-		f6 := []*string{}
-		for _, f6iter := range r.ko.Spec.CacheSecurityGroupNames {
-			var f6elem string
-			f6elem = *f6iter
-			f6 = append(f6, &f6elem)
+		f5 := []*string{}
+		for _, f5iter := range r.ko.Spec.CacheSecurityGroupNames {
+			var f5elem string
+			f5elem = *f5iter
+			f5 = append(f5, &f5elem)
 		}
-		res.SetCacheSecurityGroupNames(f6)
+		res.SetCacheSecurityGroupNames(f5)
 	}
 	if r.ko.Spec.CacheSubnetGroupName != nil {
 		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
@@ -770,92 +767,89 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f11 := []*svcsdk.LogDeliveryConfigurationRequest{}
-		for _, f11iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f11elem := &svcsdk.LogDeliveryConfigurationRequest{}
-			if f11iter.DestinationDetails != nil {
-				f11elemf0 := &svcsdk.DestinationDetails{}
-				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f11elemf0f0 := &svcsdk.CloudWatchLogsDestinationDetails{}
-					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f11elemf0f0.SetLogGroup(*f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup)
+		f10 := []*svcsdk.LogDeliveryConfigurationRequest{}
+		for _, f10iter := range r.ko.Spec.LogDeliveryConfigurations {
+			f10elem := &svcsdk.LogDeliveryConfigurationRequest{}
+			if f10iter.DestinationDetails != nil {
+				f10elemf0 := &svcsdk.DestinationDetails{}
+				if f10iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f10elemf0f0 := &svcsdk.CloudWatchLogsDestinationDetails{}
+					if f10iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f10elemf0f0.SetLogGroup(*f10iter.DestinationDetails.CloudWatchLogsDetails.LogGroup)
 					}
-					f11elemf0.SetCloudWatchLogsDetails(f11elemf0f0)
+					f10elemf0.SetCloudWatchLogsDetails(f10elemf0f0)
 				}
-				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f11elemf0f1 := &svcsdk.KinesisFirehoseDestinationDetails{}
-					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f11elemf0f1.SetDeliveryStream(*f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream)
+				if f10iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f10elemf0f1 := &svcsdk.KinesisFirehoseDestinationDetails{}
+					if f10iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f10elemf0f1.SetDeliveryStream(*f10iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream)
 					}
-					f11elemf0.SetKinesisFirehoseDetails(f11elemf0f1)
+					f10elemf0.SetKinesisFirehoseDetails(f10elemf0f1)
 				}
-				f11elem.SetDestinationDetails(f11elemf0)
+				f10elem.SetDestinationDetails(f10elemf0)
 			}
-			if f11iter.DestinationType != nil {
-				f11elem.SetDestinationType(*f11iter.DestinationType)
+			if f10iter.DestinationType != nil {
+				f10elem.SetDestinationType(*f10iter.DestinationType)
 			}
-			if f11iter.Enabled != nil {
-				f11elem.SetEnabled(*f11iter.Enabled)
+			if f10iter.Enabled != nil {
+				f10elem.SetEnabled(*f10iter.Enabled)
 			}
-			if f11iter.LogFormat != nil {
-				f11elem.SetLogFormat(*f11iter.LogFormat)
+			if f10iter.LogFormat != nil {
+				f10elem.SetLogFormat(*f10iter.LogFormat)
 			}
-			if f11iter.LogType != nil {
-				f11elem.SetLogType(*f11iter.LogType)
+			if f10iter.LogType != nil {
+				f10elem.SetLogType(*f10iter.LogType)
 			}
-			f11 = append(f11, f11elem)
+			f10 = append(f10, f10elem)
 		}
-		res.SetLogDeliveryConfigurations(f11)
+		res.SetLogDeliveryConfigurations(f10)
 	}
 	if r.ko.Spec.MultiAZEnabled != nil {
 		res.SetMultiAZEnabled(*r.ko.Spec.MultiAZEnabled)
 	}
 	if r.ko.Spec.NodeGroupConfiguration != nil {
-		f13 := []*svcsdk.NodeGroupConfiguration{}
-		for _, f13iter := range r.ko.Spec.NodeGroupConfiguration {
-			f13elem := &svcsdk.NodeGroupConfiguration{}
-			if f13iter.NodeGroupID != nil {
-				f13elem.SetNodeGroupId(*f13iter.NodeGroupID)
+		f12 := []*svcsdk.NodeGroupConfiguration{}
+		for _, f12iter := range r.ko.Spec.NodeGroupConfiguration {
+			f12elem := &svcsdk.NodeGroupConfiguration{}
+			if f12iter.NodeGroupID != nil {
+				f12elem.SetNodeGroupId(*f12iter.NodeGroupID)
 			}
-			if f13iter.PrimaryAvailabilityZone != nil {
-				f13elem.SetPrimaryAvailabilityZone(*f13iter.PrimaryAvailabilityZone)
+			if f12iter.PrimaryAvailabilityZone != nil {
+				f12elem.SetPrimaryAvailabilityZone(*f12iter.PrimaryAvailabilityZone)
 			}
-			if f13iter.PrimaryOutpostARN != nil {
-				f13elem.SetPrimaryOutpostArn(*f13iter.PrimaryOutpostARN)
+			if f12iter.PrimaryOutpostARN != nil {
+				f12elem.SetPrimaryOutpostArn(*f12iter.PrimaryOutpostARN)
 			}
-			if f13iter.ReplicaAvailabilityZones != nil {
-				f13elemf3 := []*string{}
-				for _, f13elemf3iter := range f13iter.ReplicaAvailabilityZones {
-					var f13elemf3elem string
-					f13elemf3elem = *f13elemf3iter
-					f13elemf3 = append(f13elemf3, &f13elemf3elem)
+			if f12iter.ReplicaAvailabilityZones != nil {
+				f12elemf3 := []*string{}
+				for _, f12elemf3iter := range f12iter.ReplicaAvailabilityZones {
+					var f12elemf3elem string
+					f12elemf3elem = *f12elemf3iter
+					f12elemf3 = append(f12elemf3, &f12elemf3elem)
 				}
-				f13elem.SetReplicaAvailabilityZones(f13elemf3)
+				f12elem.SetReplicaAvailabilityZones(f12elemf3)
 			}
-			if f13iter.ReplicaCount != nil {
-				f13elem.SetReplicaCount(*f13iter.ReplicaCount)
+			if f12iter.ReplicaCount != nil {
+				f12elem.SetReplicaCount(*f12iter.ReplicaCount)
 			}
-			if f13iter.ReplicaOutpostARNs != nil {
-				f13elemf5 := []*string{}
-				for _, f13elemf5iter := range f13iter.ReplicaOutpostARNs {
-					var f13elemf5elem string
-					f13elemf5elem = *f13elemf5iter
-					f13elemf5 = append(f13elemf5, &f13elemf5elem)
+			if f12iter.ReplicaOutpostARNs != nil {
+				f12elemf5 := []*string{}
+				for _, f12elemf5iter := range f12iter.ReplicaOutpostARNs {
+					var f12elemf5elem string
+					f12elemf5elem = *f12elemf5iter
+					f12elemf5 = append(f12elemf5, &f12elemf5elem)
 				}
-				f13elem.SetReplicaOutpostArns(f13elemf5)
+				f12elem.SetReplicaOutpostArns(f12elemf5)
 			}
-			if f13iter.Slots != nil {
-				f13elem.SetSlots(*f13iter.Slots)
+			if f12iter.Slots != nil {
+				f12elem.SetSlots(*f12iter.Slots)
 			}
-			f13 = append(f13, f13elem)
+			f12 = append(f12, f12elem)
 		}
-		res.SetNodeGroupConfiguration(f13)
+		res.SetNodeGroupConfiguration(f12)
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
 		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
-	}
-	if r.ko.Spec.NumCacheClusters != nil {
-		res.SetNumCacheClusters(*r.ko.Spec.NumCacheClusters)
 	}
 	if r.ko.Spec.NumNodeGroups != nil {
 		res.SetNumNodeGroups(*r.ko.Spec.NumNodeGroups)
@@ -864,13 +858,13 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetPort(*r.ko.Spec.Port)
 	}
 	if r.ko.Spec.PreferredCacheClusterAZs != nil {
-		f18 := []*string{}
-		for _, f18iter := range r.ko.Spec.PreferredCacheClusterAZs {
-			var f18elem string
-			f18elem = *f18iter
-			f18 = append(f18, &f18elem)
+		f16 := []*string{}
+		for _, f16iter := range r.ko.Spec.PreferredCacheClusterAZs {
+			var f16elem string
+			f16elem = *f16iter
+			f16 = append(f16, &f16elem)
 		}
-		res.SetPreferredCacheClusterAZs(f18)
+		res.SetPreferredCacheClusterAZs(f16)
 	}
 	if r.ko.Spec.PreferredMaintenanceWindow != nil {
 		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
@@ -888,22 +882,22 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
 	}
 	if r.ko.Spec.SecurityGroupIDs != nil {
-		f24 := []*string{}
-		for _, f24iter := range r.ko.Spec.SecurityGroupIDs {
-			var f24elem string
-			f24elem = *f24iter
-			f24 = append(f24, &f24elem)
+		f22 := []*string{}
+		for _, f22iter := range r.ko.Spec.SecurityGroupIDs {
+			var f22elem string
+			f22elem = *f22iter
+			f22 = append(f22, &f22elem)
 		}
-		res.SetSecurityGroupIds(f24)
+		res.SetSecurityGroupIds(f22)
 	}
 	if r.ko.Spec.SnapshotARNs != nil {
-		f25 := []*string{}
-		for _, f25iter := range r.ko.Spec.SnapshotARNs {
-			var f25elem string
-			f25elem = *f25iter
-			f25 = append(f25, &f25elem)
+		f23 := []*string{}
+		for _, f23iter := range r.ko.Spec.SnapshotARNs {
+			var f23elem string
+			f23elem = *f23iter
+			f23 = append(f23, &f23elem)
 		}
-		res.SetSnapshotArns(f25)
+		res.SetSnapshotArns(f23)
 	}
 	if r.ko.Spec.SnapshotName != nil {
 		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
@@ -918,13 +912,13 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
 	}
 	if r.ko.Spec.UserGroupIDs != nil {
-		f30 := []*string{}
-		for _, f30iter := range r.ko.Spec.UserGroupIDs {
-			var f30elem string
-			f30elem = *f30iter
-			f30 = append(f30, &f30elem)
+		f28 := []*string{}
+		for _, f28iter := range r.ko.Spec.UserGroupIDs {
+			var f28elem string
+			f28elem = *f28iter
+			f28 = append(f28, &f28elem)
 		}
-		res.SetUserGroupIds(f30)
+		res.SetUserGroupIds(f28)
 	}
 
 	return res, nil
@@ -1287,9 +1281,6 @@ func (rm *resourceManager) newUpdateRequestPayload(
 			res.SetAuthToken(tmpSecret)
 		}
 	}
-	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
-		res.SetAutoMinorVersionUpgrade(*r.ko.Spec.AutoMinorVersionUpgrade)
-	}
 	if r.ko.Spec.AutomaticFailoverEnabled != nil {
 		res.SetAutomaticFailoverEnabled(*r.ko.Spec.AutomaticFailoverEnabled)
 	}
@@ -1461,16 +1452,21 @@ func (rm *resourceManager) updateConditions(
 		}
 	}
 
-	if rm.terminalAWSError(err) {
+	if rm.terminalAWSError(err) || err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound {
 		if terminalCondition == nil {
 			terminalCondition = &ackv1alpha1.Condition{
 				Type: ackv1alpha1.ConditionTypeTerminal,
 			}
 			ko.Status.Conditions = append(ko.Status.Conditions, terminalCondition)
 		}
+		var errorMessage = ""
+		if err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound {
+			errorMessage = err.Error()
+		} else {
+			awsErr, _ := ackerr.AWSError(err)
+			errorMessage = awsErr.Message()
+		}
 		terminalCondition.Status = corev1.ConditionTrue
-		awsErr, _ := ackerr.AWSError(err)
-		errorMessage := awsErr.Message()
 		terminalCondition.Message = &errorMessage
 	} else {
 		// Clear the terminal condition if no longer present

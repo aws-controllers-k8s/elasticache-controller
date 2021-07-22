@@ -48,21 +48,28 @@ type UserStatus struct {
 	// All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
 	// that is used to contain resource sync state, account ownership,
 	// constructed ARN for the resource
+	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
 	// All CRS managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
+	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// Denotes whether the user requires a password to authenticate.
+	// +kubebuilder:validation:Optional
 	Authentication *Authentication `json:"authentication,omitempty"`
 	// Access permissions string used for this user.
+	// +kubebuilder:validation:Optional
 	ExpandedAccessString *string `json:"expandedAccessString,omitempty"`
 	// Access permissions string used for this user.
+	// +kubebuilder:validation:Optional
 	LastRequestedAccessString *string `json:"lastRequestedAccessString,omitempty"`
 	// Indicates the user status. Can be "active", "modifying" or "deleting".
+	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`
 	// Returns a list of the user group IDs the user belongs to.
+	// +kubebuilder:validation:Optional
 	UserGroupIDs []*string `json:"userGroupIDs,omitempty"`
 }
 

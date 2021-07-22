@@ -45,18 +45,23 @@ type SnapshotStatus struct {
 	// All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
 	// that is used to contain resource sync state, account ownership,
 	// constructed ARN for the resource
+	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
 	// All CRS managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
+	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// This parameter is currently disabled.
+	// +kubebuilder:validation:Optional
 	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Indicates the status of automatic failover for the source Redis replication
 	// group.
+	// +kubebuilder:validation:Optional
 	AutomaticFailover *string `json:"automaticFailover,omitempty"`
 	// The date and time when the source cluster was created.
+	// +kubebuilder:validation:Optional
 	CacheClusterCreateTime *metav1.Time `json:"cacheClusterCreateTime,omitempty"`
 	// The name of the compute and memory capacity node type for the source cluster.
 	//
@@ -103,29 +108,39 @@ type SnapshotStatus struct {
 	//
 	//    * Redis configuration variables appendonly and appendfsync are not supported
 	//    on Redis version 2.8.22 and later.
+	// +kubebuilder:validation:Optional
 	CacheNodeType *string `json:"cacheNodeType,omitempty"`
 	// The cache parameter group that is associated with the source cluster.
+	// +kubebuilder:validation:Optional
 	CacheParameterGroupName *string `json:"cacheParameterGroupName,omitempty"`
 	// The name of the cache subnet group associated with the source cluster.
+	// +kubebuilder:validation:Optional
 	CacheSubnetGroupName *string `json:"cacheSubnetGroupName,omitempty"`
 	// The name of the cache engine (memcached or redis) used by the source cluster.
+	// +kubebuilder:validation:Optional
 	Engine *string `json:"engine,omitempty"`
 	// The version of the cache engine version that is used by the source cluster.
+	// +kubebuilder:validation:Optional
 	EngineVersion *string `json:"engineVersion,omitempty"`
 	// A list of the cache nodes in the source cluster.
+	// +kubebuilder:validation:Optional
 	NodeSnapshots []*NodeSnapshot `json:"nodeSnapshots,omitempty"`
 	// The number of cache nodes in the source cluster.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
 	// this value must be between 1 and 40.
+	// +kubebuilder:validation:Optional
 	NumCacheNodes *int64 `json:"numCacheNodes,omitempty"`
 	// The number of node groups (shards) in this snapshot. When restoring from
 	// a snapshot, the number of node groups (shards) in the snapshot and in the
 	// restored replication group must be the same.
+	// +kubebuilder:validation:Optional
 	NumNodeGroups *int64 `json:"numNodeGroups,omitempty"`
 	// The port number used by each cache nodes in the source cluster.
+	// +kubebuilder:validation:Optional
 	Port *int64 `json:"port,omitempty"`
 	// The name of the Availability Zone in which the source cluster is located.
+	// +kubebuilder:validation:Optional
 	PreferredAvailabilityZone *string `json:"preferredAvailabilityZone,omitempty"`
 	// Specifies the weekly time range during which maintenance on the cluster is
 	// performed. It is specified as a range in the format ddd:hh24:mi-ddd:hh24:mi
@@ -148,10 +163,13 @@ type SnapshotStatus struct {
 	//    * sat
 	//
 	// Example: sun:23:00-mon:01:30
+	// +kubebuilder:validation:Optional
 	PreferredMaintenanceWindow *string `json:"preferredMaintenanceWindow,omitempty"`
 	// The ARN (Amazon Resource Name) of the preferred outpost.
+	// +kubebuilder:validation:Optional
 	PreferredOutpostARN *string `json:"preferredOutpostARN,omitempty"`
 	// A description of the source replication group.
+	// +kubebuilder:validation:Optional
 	ReplicationGroupDescription *string `json:"replicationGroupDescription,omitempty"`
 	// For an automatic snapshot, the number of days for which ElastiCache retains
 	// the snapshot before deleting it.
@@ -163,21 +181,27 @@ type SnapshotStatus struct {
 	//
 	// Important If the value of SnapshotRetentionLimit is set to zero (0), backups
 	// are turned off.
+	// +kubebuilder:validation:Optional
 	SnapshotRetentionLimit *int64 `json:"snapshotRetentionLimit,omitempty"`
 	// Indicates whether the snapshot is from an automatic backup (automated) or
 	// was created manually (manual).
+	// +kubebuilder:validation:Optional
 	SnapshotSource *string `json:"snapshotSource,omitempty"`
 	// The status of the snapshot. Valid values: creating | available | restoring
 	// | copying | deleting.
+	// +kubebuilder:validation:Optional
 	SnapshotStatus *string `json:"snapshotStatus,omitempty"`
 	// The daily time range during which ElastiCache takes daily snapshots of the
 	// source cluster.
+	// +kubebuilder:validation:Optional
 	SnapshotWindow *string `json:"snapshotWindow,omitempty"`
 	// The Amazon Resource Name (ARN) for the topic used by the source cluster for
 	// publishing notifications.
+	// +kubebuilder:validation:Optional
 	TopicARN *string `json:"topicARN,omitempty"`
 	// The Amazon Virtual Private Cloud identifier (VPC ID) of the cache subnet
 	// group for the source cluster.
+	// +kubebuilder:validation:Optional
 	VPCID *string `json:"vpcID,omitempty"`
 }
 
