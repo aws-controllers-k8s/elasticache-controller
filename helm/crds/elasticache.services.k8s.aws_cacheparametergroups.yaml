@@ -35,16 +35,30 @@ spec:
           metadata:
             type: object
           spec:
-            description: CacheParameterGroupSpec defines the desired state of CacheParameterGroup
+            description: "CacheParameterGroupSpec defines the desired state of CacheParameterGroup.
+              \n Represents the output of a CreateCacheParameterGroup operation."
             properties:
               cacheParameterGroupFamily:
+                description: "The name of the cache parameter group family that the
+                  cache parameter group can be used with. \n Valid values are: memcached1.4
+                  | memcached1.5 | memcached1.6 | redis2.6 | redis2.8 | redis3.2 |
+                  redis4.0 | redis5.0 | redis6.x |"
                 type: string
               cacheParameterGroupName:
+                description: A user-specified name for the cache parameter group.
                 type: string
               description:
+                description: A user-specified description for the cache parameter
+                  group.
                 type: string
               parameterNameValues:
+                description: An array of parameter names and values for the parameter
+                  update. You must supply at least one parameter name and value; subsequent
+                  arguments are optional. A maximum of 20 parameters may be modified
+                  per request.
                 items:
+                  description: Describes a name-value pair that is used to update
+                    the value of a parameter.
                   properties:
                     parameterName:
                       type: string
@@ -117,7 +131,12 @@ spec:
                   type: object
                 type: array
               events:
+                description: A list of events. Each element in the list contains detailed
+                  information about one event.
                 items:
+                  description: Represents a single occurrence of something interesting
+                    within the system. Some examples of events are creating a cluster,
+                    adding or removing a cache node, or rebooting a node.
                   properties:
                     date:
                       format: date-time
@@ -129,9 +148,14 @@ spec:
                   type: object
                 type: array
               isGlobal:
+                description: Indicates whether the parameter group is associated with
+                  a Global datastore
                 type: boolean
               parameters:
+                description: A list of Parameter instances.
                 items:
+                  description: Describes an individual setting that controls some
+                    aspect of ElastiCache behavior.
                   properties:
                     allowedValues:
                       type: string
@@ -151,9 +175,6 @@ spec:
                       type: string
                   type: object
                 type: array
-            required:
-            - ackResourceMetadata
-            - conditions
             type: object
         type: object
     served: true

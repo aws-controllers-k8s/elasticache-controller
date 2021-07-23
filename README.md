@@ -13,6 +13,10 @@ Kubernetes Github project.
 The ACK service controller for Amazon ElastiCache supports the following Amazon ElastiCache API resources in `DEVELOPER PREVIEW`:
 - [x] Replication Group
 - [x] Cache Subnet Group
+- [x] User Group
+- [x] User
+- [x] Snapshot Group
+- [x] Cache Parameter Group
 
 ## Contributing
 

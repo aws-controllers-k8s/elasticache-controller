@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.0
   creationTimestamp: null
-  name: cachesubnetgroups.elasticache.services.k8s.aws
+  name: users.elasticache.services.k8s.aws
 spec:
   group: elasticache.services.k8s.aws
   names:
-    kind: CacheSubnetGroup
-    listKind: CacheSubnetGroupList
-    plural: cachesubnetgroups
-    singular: cachesubnetgroup
+    kind: User
+    listKind: UserList
+    plural: users
+    singular: user
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CacheSubnetGroup is the Schema for the CacheSubnetGroups API
+        description: User is the Schema for the Users API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,30 +34,52 @@ spec:
           metadata:
             type: object
           spec:
-            description: "CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup.
-              \n Represents the output of one of the following operations: \n    *
-              CreateCacheSubnetGroup \n    * ModifyCacheSubnetGroup"
             properties:
-              cacheSubnetGroupDescription:
-                description: A description for the cache subnet group.
+              accessString:
+                description: Access permissions string used for this user.
                 type: string
-              cacheSubnetGroupName:
-                description: "A name for the cache subnet group. This value is stored
-                  as a lowercase string. \n Constraints: Must contain no more than
-                  255 alphanumeric characters or hyphens. \n Example: mysubnetgroup"
+              engine:
+                description: The current supported value is Redis.
                 type: string
-              subnetIDs:
-                description: A list of VPC subnet IDs for the cache subnet group.
+              noPasswordRequired:
+                description: Indicates a password is not required for this user.
+                type: boolean
+              passwords:
+                description: Passwords used for this user. You can create up to two
+                  passwords for each user.
                 items:
-                  type: string
+                  description: SecretKeyReference combines a k8s corev1.SecretReference
+                    with a specific key within the referred-to Secret
+                  properties:
+                    key:
+                      description: Key is the key within the secret
+                      type: string
+                    name:
+                      description: Name is unique within a namespace to reference
+                        a secret resource.
+                      type: string
+                    namespace:
+                      description: Namespace defines the space within which the secret
+                        name must be unique.
+                      type: string
+                  required:
+                  - key
+                  type: object
                 type: array
+              userID:
+                description: The ID of the user.
+                type: string
+              userName:
+                description: The username of the user.
+                type: string
             required:
-            - cacheSubnetGroupDescription
-            - cacheSubnetGroupName
-            - subnetIDs
+            - accessString
+            - engine
+            - userID
+            - userName
             type: object
           status:
-            description: CacheSubnetGroupStatus defines the observed state of CacheSubnetGroup
+            description: UserStatus defines the observed state of User
             properties:
               ackResourceMetadata:
                 description: All CRs managed by ACK have a common `Status.ACKResourceMetadata`
@@ -81,6 +103,15 @@ spec:
                     type: string
                 required:
                 - ownerAccountID
+                type: object
+              authentication:
+                description: Denotes whether the user requires a password to authenticate.
+                properties:
+                  passwordCount:
+                    format: int64
+                    type: integer
+                  type_:
+                    type: string
                 type: object
               conditions:
                 description: All CRS managed by ACK have a common `Status.Conditions`
@@ -115,51 +146,22 @@ spec:
                   - type
                   type: object
                 type: array
-              events:
-                description: A list of events. Each element in the list contains detailed
-                  information about one event.
-                items:
-                  description: Represents a single occurrence of something interesting
-                    within the system. Some examples of events are creating a cluster,
-                    adding or removing a cache node, or rebooting a node.
-                  properties:
-                    date:
-                      format: date-time
-                      type: string
-                    message:
-                      type: string
-                    sourceIdentifier:
-                      type: string
-                  type: object
-                type: array
-              subnets:
-                description: A list of subnets associated with the cache subnet group.
-                items:
-                  description: Represents the subnet associated with a cluster. This
-                    parameter refers to subnets defined in Amazon Virtual Private
-                    Cloud (Amazon VPC) and used with ElastiCache.
-                  properties:
-                    subnetAvailabilityZone:
-                      description: Describes an Availability Zone in which the cluster
-                        is launched.
-                      properties:
-                        name:
-                          type: string
-                      type: object
-                    subnetIdentifier:
-                      type: string
-                    subnetOutpost:
-                      description: The ID of the outpost subnet.
-                      properties:
-                        subnetOutpostARN:
-                          type: string
-                      type: object
-                  type: object
-                type: array
-              vpcID:
-                description: The Amazon Virtual Private Cloud identifier (VPC ID)
-                  of the cache subnet group.
+              expandedAccessString:
+                description: Access permissions string used for this user.
                 type: string
+              lastRequestedAccessString:
+                description: Access permissions string used for this user.
+                type: string
+              status:
+                description: Indicates the user status. Can be "active", "modifying"
+                  or "deleting".
+                type: string
+              userGroupIDs:
+                description: Returns a list of the user group IDs the user belongs
+                  to.
+                items:
+                  type: string
+                type: array
             type: object
         type: object
     served: true
