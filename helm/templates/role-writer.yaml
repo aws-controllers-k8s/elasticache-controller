@@ -17,6 +17,10 @@ rules:
 
   - snapshots
 
+  - users
+
+  - usergroups
+
   verbs:
   - create
   - delete
@@ -32,6 +36,8 @@ rules:
   - cachesubnetgroups
   - replicationgroups
   - snapshots
+  - users
+  - usergroups
   verbs:
   - get
   - patch
