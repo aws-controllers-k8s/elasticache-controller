@@ -35,6 +35,18 @@ def rg_deletion_waiter():
     return ec.get_waiter('replication_group_deleted')
 
 
+# delete the replication group using the provided k8s reference, and use the elasticache deletion waiter
+# to wait for server-side deletion
+@pytest.fixture(scope="module")
+def perform_teardown(rg_deletion_waiter):
+    def _perform_teardown(reference, rg_id):
+        k8s.delete_custom_resource(reference)
+        sleep(DEFAULT_WAIT_SECS)
+        rg_deletion_waiter.wait(ReplicationGroupId=rg_id)  # throws exception if wait fails
+
+    return _perform_teardown
+
+
 # retrieve resources created in the bootstrap step
 @pytest.fixture(scope="module")
 def bootstrap_resources():
@@ -69,7 +81,7 @@ def make_replication_group():
 
 
 @pytest.fixture(scope="module")
-def rg_input_coverage(bootstrap_resources, make_rg_name, make_replication_group, rg_deletion_waiter):
+def rg_input_coverage(bootstrap_resources, make_rg_name, make_replication_group, perform_teardown):
     input_dict = {
         "RG_ID": make_rg_name("rg-input-coverage"),
         "KMS_KEY_ID": bootstrap_resources.KmsKeyID,
@@ -82,10 +94,7 @@ def rg_input_coverage(bootstrap_resources, make_rg_name, make_replication_group,
     (reference, resource) = make_replication_group("replicationgroup_input_coverage", input_dict, input_dict["RG_ID"])
     yield (reference, resource)
 
-    # teardown
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"]) #throws exception if wait fails
+    perform_teardown(reference, input_dict['RG_ID'])
 
 @pytest.fixture(scope="module")
 def secrets():
@@ -105,7 +114,7 @@ def secrets():
 
 
 @pytest.fixture(scope="module")
-def rg_auth_token(make_rg_name, make_replication_group, rg_deletion_waiter, secrets):
+def rg_auth_token(make_rg_name, make_replication_group, perform_teardown, secrets):
     input_dict = {
         "RG_ID": make_rg_name("rg-auth-token"),
         "NAME": secrets['NAME1'],
@@ -113,13 +122,12 @@ def rg_auth_token(make_rg_name, make_replication_group, rg_deletion_waiter, secr
     }
     (reference, resource) = make_replication_group("replicationgroup_authtoken", input_dict, input_dict["RG_ID"])
     yield (reference, resource)
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])  # throws exception if wait fails
+
+    perform_teardown(reference, input_dict['RG_ID'])
 
 
 @pytest.fixture(scope="module")
-def rg_cmd_fromsnapshot(bootstrap_resources, make_rg_name, make_replication_group, rg_deletion_waiter):
+def rg_cmd_fromsnapshot(bootstrap_resources, make_rg_name, make_replication_group, perform_teardown):
     input_dict = {
         "RG_ID": make_rg_name("rg-cmd-fromsnapshot"),
         "SNAPSHOT_NAME": bootstrap_resources.SnapshotName
@@ -128,10 +136,7 @@ def rg_cmd_fromsnapshot(bootstrap_resources, make_rg_name, make_replication_grou
     (reference, resource) = make_replication_group("replicationgroup_cmd_fromsnapshot", input_dict, input_dict["RG_ID"])
     yield (reference, resource)
 
-    # teardown
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+    perform_teardown(reference, input_dict['RG_ID'])
 
 
 @pytest.fixture(scope="module")
@@ -145,16 +150,13 @@ def rg_cmd_update_input(make_rg_name):
 
 
 @pytest.fixture(scope="module")
-def rg_cmd_update(rg_cmd_update_input, make_replication_group, rg_deletion_waiter):
+def rg_cmd_update(rg_cmd_update_input, make_replication_group, perform_teardown):
     input_dict = rg_cmd_update_input
 
     (reference, resource) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict["RG_ID"])
     yield (reference, resource)
 
-    # teardown
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+    perform_teardown(reference, input_dict['RG_ID'])
 
 
 @pytest.fixture(scope="module")
@@ -168,16 +170,33 @@ def rg_update_pmw_input(make_rg_name):
 
 
 @pytest.fixture(scope="module")
-def rg_update_pmw(rg_update_pmw_input, make_replication_group, rg_deletion_waiter):
+def rg_update_pmw(rg_update_pmw_input, make_replication_group, perform_teardown):
     input_dict = rg_update_pmw_input
 
     (reference, resource) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict['RG_ID'])
     yield reference, resource
 
-    # teardown
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    rg_deletion_waiter.wait(ReplicationGroupId=input_dict['RG_ID'])
+    perform_teardown(reference, input_dict['RG_ID'])
+
+
+@pytest.fixture(scope="module")
+def rg_update_cpg_input(make_rg_name):
+    return {
+        "RG_ID": make_rg_name("rg-update-cpg"),
+        "ENGINE_VERSION": "6.x",
+        "NUM_NODE_GROUPS": "1",
+        "REPLICAS_PER_NODE_GROUP": "1"
+    }
+
+
+@pytest.fixture(scope="module")
+def rg_update_cpg(rg_update_cpg_input, make_replication_group, perform_teardown):
+    input_dict = rg_update_cpg_input
+
+    (reference, resource) = make_replication_group("replicationgroup_cmd_update", input_dict, input_dict['RG_ID'])
+    yield reference, resource
+
+    perform_teardown(reference, input_dict['RG_ID'])
 
 
 @pytest.fixture(scope="module")
@@ -271,6 +290,21 @@ class TestReplicationGroup:
         # assert new state
         cc = retrieve_cache_cluster(rg_update_pmw_input['RG_ID'])
         assert cc['PreferredMaintenanceWindow'] == desired_pmw
+
+    def test_rg_update_cpg(self, rg_update_cpg_input, rg_update_cpg, bootstrap_resources):
+        # wait for resource to sync and retrieve initial PMW
+        (reference, _) = rg_update_cpg
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+
+        # update, wait for resource to sync
+        patch = {"spec": {"cacheParameterGroupName": bootstrap_resources.CPGName}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)  # should be immediate
+
+        # assert new state
+        cc = retrieve_cache_cluster(rg_update_cpg_input['RG_ID'])
+        assert cc['CacheParameterGroup']['CacheParameterGroupName'] == bootstrap_resources.CPGName
 
     def test_rg_auth_token(self, rg_auth_token, secrets):
         (reference, _) = rg_auth_token
