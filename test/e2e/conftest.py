@@ -28,9 +28,6 @@ def pytest_configure(config):
         "markers", "service(arg): mark test associated with a given service"
     )
     config.addinivalue_line(
-        "markers", "usecase(arg): mark test associated with a given usecase"
-    )
-    config.addinivalue_line(
         "markers", "slow: mark test as slow to run"
     )
     config.addinivalue_line(
@@ -49,7 +46,6 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow)
         if "blocked" in item.keywords and not config.getoption("--runblocked"):
             item.add_marker(skip_blocked)
-    # TODO: choose test per 'usecase' selector
 
 
 # Provide a k8s client to interact with the integration test cluster

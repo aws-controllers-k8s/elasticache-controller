@@ -18,28 +18,25 @@ Uses declarative tests framework for custom resources.
 To add test: add scenario yaml to scenarios/ directory.
 """
 
-from declarative_test_fwk import helper, loader, runner
+from e2e.declarative_test_fwk import runner, loader, helper
 
 import pytest
 import boto3
 import logging
 
-from e2e import service_bootstrap, service_cleanup, service_marker, scenarios_directory, CRD_VERSION, CRD_GROUP, SERVICE_NAME
+from e2e import service_marker, scenarios_directory, resource_directory, CRD_VERSION, CRD_GROUP, SERVICE_NAME
+from e2e.bootstrap_resources import get_bootstrap_resources
+
 from acktest.k8s import resource as k8s
 
-@helper.resource_helper("ReplicationGroup")
+
+@helper.register_resource_helper(resource_kind="ReplicationGroup", resource_plural="ReplicationGroups")
 class ReplicationGroupHelper(helper.ResourceHelper):
-    def assert_expectations(self, verb: str, input_data: dict, expectations: dict,
-                            reference: k8s.CustomResourceReference):
-        # default assertions
-        super().assert_expectations(verb, input_data, expectations, reference)
-
-        # perform custom server side checks based on:
-        # verb, input data to verb, expectations for given resource
-
     """
-    Helper for replication group scenarios
+    Helper for replication group scenarios.
+    Overrides methods as required for custom resources.
     """
+
     def wait_for_delete(self, reference: k8s.CustomResourceReference):
         logging.debug(f"ReplicationGroupHelper - wait_for_delete()")
         ec = boto3.client("elasticache")
@@ -51,41 +48,26 @@ class ReplicationGroupHelper(helper.ResourceHelper):
 @pytest.fixture(scope="session")
 def input_replacements():
     """
-    Session scoped fixture to bootstrap service resources and teardown
     provides input replacements for test scenarios.
-    Eliminates the need for:
-     - bootstrap.yaml and
-     - call to <service_controller_test_dir>/service_bootstrap.py from test-infra
-     - call to <service_controller_test_dir>/service_cleanup.py from test-infra
     """
-
-    resources_dict = service_bootstrap.service_bootstrap()
+    resource_replacements = get_bootstrap_resources().replacement_dict()
     replacements = {
         "CRD_VERSION": CRD_VERSION,
         "CRD_GROUP": CRD_GROUP,
-        "SERVICE_NAME": SERVICE_NAME,
-        "SNS_TOPIC_ARN": resources_dict.get("SnsTopicARN"),
-        "SG_ID": resources_dict.get("SecurityGroupID"),
-        "USERGROUP_ID": resources_dict.get("UserGroupID"),
-        "KMS_KEY_ID": resources_dict.get("KmsKeyID"),
-        "SNAPSHOT_NAME": resources_dict.get("SnapshotName"),
-        "NON_DEFAULT_USER": resources_dict.get("SnapshotName")
+        "SERVICE_NAME": SERVICE_NAME
     }
-
-    yield replacements
-    # teardown
-    service_cleanup.service_cleanup(resources_dict)
+    yield {**resource_replacements, **replacements}
 
 
 @pytest.fixture(params=loader.list_scenarios(scenarios_directory), ids=loader.idfn)
 def scenario(request, input_replacements):
     """
-    Parameterized fixture
-    Provides scenarios to execute
-    Supports parallel execution of scenarios
+    Parameterized pytest fixture
+    Provides test scenarios to execute
+    Supports parallel execution of test scenarios
     """
     scenario_file_path = request.param
-    scenario = loader.load_scenario(scenario_file_path, input_replacements)
+    scenario = loader.load_scenario(scenario_file_path, resource_directory, input_replacements)
     yield scenario
     runner.teardown(scenario)
 

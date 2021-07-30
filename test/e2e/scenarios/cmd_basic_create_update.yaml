@@ -1,12 +1,9 @@
 id: "RG_CMD_basic_create_update"
 description: "In this test we create RG with absolutely minimum configuration and try to update it."
-usecases:
-  - replication_group
-  - cmd
 #marks:
 #  - slow
 #  - blocked
-customResourceReference:
+resource:
   apiVersion: $CRD_GROUP/$CRD_VERSION
   kind: ReplicationGroup
   metadata:
@@ -21,20 +18,28 @@ steps:
         replicationGroupDescription: Basic create and update of CMD RG
         cacheNodeType: cache.t3.micro
         numNodeGroups: 1
-    expect:
+    wait:
       status:
         conditions:
-          ACK.ResourceSynced: "True"
+          ACK.ResourceSynced:
+            status: "True"
+            timeout: 1800
+    expect:
+      status:
         status: "available"
   - id: "invalid_cacheNodeType_on_CMD_replication_group_causes_Terminal_condition"
     description: "Negative test include transitEncryptionEnabled"
     patch:
       spec:
         cacheNodeType: cache.micro # invalid value
+    wait: 60
     expect:
       status:
         conditions:
           ACK.Terminal: "True"
+          ACK.ResourceSynced:
+            status: "True"
+            # message: "Expected message ..."
   - id: "delete_CMD_RG"
     description: "Delete cluster mode disabled replication group"
     delete: test$RANDOM_SUFFIX
