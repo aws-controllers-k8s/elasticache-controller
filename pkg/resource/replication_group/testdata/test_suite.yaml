@@ -72,6 +72,23 @@ tests:
         expect:
           latest_state: "replication_group/cr/rg_cmd_create_completed.yaml" #unchanged
           error: nil
+      - name: "ReadOne=SpecUpdate"
+        description: "Test if the controller can populate the latest resource Spec with updated values from the server."
+        given:
+          desired_state: "replication_group/cr/rg_cmd_all_spec_desired.yaml"
+          svc_api:
+            - operation: DescribeReplicationGroupsWithContext
+              output_fixture: "replication_group/read_one/rg_cmd_all_spec.json"
+            - operation: DescribeCacheClustersWithContext
+              output_fixture: "cache_clusters/read_many/rg_cmd_all_spec.json"
+            - operation: ListAllowedNodeTypeModifications
+              output_fixture: "allowed_node_types/read_many/rg_cmd_allowed_node_types_simple.json"
+            - operation: DescribeEventsWithContext
+              output_fixture: "events/read_many/rg_cmd_events.json"
+        invoke: ReadOne
+        expect:
+          latest_state: "replication_group/cr/rg_cmd_all_spec_latest.yaml"
+          error: nil
       - name: "Update=IncreaseReplicaCount"
         description: "Ensure a replica is added once a new config is provided"
         given:

@@ -1,0 +1,79 @@
+{
+  "ReplicationGroups": [
+    {
+      "Status": "available",
+      "MultiAZ": "disabled",
+      "Description": "description2",
+      "UserGroupIds": [
+        "usergroup2"
+      ],
+      "NodeGroups": [
+        {
+          "Status": "available",
+          "NodeGroupMembers": [
+            {
+              "CurrentRole": "replica",
+              "PreferredAvailabilityZone": "us-west-2c",
+              "CacheNodeId": "0001",
+              "ReadEndpoint": {
+                "Port": 7070,
+                "Address": "replica-address-2"
+              },
+              "CacheClusterId": "rg-all-spec-001"
+            },
+            {
+              "CurrentRole": "primary",
+              "PreferredAvailabilityZone": "us-west-2d",
+              "CacheNodeId": "0001",
+              "ReadEndpoint": {
+                "Port": 7070,
+                "Address": "primary-address-2"
+              },
+              "CacheClusterId": "rg-all-spec-002"
+            }
+          ],
+          "ReaderEndpoint": {
+            "Port": 7070,
+            "Address": "reader-address-1"
+          },
+          "NodeGroupId": "0001",
+          "PrimaryEndpoint": {
+            "Port": 7070,
+            "Address": "cluster-address-2"
+          }
+        }
+      ],
+      "AuthTokenEnabled": false,
+      "AtRestEncryptionEnabled": false,
+      "ClusterEnabled": false,
+      "LogDeliveryConfigurations": [
+        {
+          "DestinationDetails": {
+            "KinesisFirehoseDetails": {
+              "DeliveryStream": "test"
+            }
+          },
+          "Status": "error",
+          "LogType": "slow-log",
+          "LogFormat": "text",
+          "DestinationType": "kinesis-firehose",
+          "Message": "Destination delivery stream test does not exist."
+        }
+      ],
+      "ReplicationGroupId": "rg-all-spec",
+      "GlobalReplicationGroupInfo": {},
+      "SnapshotRetentionLimit": 0,
+      "AutomaticFailover": "disabled",
+      "TransitEncryptionEnabled": false,
+      "SnapshotWindow": "10:00-11:00",
+      "KmsKeyId": "key2",
+      "MemberClusters": [
+        "rg-all-spec-001",
+        "rg-all-spec-002"
+      ],
+      "CacheNodeType": "cache.t3.micro",
+      "ARN": "arn:aws:elasticache:us-west-2:012345678910:replicationgroup:rg-all-spec",
+      "PendingModifiedValues": {}
+    }
+  ]
+}

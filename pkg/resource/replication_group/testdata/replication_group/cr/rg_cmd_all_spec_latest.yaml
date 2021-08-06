@@ -1,0 +1,110 @@
+# see rg_cmd_all_spec_desired.yaml for more details. Almost all spec fields in this
+# file are different from those in that file.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: rg-all-spec
+spec:
+  atRestEncryptionEnabled: false
+  # authToken is not retrievable by the server, so should not be present here
+  automaticFailoverEnabled: false
+  cacheNodeType: cache.t3.micro
+  cacheParameterGroupName: customparamgroup
+  cacheSecurityGroupNames:
+    - sgname3
+    - sgname4
+  cacheSubnetGroupName: non-default-subnet-group
+  engine: mock-engine
+  engineVersion: 6.0.5
+  kmsKeyID: key2 # included even though the API has not been returning the associated field
+  logDeliveryConfigurations:
+    - destinationType: kinesis-firehose
+      logFormat: text
+      logType: slow-log
+      destinationDetails:
+        kinesisFirehoseDetails:
+          deliveryStream: test
+  multiAZEnabled: false
+  nodeGroupConfiguration:
+    - nodeGroupID: "0001"
+      primaryAvailabilityZone: us-west-2d
+      replicaAvailabilityZones:
+        - us-west-2c
+      replicaCount: 1
+  notificationTopicARN: arn:aws:sns:mock-arn-2
+  numNodeGroups: 1
+  port: 7070
+  preferredCacheClusterAZs:
+    - us-west-2d
+    - us-west-2c
+  preferredMaintenanceWindow: wed:08:00-wed:09:00
+  primaryClusterID: rg-all-spec-002
+  replicasPerNodeGroup: 1
+  replicationGroupDescription: description2
+  replicationGroupID: rg-all-spec
+  securityGroupIDs:
+    - sgid3
+    - sgid4
+  # snapshotARNs should not be present; see note about authToken above
+  # snapshotName should not be present, same case as above
+  snapshotRetentionLimit: 0
+  snapshotWindow: 10:00-11:00
+  transitEncryptionEnabled: false
+  userGroupIDs:
+    - usergroup2
+status:
+  ackResourceMetadata:
+    arn: arn:aws:elasticache:us-west-2:012345678910:replicationgroup:rg-all-spec
+    ownerAccountID: ""
+  allowedScaleUpModifications:
+    - cache.m3.2xlarge
+  authTokenEnabled: false
+  automaticFailover: disabled
+  clusterEnabled: false
+  conditions:
+    - status: "True"
+      type: ACK.ResourceSynced
+  description: description2
+  events: # should remain same as in desired
+    - date: "2021-03-30T20:12:00Z"
+      message: Replication group rg-cmd created
+  globalReplicationGroupInfo: {}
+  logDeliveryConfigurations:
+    - destinationType: kinesis-firehose
+      logFormat: text
+      logType: slow-log
+      message: "Destination delivery stream test does not exist."
+      status: error
+      destinationDetails:
+        kinesisFirehoseDetails:
+          deliveryStream: test
+  memberClusters:
+    - rg-all-spec-001
+    - rg-all-spec-002
+  multiAZ: disabled
+  nodeGroups:
+    - nodeGroupID: "0001"
+      nodeGroupMembers:
+        - cacheClusterID: rg-all-spec-001
+          cacheNodeID: "0001"
+          currentRole: replica
+          preferredAvailabilityZone: us-west-2c
+          readEndpoint:
+            address: replica-address-2
+            port: 7070
+        - cacheClusterID: rg-all-spec-002
+          cacheNodeID: "0001"
+          currentRole: primary
+          preferredAvailabilityZone: us-west-2d
+          readEndpoint:
+            address: primary-address-2
+            port: 7070
+      primaryEndpoint:
+        address: cluster-address-2
+        port: 7070
+      readerEndpoint:
+        address: reader-address-2
+        port: 7070
+      status: available
+  pendingModifiedValues: {}
+  status: available

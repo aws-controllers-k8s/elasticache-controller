@@ -1,0 +1,108 @@
+# This manifest is not realistic. For example, specifying both CacheSecurityGroupNames and SecurityGroupIDs is
+#   redundant, and there are many other invalid parameter combinations. Further, many of these creation (Spec) fields
+#   are immutable and practically will never see a value from the server different than the one specified upon creation.
+#   However, the purpose of this test is to ensure that for every spec field, the latest object will have the
+#   correct state from the API response, as opposed to merely being copied over from the desired object.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: rg-all-spec
+spec:
+  atRestEncryptionEnabled: true
+  authToken:
+    namespace: default
+    name: first
+    key: secret1
+  automaticFailoverEnabled: true
+  cacheNodeType: cache.t3.small
+  cacheParameterGroupName: default.redis6.x.cluster.on
+  cacheSecurityGroupNames:
+    - sgname1
+    - sgname2
+  cacheSubnetGroupName: default
+  engine: redis
+  engineVersion: 6.x
+  kmsKeyID: key1
+  logDeliveryConfigurations:
+    - destinationType: cloudwatch-logs
+      logFormat: json
+      logType: slow-log
+      destinationDetails:
+        cloudWatchLogsDetails:
+          logGroup: log-group-1
+  multiAZEnabled: true
+  nodeGroupConfiguration:
+    - nodeGroupID: "0001"
+      primaryAvailabilityZone: us-west-2a
+      replicaAvailabilityZones:
+        - us-west-2b
+      replicaCount: 5
+  notificationTopicARN: arn:aws:sns:mock-arn-1
+  numNodeGroups: 2
+  port: 6380
+  preferredCacheClusterAZs:
+    - us-west-2a
+    - us-west-2b
+  preferredMaintenanceWindow: sun:23:00-mon:01:30
+  primaryClusterID: primary1
+  replicasPerNodeGroup: 5
+  replicationGroupDescription: description1
+  replicationGroupID: rg-all-spec
+  securityGroupIDs:
+    - sgid1
+    - sgid2
+  snapshotARNs:
+    - mock-arn-1
+  snapshotName: snapshot1
+  snapshotRetentionLimit: 5
+  snapshotWindow: 05:00-06:00
+  transitEncryptionEnabled: true
+  userGroupIDs:
+    - usergroup1
+status:
+  ackResourceMetadata:
+    arn: arn:aws:elasticache:us-west-2:012345678910:replicationgroup:rg-all-spec
+    ownerAccountID: ""
+  allowedScaleUpModifications:
+    - cache.m3.2xlarge
+  authTokenEnabled: false
+  automaticFailover: enabled
+  clusterEnabled: false
+  conditions:
+    - status: "True"
+      type: ACK.ResourceSynced
+  description: description1
+  events: # RG name is inconsistent but this test focuses on spec, not status
+    - date: "2021-03-30T20:12:00Z"
+      message: Replication group rg-cmd created
+  globalReplicationGroupInfo: {}
+  memberClusters:
+    - rg-cmd-001
+    - rg-cmd-002
+  multiAZ: enabled
+  nodeGroups:
+    - nodeGroupID: "0001"
+      nodeGroupMembers:
+        - cacheClusterID: rg-all-spec-001
+          cacheNodeID: "0001"
+          currentRole: primary
+          preferredAvailabilityZone: us-west-2a
+          readEndpoint:
+            address: primary-address-1
+            port: 6380
+        - cacheClusterID: rg-all-spec-002
+          cacheNodeID: "0001"
+          currentRole: replica
+          preferredAvailabilityZone: us-west-2b
+          readEndpoint:
+            address: replica-address-1
+            port: 6380
+      primaryEndpoint:
+        address: cluster-address-1
+        port: 6380
+      readerEndpoint:
+        address: reader-address-1
+        port: 6380
+      status: available
+  pendingModifiedValues: {}
+  status: available

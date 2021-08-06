@@ -1,0 +1,46 @@
+{
+  "CacheClusters": [
+    {
+      "CacheClusterId": "rg-all-spec-001",
+      "ReplicationGroupId": "rg-all-spec",
+      "CacheClusterStatus": "available",
+      "SnapshotRetentionLimit": 0,
+      "ClientDownloadLandingPage": "https://console.aws.amazon.com/elasticache/home#client-download:",
+      "CacheNodeType": "cache.t3.micro",
+      "TransitEncryptionEnabled": false,
+      "Engine": "mock-engine",
+      "CacheSecurityGroups": [],
+      "NumCacheNodes": 1,
+      "AutoMinorVersionUpgrade": true,
+      "SecurityGroups": [
+        {
+          "Status": "active",
+          "SecurityGroupId": "sgid3"
+        },
+        {
+          "Status": "active",
+          "SecurityGroupId": "sgid4"
+        }
+      ],
+      "PendingModifiedValues": {},
+      "PreferredMaintenanceWindow": "wed:08:00-wed:09:00",
+      "CacheSubnetGroupName": "non-default-subnet-group",
+      "AuthTokenEnabled": false,
+      "AtRestEncryptionEnabled": false,
+      "EngineVersion": "6.0.5",
+      "CacheClusterCreateTime": "2021-04-13T19:07:04.983Z",
+      "PreferredAvailabilityZone": "us-west-2c",
+      "SnapshotWindow": "06:30-07:30",
+      "NotificationConfiguration": {
+        "TopicStatus": "active",
+        "TopicArn": "arn:aws:sns:mock-arn-2"
+      },
+      "ARN": "arn:aws:elasticache:us-east-1:012345678910:cluster:rg-all-spec-001",
+      "CacheParameterGroup": {
+        "CacheNodeIdsToReboot": [],
+        "CacheParameterGroupName": "customparamgroup",
+        "ParameterApplyStatus": "in-sync"
+      }
+    }
+  ]
+}
