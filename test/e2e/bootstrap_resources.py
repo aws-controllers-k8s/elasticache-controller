@@ -21,13 +21,17 @@ from e2e import bootstrap_directory
 
 @dataclass
 class TestBootstrapResources:
-    SnsTopicARN: str
-    SecurityGroupID: str
-    UserGroupID: str
+    SnsTopic1: str
+    SnsTopic2: str
+    SecurityGroup1: str
+    SecurityGroup2: str
+    UserGroup1: str
+    UserGroup2: str
     KmsKeyID: str
     SnapshotName: str
     NonDefaultUser: str
-    CWLogGroup: str
+    CWLogGroup1: str
+    CWLogGroup2: str
     CPGName: str
 
 _bootstrap_resources = None

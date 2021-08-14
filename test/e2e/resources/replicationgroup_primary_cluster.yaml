@@ -1,0 +1,12 @@
+# CMD replication group manifest for specifying an existing node to use as primary
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  # cache node type and engine cannot be used when specifying existing primary node, even if DNE
+  numNodeGroups: 1
+  replicasPerNodeGroup: 1
+  replicationGroupDescription: cluster-mode disabled RG
+  replicationGroupID: $RG_ID
+  primaryClusterID: $PRIMARY_NODE

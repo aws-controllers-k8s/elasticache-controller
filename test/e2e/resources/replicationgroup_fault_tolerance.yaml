@@ -1,0 +1,14 @@
+# CMD replication group for testing modification fault tolerance features (multi AZ, auto failover, primary promotion)
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  automaticFailoverEnabled: $AF_ENABLED
+  cacheNodeType: cache.t3.micro
+  engine: redis
+  multiAZEnabled: $MAZ_ENABLED
+  numNodeGroups: 1
+  replicasPerNodeGroup: 1
+  replicationGroupDescription: description
+  replicationGroupID: $RG_ID

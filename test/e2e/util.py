@@ -92,6 +92,27 @@ def assert_user_deletion(user_id: str):
         pass  # we only expect this particular exception (if deletion has already completed)
 
 
+# given "rg" (the k8s object representing a replication group), assert that:
+#   1) there are non-zero amount of node groups
+#   2) the number of replicas in every node group equals desired_replica_count
+def assert_even_shards_replica_count(rg, desired_replica_count):
+    assert len(rg['status']['nodeGroups']) != 0
+    for ng in rg['status']['nodeGroups']:
+        assert len(ng['nodeGroupMembers']) == (desired_replica_count + 1)
+
+
+# TODO: move to common repository
+# given the latest state of the resource, assert that the terminal condition is set
+def assert_terminal_condition_set(resource):
+    terminal = None
+    for cond in resource['status']['conditions']:
+        if cond['type'] == "ACK.Terminal":
+            terminal = cond
+
+    assert terminal is not None
+    assert terminal['status'] == "True"
+
+
 # provide a basic nodeGroupConfiguration object of desired size
 def provide_node_group_configuration(size: int):
     ngc = []
@@ -102,12 +123,15 @@ def provide_node_group_configuration(size: int):
 
 # retrieve first cache cluster found from specified replication group
 def retrieve_cache_cluster(rg_id: str):
-    rg_response = ec.describe_replication_groups(ReplicationGroupId=rg_id)
-
-    rg = rg_response['ReplicationGroups'][0]
+    rg = retrieve_replication_group(rg_id)
     if len(rg['MemberClusters']) == 0:
         logging.debug(f"No member clusters found for replication group {rg_id}")
         return None
 
     cc_response = ec.describe_cache_clusters(CacheClusterId=rg['MemberClusters'][0])
     return cc_response['CacheClusters'][0]
+
+
+def retrieve_replication_group(rg_id: str):
+    rg_response = ec.describe_replication_groups(ReplicationGroupId=rg_id)
+    return rg_response['ReplicationGroups'][0]

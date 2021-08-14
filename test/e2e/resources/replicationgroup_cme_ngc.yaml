@@ -1,0 +1,24 @@
+# CME replication group. "NGC" means that the field nodeGroupConfiguration is specified, with a detailed configuration
+# for each shard
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  cacheNodeType: cache.t3.micro
+  engine: redis
+  nodeGroupConfiguration:
+    - nodeGroupID: $NGID1
+      primaryAvailabilityZone: us-west-2a
+      replicaAvailabilityZones:
+        - us-west-2b
+        - us-west-2c
+      replicaCount: 2
+    - nodeGroupID: $NGID2
+      primaryAvailabilityZone: us-west-2b
+      replicaAvailabilityZones:
+        - us-west-2c
+        - us-west-2a
+      replicaCount: 2
+  replicationGroupDescription: cluster-mode enabled RG
+  replicationGroupID: $RG_ID

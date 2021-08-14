@@ -86,19 +86,34 @@ def service_cleanup(config: dict):
     )
 
     try:
-        delete_sns_topic(resources.SnsTopicARN)
+        delete_sns_topic(resources.SnsTopic1)
     except:
-        logging.exception(f"Unable to delete SNS topic {resources.SnsTopicARN}")
+        logging.exception(f"Unable to delete SNS topic {resources.SnsTopic1}")
 
     try:
-        delete_security_group(resources.SecurityGroupID)
+        delete_sns_topic(resources.SnsTopic2)
     except:
-        logging.exception(f"Unable to delete VPC Security Group {resources.SecurityGroupID}")
+        logging.exception(f"Unable to delete SNS topic {resources.SnsTopic2}")
 
     try:
-        delete_user_group(resources.UserGroupID)
+        delete_security_group(resources.SecurityGroup1)
     except:
-        logging.exception(f"Unable to delete ElastiCache User Group {resources.UserGroupID}")
+        logging.exception(f"Unable to delete VPC Security Group {resources.SecurityGroup1}")
+
+    try:
+        delete_security_group(resources.SecurityGroup2)
+    except:
+        logging.exception(f"Unable to delete VPC Security Group {resources.SecurityGroup2}")
+
+    try:
+        delete_user_group(resources.UserGroup1)
+    except:
+        logging.exception(f"Unable to delete ElastiCache User Group {resources.UserGroup1}")
+
+    try:
+        delete_user_group(resources.UserGroup2)
+    except:
+        logging.exception(f"Unable to delete ElastiCache User Group {resources.UserGroup2}")
 
     try:
         delete_kms_key(resources.KmsKeyID)
@@ -116,9 +131,14 @@ def service_cleanup(config: dict):
         logging.exception(f"Unable to delete user {resources.NonDefaultUser}")
 
     try:
-        delete_log_group(resources.CWLogGroup)
+        delete_log_group(resources.CWLogGroup1)
     except:
-        logging.exception(f"Unable to delete CW log group {resources.CWLogGroup}")
+        logging.exception(f"Unable to delete CW log group {resources.CWLogGroup1}")
+
+    try:
+        delete_log_group(resources.CWLogGroup2)
+    except:
+        logging.exception(f"Unable to delete CW log group {resources.CWLogGroup2}")
 
     try:
         delete_cpg(resources.CPGName)
