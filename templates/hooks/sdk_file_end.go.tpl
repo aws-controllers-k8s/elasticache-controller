@@ -14,7 +14,7 @@ func (rm *resourceManager) set{{ $outputShape.ShapeName }}Output (
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
 	ko := r.ko.DeepCopy()
-{{ $createCode := GoCodeSetCreateOutput .CRD "resp" "ko" 1 true }}
+{{ $createCode := GoCodeSetCreateOutput .CRD "resp" "ko" 1 }}
 {{ $createCode }}
 	rm.setStatusDefaults(ko)
 {{- if $hookCode := Hook .CRD "sdk_file_end_set_output_post_populate" }}
