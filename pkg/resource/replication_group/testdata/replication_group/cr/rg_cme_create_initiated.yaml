@@ -2,6 +2,7 @@ apiVersion: elasticache.services.k8s.aws/v1alpha1
 kind: ReplicationGroup
 # omitted metadata
 spec:
+  atRestEncryptionEnabled: false
   cacheNodeType: cache.t3.micro
   engine: redis
   nodeGroupConfiguration:
@@ -22,6 +23,9 @@ spec:
   numNodeGroups: 2
   replicationGroupDescription: cluster-mode enabled RG
   replicationGroupID: rg-cme
+  snapshotRetentionLimit: 0
+  snapshotWindow: 08:00-09:00
+  transitEncryptionEnabled: false
 status:
   ackResourceMetadata:
     arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cme
