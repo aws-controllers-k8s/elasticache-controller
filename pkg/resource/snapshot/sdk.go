@@ -349,6 +349,11 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.CacheClusterCreateTime = nil
 	}
+	if resp.Snapshot.CacheClusterId != nil {
+		ko.Spec.CacheClusterID = resp.Snapshot.CacheClusterId
+	} else {
+		ko.Spec.CacheClusterID = nil
+	}
 	if resp.Snapshot.CacheNodeType != nil {
 		ko.Status.CacheNodeType = resp.Snapshot.CacheNodeType
 	} else {
@@ -373,6 +378,11 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.EngineVersion = resp.Snapshot.EngineVersion
 	} else {
 		ko.Status.EngineVersion = nil
+	}
+	if resp.Snapshot.KmsKeyId != nil {
+		ko.Spec.KMSKeyID = resp.Snapshot.KmsKeyId
+	} else {
+		ko.Spec.KMSKeyID = nil
 	}
 	if resp.Snapshot.NodeSnapshots != nil {
 		f11 := []*svcapitypes.NodeSnapshot{}
@@ -474,6 +484,16 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.ReplicationGroupDescription = nil
 	}
+	if resp.Snapshot.ReplicationGroupId != nil {
+		ko.Spec.ReplicationGroupID = resp.Snapshot.ReplicationGroupId
+	} else {
+		ko.Spec.ReplicationGroupID = nil
+	}
+	if resp.Snapshot.SnapshotName != nil {
+		ko.Spec.SnapshotName = resp.Snapshot.SnapshotName
+	} else {
+		ko.Spec.SnapshotName = nil
+	}
 	if resp.Snapshot.SnapshotRetentionLimit != nil {
 		ko.Status.SnapshotRetentionLimit = resp.Snapshot.SnapshotRetentionLimit
 	} else {
@@ -533,6 +553,20 @@ func (rm *resourceManager) newCreateRequestPayload(
 	}
 	if r.ko.Spec.SnapshotName != nil {
 		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+	}
+	if r.ko.Spec.Tags != nil {
+		f4 := []*svcsdk.Tag{}
+		for _, f4iter := range r.ko.Spec.Tags {
+			f4elem := &svcsdk.Tag{}
+			if f4iter.Key != nil {
+				f4elem.SetKey(*f4iter.Key)
+			}
+			if f4iter.Value != nil {
+				f4elem.SetValue(*f4iter.Value)
+			}
+			f4 = append(f4, f4elem)
+		}
+		res.SetTags(f4)
 	}
 
 	return res, nil

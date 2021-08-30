@@ -53,6 +53,7 @@ func newResourceDelta(
 			delta.Add("Spec.NoPasswordRequired", a.ko.Spec.NoPasswordRequired, b.ko.Spec.NoPasswordRequired)
 		}
 	}
+
 	if ackcompare.HasNilDifference(a.ko.Spec.UserID, b.ko.Spec.UserID) {
 		delta.Add("Spec.UserID", a.ko.Spec.UserID, b.ko.Spec.UserID)
 	} else if a.ko.Spec.UserID != nil && b.ko.Spec.UserID != nil {

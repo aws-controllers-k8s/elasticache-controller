@@ -182,6 +182,16 @@ func (rm *resourceManager) sdkCreate(
 		arn := ackv1alpha1.AWSResourceName(*resp.CacheSubnetGroup.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.CacheSubnetGroup.CacheSubnetGroupDescription != nil {
+		ko.Spec.CacheSubnetGroupDescription = resp.CacheSubnetGroup.CacheSubnetGroupDescription
+	} else {
+		ko.Spec.CacheSubnetGroupDescription = nil
+	}
+	if resp.CacheSubnetGroup.CacheSubnetGroupName != nil {
+		ko.Spec.CacheSubnetGroupName = resp.CacheSubnetGroup.CacheSubnetGroupName
+	} else {
+		ko.Spec.CacheSubnetGroupName = nil
+	}
 	if resp.CacheSubnetGroup.Subnets != nil {
 		f3 := []*svcapitypes.Subnet{}
 		for _, f3iter := range resp.CacheSubnetGroup.Subnets {
@@ -242,6 +252,20 @@ func (rm *resourceManager) newCreateRequestPayload(
 		}
 		res.SetSubnetIds(f2)
 	}
+	if r.ko.Spec.Tags != nil {
+		f3 := []*svcsdk.Tag{}
+		for _, f3iter := range r.ko.Spec.Tags {
+			f3elem := &svcsdk.Tag{}
+			if f3iter.Key != nil {
+				f3elem.SetKey(*f3iter.Key)
+			}
+			if f3iter.Value != nil {
+				f3elem.SetValue(*f3iter.Value)
+			}
+			f3 = append(f3, f3elem)
+		}
+		res.SetTags(f3)
+	}
 
 	return res, nil
 }
@@ -279,6 +303,16 @@ func (rm *resourceManager) sdkUpdate(
 	if resp.CacheSubnetGroup.ARN != nil {
 		arn := ackv1alpha1.AWSResourceName(*resp.CacheSubnetGroup.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
+	}
+	if resp.CacheSubnetGroup.CacheSubnetGroupDescription != nil {
+		ko.Spec.CacheSubnetGroupDescription = resp.CacheSubnetGroup.CacheSubnetGroupDescription
+	} else {
+		ko.Spec.CacheSubnetGroupDescription = nil
+	}
+	if resp.CacheSubnetGroup.CacheSubnetGroupName != nil {
+		ko.Spec.CacheSubnetGroupName = resp.CacheSubnetGroup.CacheSubnetGroupName
+	} else {
+		ko.Spec.CacheSubnetGroupName = nil
 	}
 	if resp.CacheSubnetGroup.Subnets != nil {
 		f3 := []*svcapitypes.Subnet{}

@@ -35,6 +35,9 @@ type UserSpec struct {
 	// Passwords used for this user. You can create up to two passwords for each
 	// user.
 	Passwords []*ackv1alpha1.SecretKeyReference `json:"passwords,omitempty"`
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user.
 	// +kubebuilder:validation:Required
 	UserID *string `json:"userID"`

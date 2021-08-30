@@ -201,6 +201,11 @@ func (rm *resourceManager) sdkCreate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.Engine != nil {
+		ko.Spec.Engine = resp.Engine
+	} else {
+		ko.Spec.Engine = nil
+	}
 	if resp.PendingChanges != nil {
 		f2 := &svcapitypes.UserGroupPendingChanges{}
 		if resp.PendingChanges.UserIdsToAdd != nil {
@@ -241,6 +246,22 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.Status = nil
 	}
+	if resp.UserGroupId != nil {
+		ko.Spec.UserGroupID = resp.UserGroupId
+	} else {
+		ko.Spec.UserGroupID = nil
+	}
+	if resp.UserIds != nil {
+		f6 := []*string{}
+		for _, f6iter := range resp.UserIds {
+			var f6elem string
+			f6elem = *f6iter
+			f6 = append(f6, &f6elem)
+		}
+		ko.Spec.UserIDs = f6
+	} else {
+		ko.Spec.UserIDs = nil
+	}
 
 	rm.setStatusDefaults(ko)
 	// custom set output from response
@@ -262,17 +283,31 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.Engine != nil {
 		res.SetEngine(*r.ko.Spec.Engine)
 	}
+	if r.ko.Spec.Tags != nil {
+		f1 := []*svcsdk.Tag{}
+		for _, f1iter := range r.ko.Spec.Tags {
+			f1elem := &svcsdk.Tag{}
+			if f1iter.Key != nil {
+				f1elem.SetKey(*f1iter.Key)
+			}
+			if f1iter.Value != nil {
+				f1elem.SetValue(*f1iter.Value)
+			}
+			f1 = append(f1, f1elem)
+		}
+		res.SetTags(f1)
+	}
 	if r.ko.Spec.UserGroupID != nil {
 		res.SetUserGroupId(*r.ko.Spec.UserGroupID)
 	}
 	if r.ko.Spec.UserIDs != nil {
-		f2 := []*string{}
-		for _, f2iter := range r.ko.Spec.UserIDs {
-			var f2elem string
-			f2elem = *f2iter
-			f2 = append(f2, &f2elem)
+		f3 := []*string{}
+		for _, f3iter := range r.ko.Spec.UserIDs {
+			var f3elem string
+			f3elem = *f3iter
+			f3 = append(f3, &f3elem)
 		}
-		res.SetUserIds(f2)
+		res.SetUserIds(f3)
 	}
 
 	return res, nil

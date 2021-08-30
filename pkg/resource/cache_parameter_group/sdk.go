@@ -160,6 +160,21 @@ func (rm *resourceManager) sdkCreate(
 		arn := ackv1alpha1.AWSResourceName(*resp.CacheParameterGroup.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.CacheParameterGroup.CacheParameterGroupFamily != nil {
+		ko.Spec.CacheParameterGroupFamily = resp.CacheParameterGroup.CacheParameterGroupFamily
+	} else {
+		ko.Spec.CacheParameterGroupFamily = nil
+	}
+	if resp.CacheParameterGroup.CacheParameterGroupName != nil {
+		ko.Spec.CacheParameterGroupName = resp.CacheParameterGroup.CacheParameterGroupName
+	} else {
+		ko.Spec.CacheParameterGroupName = nil
+	}
+	if resp.CacheParameterGroup.Description != nil {
+		ko.Spec.Description = resp.CacheParameterGroup.Description
+	} else {
+		ko.Spec.Description = nil
+	}
 	if resp.CacheParameterGroup.IsGlobal != nil {
 		ko.Status.IsGlobal = resp.CacheParameterGroup.IsGlobal
 	} else {
@@ -191,6 +206,20 @@ func (rm *resourceManager) newCreateRequestPayload(
 	}
 	if r.ko.Spec.Description != nil {
 		res.SetDescription(*r.ko.Spec.Description)
+	}
+	if r.ko.Spec.Tags != nil {
+		f3 := []*svcsdk.Tag{}
+		for _, f3iter := range r.ko.Spec.Tags {
+			f3elem := &svcsdk.Tag{}
+			if f3iter.Key != nil {
+				f3elem.SetKey(*f3iter.Key)
+			}
+			if f3iter.Value != nil {
+				f3elem.SetValue(*f3iter.Value)
+			}
+			f3 = append(f3, f3elem)
+		}
+		res.SetTags(f3)
 	}
 
 	return res, nil

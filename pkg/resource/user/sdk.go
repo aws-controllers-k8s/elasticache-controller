@@ -184,6 +184,11 @@ func (rm *resourceManager) sdkCreate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.AccessString != nil {
+		ko.Spec.AccessString = resp.AccessString
+	} else {
+		ko.Spec.AccessString = nil
+	}
 	if resp.Authentication != nil {
 		f2 := &svcapitypes.Authentication{}
 		if resp.Authentication.PasswordCount != nil {
@@ -195,6 +200,11 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.Authentication = f2
 	} else {
 		ko.Status.Authentication = nil
+	}
+	if resp.Engine != nil {
+		ko.Spec.Engine = resp.Engine
+	} else {
+		ko.Spec.Engine = nil
 	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
@@ -211,6 +221,16 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.UserGroupIDs = f5
 	} else {
 		ko.Status.UserGroupIDs = nil
+	}
+	if resp.UserId != nil {
+		ko.Spec.UserID = resp.UserId
+	} else {
+		ko.Spec.UserID = nil
+	}
+	if resp.UserName != nil {
+		ko.Spec.UserName = resp.UserName
+	} else {
+		ko.Spec.UserName = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -256,6 +276,20 @@ func (rm *resourceManager) newCreateRequestPayload(
 			f3 = append(f3, &f3elem)
 		}
 		res.SetPasswords(f3)
+	}
+	if r.ko.Spec.Tags != nil {
+		f4 := []*svcsdk.Tag{}
+		for _, f4iter := range r.ko.Spec.Tags {
+			f4elem := &svcsdk.Tag{}
+			if f4iter.Key != nil {
+				f4elem.SetKey(*f4iter.Key)
+			}
+			if f4iter.Value != nil {
+				f4elem.SetValue(*f4iter.Value)
+			}
+			f4 = append(f4, f4elem)
+		}
+		res.SetTags(f4)
 	}
 	if r.ko.Spec.UserID != nil {
 		res.SetUserId(*r.ko.Spec.UserID)
@@ -306,6 +340,11 @@ func (rm *resourceManager) sdkUpdate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.AccessString != nil {
+		ko.Spec.AccessString = resp.AccessString
+	} else {
+		ko.Spec.AccessString = nil
+	}
 	if resp.Authentication != nil {
 		f2 := &svcapitypes.Authentication{}
 		if resp.Authentication.PasswordCount != nil {
@@ -317,6 +356,11 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.Authentication = f2
 	} else {
 		ko.Status.Authentication = nil
+	}
+	if resp.Engine != nil {
+		ko.Spec.Engine = resp.Engine
+	} else {
+		ko.Spec.Engine = nil
 	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
@@ -333,6 +377,16 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.UserGroupIDs = f5
 	} else {
 		ko.Status.UserGroupIDs = nil
+	}
+	if resp.UserId != nil {
+		ko.Spec.UserID = resp.UserId
+	} else {
+		ko.Spec.UserID = nil
+	}
+	if resp.UserName != nil {
+		ko.Spec.UserName = resp.UserName
+	} else {
+		ko.Spec.UserName = nil
 	}
 
 	rm.setStatusDefaults(ko)
