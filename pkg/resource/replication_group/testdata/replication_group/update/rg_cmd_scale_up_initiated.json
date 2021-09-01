@@ -51,7 +51,7 @@
       "rg-cmd-001",
       "rg-cmd-002"
     ],
-    "CacheNodeType": "cache.t3.micro",
+    "CacheNodeType": "cache.t3.small",
     "ARN": "arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd",
     "PendingModifiedValues": {}
   }

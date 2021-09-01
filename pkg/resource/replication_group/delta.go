@@ -16,7 +16,16 @@
 package replication_group
 
 import (
+	"bytes"
+	"reflect"
+
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+)
+
+// Hack to avoid import errors during build...
+var (
+	_ = &bytes.Buffer{}
+	_ = &reflect.Method{}
 )
 
 // newResourceDelta returns a new `ackcompare.Delta` used to compare two
@@ -67,7 +76,6 @@ func newResourceDelta(
 			delta.Add("Spec.CacheParameterGroupName", a.ko.Spec.CacheParameterGroupName, b.ko.Spec.CacheParameterGroupName)
 		}
 	}
-
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames) {
 		delta.Add("Spec.CacheSecurityGroupNames", a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames)
 	}
@@ -99,7 +107,9 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
-
+	if !reflect.DeepEqual(a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations) {
+		delta.Add("Spec.LogDeliveryConfigurations", a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled) {
 		delta.Add("Spec.MultiAZEnabled", a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled)
 	} else if a.ko.Spec.MultiAZEnabled != nil && b.ko.Spec.MultiAZEnabled != nil {
@@ -107,7 +117,9 @@ func newResourceDelta(
 			delta.Add("Spec.MultiAZEnabled", a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled)
 		}
 	}
-
+	if !reflect.DeepEqual(a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration) {
+		delta.Add("Spec.NodeGroupConfiguration", a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN) {
 		delta.Add("Spec.NotificationTopicARN", a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN)
 	} else if a.ko.Spec.NotificationTopicARN != nil && b.ko.Spec.NotificationTopicARN != nil {
@@ -129,7 +141,6 @@ func newResourceDelta(
 			delta.Add("Spec.Port", a.ko.Spec.Port, b.ko.Spec.Port)
 		}
 	}
-
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.PreferredCacheClusterAZs, b.ko.Spec.PreferredCacheClusterAZs) {
 		delta.Add("Spec.PreferredCacheClusterAZs", a.ko.Spec.PreferredCacheClusterAZs, b.ko.Spec.PreferredCacheClusterAZs)
 	}
@@ -168,11 +179,9 @@ func newResourceDelta(
 			delta.Add("Spec.ReplicationGroupID", a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID)
 		}
 	}
-
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs) {
 		delta.Add("Spec.SecurityGroupIDs", a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs)
 	}
-
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs) {
 		delta.Add("Spec.SnapshotARNs", a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs)
 	}
@@ -204,7 +213,6 @@ func newResourceDelta(
 			delta.Add("Spec.TransitEncryptionEnabled", a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled)
 		}
 	}
-
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs) {
 		delta.Add("Spec.UserGroupIDs", a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs)
 	}

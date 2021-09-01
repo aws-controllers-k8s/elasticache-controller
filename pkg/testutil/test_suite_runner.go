@@ -135,7 +135,7 @@ func (runner *TestSuiteRunner) assertExpectations(assert *assert.Assertions, exp
 		}
 
 		// Delta only contains `Spec` differences. Thus, we need Delegate.Equal to compare `Status`.
-		assert.True(runner.Delegate.Equal(expectedLatest, actual))
+		assert.True(runner.Delegate.Equal(expectedLatest, actual), "Expected status, spec details did not match with actual.")
 	}
 
 	if expectation.Error == "nil" {

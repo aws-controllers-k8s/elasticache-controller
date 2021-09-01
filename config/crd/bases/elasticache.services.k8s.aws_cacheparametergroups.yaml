@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.0
+    controller-gen.kubebuilder.io/version: v0.6.1
   creationTimestamp: null
   name: cacheparametergroups.elasticache.services.k8s.aws
 spec:
@@ -145,6 +145,8 @@ spec:
                       type: string
                     sourceIdentifier:
                       type: string
+                    sourceType:
+                      type: string
                   type: object
                 type: array
               isGlobal:
@@ -158,6 +160,8 @@ spec:
                     aspect of ElastiCache behavior.
                   properties:
                     allowedValues:
+                      type: string
+                    changeType:
                       type: string
                     dataType:
                       type: string

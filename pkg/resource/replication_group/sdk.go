@@ -50,6 +50,13 @@ func (rm *resourceManager) sdkFind(
 	rlog := ackrtlog.FromContext(ctx)
 	exit := rlog.Trace("rm.sdkFind")
 	defer exit(err)
+	// If any required fields in the input shape are missing, AWS resource is
+	// not created yet. Return NotFound here to indicate to callers that the
+	// resource isn't yet created.
+	if rm.requiredFieldsMissingFromReadManyInput(r) {
+		return nil, ackerr.NotFound
+	}
+
 	input, err := rm.newListRequestPayload(r)
 	if err != nil {
 		return nil, err
@@ -418,6 +425,16 @@ func (rm *resourceManager) sdkFind(
 	return &resource{ko}, nil
 }
 
+// requiredFieldsMissingFromReadManyInput returns true if there are any fields
+// for the ReadMany Input shape that are required but not present in the
+// resource's Spec or Status
+func (rm *resourceManager) requiredFieldsMissingFromReadManyInput(
+	r *resource,
+) bool {
+	return r.ko.Spec.ReplicationGroupID == nil
+
+}
+
 // newListRequestPayload returns SDK-specific struct for the HTTP request
 // payload of the List API call for the resource
 func (rm *resourceManager) newListRequestPayload(
@@ -465,6 +482,11 @@ func (rm *resourceManager) sdkCreate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ReplicationGroup.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.ReplicationGroup.AtRestEncryptionEnabled != nil {
+		ko.Spec.AtRestEncryptionEnabled = resp.ReplicationGroup.AtRestEncryptionEnabled
+	} else {
+		ko.Spec.AtRestEncryptionEnabled = nil
+	}
 	if resp.ReplicationGroup.AuthTokenEnabled != nil {
 		ko.Status.AuthTokenEnabled = resp.ReplicationGroup.AuthTokenEnabled
 	} else {
@@ -479,6 +501,11 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
 	} else {
 		ko.Status.AutomaticFailover = nil
+	}
+	if resp.ReplicationGroup.CacheNodeType != nil {
+		ko.Spec.CacheNodeType = resp.ReplicationGroup.CacheNodeType
+	} else {
+		ko.Spec.CacheNodeType = nil
 	}
 	if resp.ReplicationGroup.ClusterEnabled != nil {
 		ko.Status.ClusterEnabled = resp.ReplicationGroup.ClusterEnabled
@@ -513,6 +540,48 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.GlobalReplicationGroupInfo = f9
 	} else {
 		ko.Status.GlobalReplicationGroupInfo = nil
+	}
+	if resp.ReplicationGroup.KmsKeyId != nil {
+		ko.Spec.KMSKeyID = resp.ReplicationGroup.KmsKeyId
+	} else {
+		ko.Spec.KMSKeyID = nil
+	}
+	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
+		f11 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f11iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
+			f11elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f11iter.DestinationDetails != nil {
+				f11elemf0 := &svcapitypes.DestinationDetails{}
+				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f11elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f11elemf0f0.LogGroup = f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+					}
+					f11elemf0.CloudWatchLogsDetails = f11elemf0f0
+				}
+				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f11elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f11elemf0f1.DeliveryStream = f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					}
+					f11elemf0.KinesisFirehoseDetails = f11elemf0f1
+				}
+				f11elem.DestinationDetails = f11elemf0
+			}
+			if f11iter.DestinationType != nil {
+				f11elem.DestinationType = f11iter.DestinationType
+			}
+			if f11iter.LogFormat != nil {
+				f11elem.LogFormat = f11iter.LogFormat
+			}
+			if f11iter.LogType != nil {
+				f11elem.LogType = f11iter.LogType
+			}
+			f11 = append(f11, f11elem)
+		}
+		ko.Spec.LogDeliveryConfigurations = f11
+	} else {
+		ko.Spec.LogDeliveryConfigurations = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
 		f12 := []*string{}
@@ -696,6 +765,21 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
+	if resp.ReplicationGroup.ReplicationGroupId != nil {
+		ko.Spec.ReplicationGroupID = resp.ReplicationGroup.ReplicationGroupId
+	} else {
+		ko.Spec.ReplicationGroupID = nil
+	}
+	if resp.ReplicationGroup.SnapshotRetentionLimit != nil {
+		ko.Spec.SnapshotRetentionLimit = resp.ReplicationGroup.SnapshotRetentionLimit
+	} else {
+		ko.Spec.SnapshotRetentionLimit = nil
+	}
+	if resp.ReplicationGroup.SnapshotWindow != nil {
+		ko.Spec.SnapshotWindow = resp.ReplicationGroup.SnapshotWindow
+	} else {
+		ko.Spec.SnapshotWindow = nil
+	}
 	if resp.ReplicationGroup.SnapshottingClusterId != nil {
 		ko.Status.SnapshottingClusterID = resp.ReplicationGroup.SnapshottingClusterId
 	} else {
@@ -705,6 +789,22 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.Status = resp.ReplicationGroup.Status
 	} else {
 		ko.Status.Status = nil
+	}
+	if resp.ReplicationGroup.TransitEncryptionEnabled != nil {
+		ko.Spec.TransitEncryptionEnabled = resp.ReplicationGroup.TransitEncryptionEnabled
+	} else {
+		ko.Spec.TransitEncryptionEnabled = nil
+	}
+	if resp.ReplicationGroup.UserGroupIds != nil {
+		f23 := []*string{}
+		for _, f23iter := range resp.ReplicationGroup.UserGroupIds {
+			var f23elem string
+			f23elem = *f23iter
+			f23 = append(f23, &f23elem)
+		}
+		ko.Spec.UserGroupIDs = f23
+	} else {
+		ko.Spec.UserGroupIDs = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -1012,6 +1112,11 @@ func (rm *resourceManager) sdkUpdate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ReplicationGroup.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.ReplicationGroup.AtRestEncryptionEnabled != nil {
+		ko.Spec.AtRestEncryptionEnabled = resp.ReplicationGroup.AtRestEncryptionEnabled
+	} else {
+		ko.Spec.AtRestEncryptionEnabled = nil
+	}
 	if resp.ReplicationGroup.AuthTokenEnabled != nil {
 		ko.Status.AuthTokenEnabled = resp.ReplicationGroup.AuthTokenEnabled
 	} else {
@@ -1026,6 +1131,11 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
 	} else {
 		ko.Status.AutomaticFailover = nil
+	}
+	if resp.ReplicationGroup.CacheNodeType != nil {
+		ko.Spec.CacheNodeType = resp.ReplicationGroup.CacheNodeType
+	} else {
+		ko.Spec.CacheNodeType = nil
 	}
 	if resp.ReplicationGroup.ClusterEnabled != nil {
 		ko.Status.ClusterEnabled = resp.ReplicationGroup.ClusterEnabled
@@ -1060,6 +1170,48 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.GlobalReplicationGroupInfo = f9
 	} else {
 		ko.Status.GlobalReplicationGroupInfo = nil
+	}
+	if resp.ReplicationGroup.KmsKeyId != nil {
+		ko.Spec.KMSKeyID = resp.ReplicationGroup.KmsKeyId
+	} else {
+		ko.Spec.KMSKeyID = nil
+	}
+	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
+		f11 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f11iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
+			f11elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f11iter.DestinationDetails != nil {
+				f11elemf0 := &svcapitypes.DestinationDetails{}
+				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f11elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f11elemf0f0.LogGroup = f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+					}
+					f11elemf0.CloudWatchLogsDetails = f11elemf0f0
+				}
+				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f11elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f11elemf0f1.DeliveryStream = f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					}
+					f11elemf0.KinesisFirehoseDetails = f11elemf0f1
+				}
+				f11elem.DestinationDetails = f11elemf0
+			}
+			if f11iter.DestinationType != nil {
+				f11elem.DestinationType = f11iter.DestinationType
+			}
+			if f11iter.LogFormat != nil {
+				f11elem.LogFormat = f11iter.LogFormat
+			}
+			if f11iter.LogType != nil {
+				f11elem.LogType = f11iter.LogType
+			}
+			f11 = append(f11, f11elem)
+		}
+		ko.Spec.LogDeliveryConfigurations = f11
+	} else {
+		ko.Spec.LogDeliveryConfigurations = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
 		f12 := []*string{}
@@ -1243,6 +1395,21 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
+	if resp.ReplicationGroup.ReplicationGroupId != nil {
+		ko.Spec.ReplicationGroupID = resp.ReplicationGroup.ReplicationGroupId
+	} else {
+		ko.Spec.ReplicationGroupID = nil
+	}
+	if resp.ReplicationGroup.SnapshotRetentionLimit != nil {
+		ko.Spec.SnapshotRetentionLimit = resp.ReplicationGroup.SnapshotRetentionLimit
+	} else {
+		ko.Spec.SnapshotRetentionLimit = nil
+	}
+	if resp.ReplicationGroup.SnapshotWindow != nil {
+		ko.Spec.SnapshotWindow = resp.ReplicationGroup.SnapshotWindow
+	} else {
+		ko.Spec.SnapshotWindow = nil
+	}
 	if resp.ReplicationGroup.SnapshottingClusterId != nil {
 		ko.Status.SnapshottingClusterID = resp.ReplicationGroup.SnapshottingClusterId
 	} else {
@@ -1252,6 +1419,22 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.Status = resp.ReplicationGroup.Status
 	} else {
 		ko.Status.Status = nil
+	}
+	if resp.ReplicationGroup.TransitEncryptionEnabled != nil {
+		ko.Spec.TransitEncryptionEnabled = resp.ReplicationGroup.TransitEncryptionEnabled
+	} else {
+		ko.Spec.TransitEncryptionEnabled = nil
+	}
+	if resp.ReplicationGroup.UserGroupIds != nil {
+		f23 := []*string{}
+		for _, f23iter := range resp.ReplicationGroup.UserGroupIds {
+			var f23elem string
+			f23elem = *f23iter
+			f23 = append(f23, &f23elem)
+		}
+		ko.Spec.UserGroupIDs = f23
+	} else {
+		ko.Spec.UserGroupIDs = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -1464,7 +1647,7 @@ func (rm *resourceManager) updateConditions(
 			errorMessage = err.Error()
 		} else {
 			awsErr, _ := ackerr.AWSError(err)
-			errorMessage = awsErr.Message()
+			errorMessage = awsErr.Error()
 		}
 		terminalCondition.Status = corev1.ConditionTrue
 		terminalCondition.Message = &errorMessage
@@ -1487,7 +1670,7 @@ func (rm *resourceManager) updateConditions(
 			awsErr, _ := ackerr.AWSError(err)
 			errorMessage := err.Error()
 			if awsErr != nil {
-				errorMessage = awsErr.Message()
+				errorMessage = awsErr.Error()
 			}
 			recoverableCondition.Message = &errorMessage
 		} else if recoverableCondition != nil {

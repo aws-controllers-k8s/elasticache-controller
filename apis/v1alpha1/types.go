@@ -143,6 +143,7 @@ type CacheNode struct {
 // have a larger maxmemory value than a cache.m1.small type.
 type CacheNodeTypeSpecificParameter struct {
 	AllowedValues        *string `json:"allowedValues,omitempty"`
+	ChangeType           *string `json:"changeType,omitempty"`
 	DataType             *string `json:"dataType,omitempty"`
 	Description          *string `json:"description,omitempty"`
 	IsModifiable         *bool   `json:"isModifiable,omitempty"`
@@ -259,8 +260,9 @@ type Endpoint struct {
 
 // Represents the output of a DescribeEngineDefaultParameters operation.
 type EngineDefaults struct {
-	CacheParameterGroupFamily *string `json:"cacheParameterGroupFamily,omitempty"`
-	Marker                    *string `json:"marker,omitempty"`
+	CacheParameterGroupFamily *string      `json:"cacheParameterGroupFamily,omitempty"`
+	Marker                    *string      `json:"marker,omitempty"`
+	Parameters                []*Parameter `json:"parameters,omitempty"`
 }
 
 // Represents a single occurrence of something interesting within the system.
@@ -270,6 +272,7 @@ type Event struct {
 	Date             *metav1.Time `json:"date,omitempty"`
 	Message          *string      `json:"message,omitempty"`
 	SourceIdentifier *string      `json:"sourceIdentifier,omitempty"`
+	SourceType       *string      `json:"sourceType,omitempty"`
 }
 
 // Used to streamline results of a search based on the property being filtered.
@@ -433,6 +436,7 @@ type NotificationConfiguration struct {
 // behavior.
 type Parameter struct {
 	AllowedValues        *string `json:"allowedValues,omitempty"`
+	ChangeType           *string `json:"changeType,omitempty"`
 	DataType             *string `json:"dataType,omitempty"`
 	Description          *string `json:"description,omitempty"`
 	IsModifiable         *bool   `json:"isModifiable,omitempty"`
