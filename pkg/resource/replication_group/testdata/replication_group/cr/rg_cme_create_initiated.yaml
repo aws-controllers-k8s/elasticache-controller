@@ -22,6 +22,10 @@ spec:
   numNodeGroups: 2
   replicationGroupDescription: cluster-mode enabled RG
   replicationGroupID: rg-cme
+  atRestEncryptionEnabled: false
+  SnapshotRetentionLimit: 0
+  snapshotWindow: "08:00-09:00"
+  TransitEncryptionEnabled: false
 status:
   ackResourceMetadata:
     arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cme

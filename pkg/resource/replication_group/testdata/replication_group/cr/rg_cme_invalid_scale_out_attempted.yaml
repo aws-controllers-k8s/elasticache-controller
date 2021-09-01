@@ -67,7 +67,7 @@ status:
   conditions:
     - status: "True" #TODO: should synced condition be set false when terminal condition is true?
       type: ACK.ResourceSynced
-    - message: Configuration for all the node groups should be provided.
+    - message: "InvalidParameterValue: Configuration for all the node groups should be provided.\n\tstatus code: 0, request id: "
       status: "True"
       type: ACK.Terminal
   configurationEndpoint:

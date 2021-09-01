@@ -50,6 +50,13 @@ func (rm *resourceManager) sdkFind(
 	rlog := ackrtlog.FromContext(ctx)
 	exit := rlog.Trace("rm.sdkFind")
 	defer exit(err)
+	// If any required fields in the input shape are missing, AWS resource is
+	// not created yet. Return NotFound here to indicate to callers that the
+	// resource isn't yet created.
+	if rm.requiredFieldsMissingFromReadManyInput(r) {
+		return nil, ackerr.NotFound
+	}
+
 	input, err := rm.newListRequestPayload(r)
 	if err != nil {
 		return nil, err
@@ -137,6 +144,16 @@ func (rm *resourceManager) sdkFind(
 	return &resource{ko}, nil
 }
 
+// requiredFieldsMissingFromReadManyInput returns true if there are any fields
+// for the ReadMany Input shape that are required but not present in the
+// resource's Spec or Status
+func (rm *resourceManager) requiredFieldsMissingFromReadManyInput(
+	r *resource,
+) bool {
+	return r.ko.Spec.UserID == nil
+
+}
+
 // newListRequestPayload returns SDK-specific struct for the HTTP request
 // payload of the List API call for the resource
 func (rm *resourceManager) newListRequestPayload(
@@ -184,6 +201,11 @@ func (rm *resourceManager) sdkCreate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.AccessString != nil {
+		ko.Spec.AccessString = resp.AccessString
+	} else {
+		ko.Spec.AccessString = nil
+	}
 	if resp.Authentication != nil {
 		f2 := &svcapitypes.Authentication{}
 		if resp.Authentication.PasswordCount != nil {
@@ -195,6 +217,11 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.Authentication = f2
 	} else {
 		ko.Status.Authentication = nil
+	}
+	if resp.Engine != nil {
+		ko.Spec.Engine = resp.Engine
+	} else {
+		ko.Spec.Engine = nil
 	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
@@ -211,6 +238,16 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.UserGroupIDs = f5
 	} else {
 		ko.Status.UserGroupIDs = nil
+	}
+	if resp.UserId != nil {
+		ko.Spec.UserID = resp.UserId
+	} else {
+		ko.Spec.UserID = nil
+	}
+	if resp.UserName != nil {
+		ko.Spec.UserName = resp.UserName
+	} else {
+		ko.Spec.UserName = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -306,6 +343,11 @@ func (rm *resourceManager) sdkUpdate(
 		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
 		ko.Status.ACKResourceMetadata.ARN = &arn
 	}
+	if resp.AccessString != nil {
+		ko.Spec.AccessString = resp.AccessString
+	} else {
+		ko.Spec.AccessString = nil
+	}
 	if resp.Authentication != nil {
 		f2 := &svcapitypes.Authentication{}
 		if resp.Authentication.PasswordCount != nil {
@@ -317,6 +359,11 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.Authentication = f2
 	} else {
 		ko.Status.Authentication = nil
+	}
+	if resp.Engine != nil {
+		ko.Spec.Engine = resp.Engine
+	} else {
+		ko.Spec.Engine = nil
 	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
@@ -333,6 +380,16 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.UserGroupIDs = f5
 	} else {
 		ko.Status.UserGroupIDs = nil
+	}
+	if resp.UserId != nil {
+		ko.Spec.UserID = resp.UserId
+	} else {
+		ko.Spec.UserID = nil
+	}
+	if resp.UserName != nil {
+		ko.Spec.UserName = resp.UserName
+	} else {
+		ko.Spec.UserName = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -446,7 +503,7 @@ func (rm *resourceManager) updateConditions(
 			errorMessage = err.Error()
 		} else {
 			awsErr, _ := ackerr.AWSError(err)
-			errorMessage = awsErr.Message()
+			errorMessage = awsErr.Error()
 		}
 		terminalCondition.Status = corev1.ConditionTrue
 		terminalCondition.Message = &errorMessage
@@ -469,7 +526,7 @@ func (rm *resourceManager) updateConditions(
 			awsErr, _ := ackerr.AWSError(err)
 			errorMessage := err.Error()
 			if awsErr != nil {
-				errorMessage = awsErr.Message()
+				errorMessage = awsErr.Error()
 			}
 			recoverableCondition.Message = &errorMessage
 		} else if recoverableCondition != nil {

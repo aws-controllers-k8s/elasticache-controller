@@ -12,6 +12,6 @@ status:
   ackResourceMetadata:
     ownerAccountID: ""
   conditions:
-    - message: The number of replicas per node group must be within 0 and 5.
+    - message: "InvalidParameterValue: The number of replicas per node group must be within 0 and 5.\n\tstatus code: 0, request id: "
       status: "True"
       type: ACK.Terminal

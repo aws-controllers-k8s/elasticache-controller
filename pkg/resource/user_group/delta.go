@@ -16,7 +16,16 @@
 package user_group
 
 import (
+	"bytes"
+	"reflect"
+
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+)
+
+// Hack to avoid import errors during build...
+var (
+	_ = &bytes.Buffer{}
+	_ = &reflect.Method{}
 )
 
 // newResourceDelta returns a new `ackcompare.Delta` used to compare two
@@ -46,7 +55,6 @@ func newResourceDelta(
 			delta.Add("Spec.UserGroupID", a.ko.Spec.UserGroupID, b.ko.Spec.UserGroupID)
 		}
 	}
-
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.UserIDs, b.ko.Spec.UserIDs) {
 		delta.Add("Spec.UserIDs", a.ko.Spec.UserIDs, b.ko.Spec.UserIDs)
 	}
