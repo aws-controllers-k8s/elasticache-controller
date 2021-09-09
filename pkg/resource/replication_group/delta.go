@@ -206,6 +206,9 @@ func newResourceDelta(
 			delta.Add("Spec.SnapshotWindow", a.ko.Spec.SnapshotWindow, b.ko.Spec.SnapshotWindow)
 		}
 	}
+	if !reflect.DeepEqual(a.ko.Spec.Tags, b.ko.Spec.Tags) {
+		delta.Add("Spec.Tags", a.ko.Spec.Tags, b.ko.Spec.Tags)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled) {
 		delta.Add("Spec.TransitEncryptionEnabled", a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled)
 	} else if a.ko.Spec.TransitEncryptionEnabled != nil && b.ko.Spec.TransitEncryptionEnabled != nil {

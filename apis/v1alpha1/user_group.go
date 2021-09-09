@@ -27,6 +27,9 @@ type UserGroupSpec struct {
 	// The current supported value is Redis.
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user group.
 	// +kubebuilder:validation:Required
 	UserGroupID *string `json:"userGroupID"`

@@ -41,6 +41,9 @@ type CacheSubnetGroupSpec struct {
 	// A list of VPC subnet IDs for the cache subnet group.
 	// +kubebuilder:validation:Required
 	SubnetIDs []*string `json:"subnetIDs"`
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `json:"tags,omitempty"`
 }
 
 // CacheSubnetGroupStatus defines the observed state of CacheSubnetGroup

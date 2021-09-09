@@ -1008,17 +1008,31 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.SnapshotWindow != nil {
 		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
 	}
+	if r.ko.Spec.Tags != nil {
+		f27 := []*svcsdk.Tag{}
+		for _, f27iter := range r.ko.Spec.Tags {
+			f27elem := &svcsdk.Tag{}
+			if f27iter.Key != nil {
+				f27elem.SetKey(*f27iter.Key)
+			}
+			if f27iter.Value != nil {
+				f27elem.SetValue(*f27iter.Value)
+			}
+			f27 = append(f27, f27elem)
+		}
+		res.SetTags(f27)
+	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
 		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
 	}
 	if r.ko.Spec.UserGroupIDs != nil {
-		f28 := []*string{}
-		for _, f28iter := range r.ko.Spec.UserGroupIDs {
-			var f28elem string
-			f28elem = *f28iter
-			f28 = append(f28, &f28elem)
+		f29 := []*string{}
+		for _, f29iter := range r.ko.Spec.UserGroupIDs {
+			var f29elem string
+			f29elem = *f29iter
+			f29 = append(f29, &f29elem)
 		}
-		res.SetUserGroupIds(f28)
+		res.SetUserGroupIds(f29)
 	}
 
 	return res, nil

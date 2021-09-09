@@ -48,6 +48,9 @@ func newResourceDelta(
 			delta.Add("Spec.Engine", a.ko.Spec.Engine, b.ko.Spec.Engine)
 		}
 	}
+	if !reflect.DeepEqual(a.ko.Spec.Tags, b.ko.Spec.Tags) {
+		delta.Add("Spec.Tags", a.ko.Spec.Tags, b.ko.Spec.Tags)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.UserGroupID, b.ko.Spec.UserGroupID) {
 		delta.Add("Spec.UserGroupID", a.ko.Spec.UserGroupID, b.ko.Spec.UserGroupID)
 	} else if a.ko.Spec.UserGroupID != nil && b.ko.Spec.UserGroupID != nil {
