@@ -76,6 +76,9 @@ func newResourceDelta(
 			delta.Add("Spec.SourceSnapshotName", a.ko.Spec.SourceSnapshotName, b.ko.Spec.SourceSnapshotName)
 		}
 	}
+	if !reflect.DeepEqual(a.ko.Spec.Tags, b.ko.Spec.Tags) {
+		delta.Add("Spec.Tags", a.ko.Spec.Tags, b.ko.Spec.Tags)
+	}
 
 	return delta
 }

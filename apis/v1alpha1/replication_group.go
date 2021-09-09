@@ -276,6 +276,11 @@ type ReplicationGroupSpec struct {
 	// If you do not specify this parameter, ElastiCache automatically chooses an
 	// appropriate time range.
 	SnapshotWindow *string `json:"snapshotWindow,omitempty"`
+	// A list of tags to be added to this resource. Tags are comma-separated key,value
+	// pairs (e.g. Key=myKey, Value=myKeyValue. You can include multiple tags as
+	// shown following: Key=myKey, Value=myKeyValue Key=mySecondKey, Value=mySecondKeyValue.
+	// Tags on replication groups will be replicated to all nodes.
+	Tags []*Tag `json:"tags,omitempty"`
 	// A flag that enables in-transit encryption when set to true.
 	//
 	// You cannot modify the value of TransitEncryptionEnabled after the cluster

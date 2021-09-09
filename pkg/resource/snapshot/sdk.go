@@ -571,6 +571,20 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.SnapshotName != nil {
 		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
 	}
+	if r.ko.Spec.Tags != nil {
+		f4 := []*svcsdk.Tag{}
+		for _, f4iter := range r.ko.Spec.Tags {
+			f4elem := &svcsdk.Tag{}
+			if f4iter.Key != nil {
+				f4elem.SetKey(*f4iter.Key)
+			}
+			if f4iter.Value != nil {
+				f4elem.SetValue(*f4iter.Value)
+			}
+			f4 = append(f4, f4elem)
+		}
+		res.SetTags(f4)
+	}
 
 	return res, nil
 }

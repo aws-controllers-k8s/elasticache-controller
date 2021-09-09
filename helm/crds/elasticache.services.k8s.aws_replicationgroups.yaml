@@ -342,6 +342,27 @@ spec:
                   05:00-09:00 \n If you do not specify this parameter, ElastiCache
                   automatically chooses an appropriate time range."
                 type: string
+              tags:
+                description: 'A list of tags to be added to this resource. Tags are
+                  comma-separated key,value pairs (e.g. Key=myKey, Value=myKeyValue.
+                  You can include multiple tags as shown following: Key=myKey, Value=myKeyValue
+                  Key=mySecondKey, Value=mySecondKeyValue. Tags on replication groups
+                  will be replicated to all nodes.'
+                items:
+                  description: A tag that can be added to an ElastiCache cluster or
+                    replication group. Tags are composed of a Key/Value pair. You
+                    can use tags to categorize and track all your ElastiCache resources,
+                    with the exception of global replication group. When you add or
+                    remove tags on replication groups, those actions will be replicated
+                    to all nodes in the replication group. A tag with a null Value
+                    is permitted.
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
               transitEncryptionEnabled:
                 description: "A flag that enables in-transit encryption when set to
                   true. \n You cannot modify the value of TransitEncryptionEnabled
