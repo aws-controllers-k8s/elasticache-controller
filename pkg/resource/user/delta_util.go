@@ -25,7 +25,9 @@ func filterDelta(
 	// the returned AccessString can be different than the specified one; as long as the last requested AccessString
 	// matches the currently desired one, remove this difference from the delta
 	if delta.DifferentAt("Spec.AccessString") {
-		if *desired.ko.Spec.AccessString == *desired.ko.Status.LastRequestedAccessString {
+		if desired.ko.Spec.AccessString != nil &&
+			desired.ko.Status.LastRequestedAccessString != nil &&
+			*desired.ko.Spec.AccessString == *desired.ko.Status.LastRequestedAccessString {
 
 			common.RemoveFromDelta(delta, "Spec.AccessString")
 		}
