@@ -222,7 +222,7 @@ class TestReplicationGroup:
 
     def test_rg_input_coverage(self, rg_input_coverage):
         (reference, _) = rg_input_coverage
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=40)
 
     def test_rg_cmd_fromsnapshot(self, rg_cmd_fromsnapshot):
         (reference, _) = rg_cmd_fromsnapshot

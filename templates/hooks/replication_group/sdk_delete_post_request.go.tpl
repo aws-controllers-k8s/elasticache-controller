@@ -2,12 +2,17 @@
 	if err == nil {
 		rp, _ := rm.setReplicationGroupOutput(r, resp.ReplicationGroup)
 		// Setting resource synced condition to false will trigger a requeue of
-		// the resource. No need to return a requeue error here.
+		// the resource.
 		ackcondition.SetSynced(
-			r,
+			rp,
 			corev1.ConditionFalse,
 			&condMsgCurrentlyDeleting,
 			nil,
 		)
-		return rp, nil
+		// Need to return a requeue error here, otherwise:
+		// - reconciler.deleteResource() marks the resource unmanaged
+		// - reconciler.HandleReconcileError() does not update status for unmanaged resource
+		// - reconciler.handleRequeues() is not invoked for delete code path.
+		// TODO: return err as nil when reconciler is updated.
+		return rp, requeueWaitWhileDeleting
     }
