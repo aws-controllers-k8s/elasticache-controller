@@ -110,20 +110,6 @@ tests:
         expect:
           latest_state: "replication_group/cr/rg_cmd_engine_upgrade_initiated.yaml"
           error: nil
-      - name: "DeleteImmediate"
-        description: "Delete cluster mode-disabled RG. Immediately deleted."
-        given:
-          desired_state: "replication_group/cr/rg_cmd_create_completed.yaml"
-          svc_api:
-            - operation: DeleteReplicationGroupWithContext
-              output_fixture: "replication_group/delete/rg_cmd_delete_initiated.json"
-            - operation: DescribeReplicationGroupsWithContext
-              error:
-                code: ReplicationGroupNotFoundFault
-                message: "ReplicationGroup rg-cmd not found"
-        invoke: Delete
-        expect:
-          error: nil
       - name: "DeleteInitiated"
         description: "Delete cluster mode-disabled RG. RG moves from available to deleting state."
         given:
@@ -135,7 +121,7 @@ tests:
               output_fixture: "replication_group/read_one/rg_cmd_delete_initiated.json"
         invoke: Delete
         expect:
-          error: nil
+          error: "Delete is in progress."
       - name: "Deleting"
         description: "Delete cluster mode-disabled RG. Retry scenario, RG is in deleting state."
         given:
@@ -143,7 +129,7 @@ tests:
           svc_api:
         invoke: Delete
         expect:
-          error: nil
+          error: "Delete is in progress."
   - name: Cluster mode enabled replication group
     description: Cluster mode enabled replication group CRUD tests
     scenarios:

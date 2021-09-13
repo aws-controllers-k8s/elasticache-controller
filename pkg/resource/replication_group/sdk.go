@@ -1093,6 +1093,9 @@ func (rm *resourceManager) sdkUpdate(
 	if err != nil {
 		return nil, err
 	}
+	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
+		input.SetLogDeliveryConfigurations(nil)
+	}
 	if delta.DifferentAt("UserGroupIDs") {
 		for _, diff := range delta.Differences {
 			if diff.Path.Contains("UserGroupIDs") {
@@ -1611,25 +1614,35 @@ func (rm *resourceManager) sdkDelete(
 	defer exit(err)
 	if isDeleting(r) {
 		// Setting resource synced condition to false will trigger a requeue of
-		// the resource. No need to return a requeue error here.
+		// the resource.
 		ackcondition.SetSynced(
 			r,
 			corev1.ConditionFalse,
 			&condMsgCurrentlyDeleting,
 			nil,
 		)
-		return r, nil
+		// Need to return a requeue error here, otherwise:
+		// - reconciler.deleteResource() marks the resource unmanaged
+		// - reconciler.HandleReconcileError() does not update status for unmanaged resource
+		// - reconciler.handleRequeues() is not invoked for delete code path.
+		// TODO: return err as nil when reconciler is updated.
+		return r, requeueWaitWhileDeleting
 	}
 	if isModifying(r) {
 		// Setting resource synced condition to false will trigger a requeue of
-		// the resource. No need to return a requeue error here.
+		// the resource.
 		ackcondition.SetSynced(
 			r,
 			corev1.ConditionFalse,
 			&condMsgNoDeleteWhileModifying,
 			nil,
 		)
-		return r, nil
+		// Need to return a requeue error here, otherwise:
+		// - reconciler.deleteResource() marks the resource unmanaged
+		// - reconciler.HandleReconcileError() does not update status for unmanaged resource
+		// - reconciler.handleRequeues() is not invoked for delete code path.
+		// TODO: return err as nil when reconciler is updated.
+		return r, requeueWaitWhileModifying
 	}
 
 	input, err := rm.newDeleteRequestPayload(r)
@@ -1644,14 +1657,19 @@ func (rm *resourceManager) sdkDelete(
 	if err == nil {
 		rp, _ := rm.setReplicationGroupOutput(r, resp.ReplicationGroup)
 		// Setting resource synced condition to false will trigger a requeue of
-		// the resource. No need to return a requeue error here.
+		// the resource.
 		ackcondition.SetSynced(
-			r,
+			rp,
 			corev1.ConditionFalse,
 			&condMsgCurrentlyDeleting,
 			nil,
 		)
-		return rp, nil
+		// Need to return a requeue error here, otherwise:
+		// - reconciler.deleteResource() marks the resource unmanaged
+		// - reconciler.HandleReconcileError() does not update status for unmanaged resource
+		// - reconciler.handleRequeues() is not invoked for delete code path.
+		// TODO: return err as nil when reconciler is updated.
+		return rp, requeueWaitWhileDeleting
 	}
 
 	return nil, err

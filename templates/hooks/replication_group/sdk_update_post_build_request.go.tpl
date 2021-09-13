@@ -1,3 +1,6 @@
+	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
+		input.SetLogDeliveryConfigurations(nil)
+	}
 	if delta.DifferentAt("UserGroupIDs") {
 		for _, diff := range delta.Differences {
 			if diff.Path.Contains("UserGroupIDs") {

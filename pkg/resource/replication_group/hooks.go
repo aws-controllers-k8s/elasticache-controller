@@ -30,6 +30,10 @@ var (
 		errors.New("Delete is in progress."),
 		ackrequeue.DefaultRequeueAfterDuration,
 	)
+	requeueWaitWhileModifying = ackrequeue.NeededAfter(
+		errors.New("Modify is in progress."),
+		ackrequeue.DefaultRequeueAfterDuration,
+	)
 )
 
 // isDeleting returns true if supplied replication group resource state is 'deleting'
