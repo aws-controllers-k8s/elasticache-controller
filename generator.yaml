@@ -19,7 +19,6 @@ resources:
           operation: DescribeEvents
           path: Events
   ReplicationGroup:
-    update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:
       terminal_codes:
         - InvalidParameter
@@ -62,17 +61,17 @@ resources:
           path: ReplicationGroup.LogDeliveryConfigurations
     hooks:
       sdk_read_many_post_set_output:
-        code: "rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})"
+        template_path: hooks/replication_group/sdk_read_many_post_set_output.go.tpl
       sdk_delete_pre_build_request:
-        template_path: hooks/sdk_delete_pre_build_request.go.tpl
+        template_path: hooks/replication_group/sdk_delete_pre_build_request.go.tpl
       sdk_delete_post_request:
-        template_path: hooks/sdk_delete_post_request.go.tpl
+        template_path: hooks/replication_group/sdk_delete_post_request.go.tpl
       sdk_update_post_build_request:
-        template_path: hooks/sdk_update_post_build_request.go.tpl
+        template_path: hooks/replication_group/sdk_update_post_build_request.go.tpl
       delta_post_compare:
         code: "filterDelta(delta, a, b)"
       sdk_file_end:
-        template_path: hooks/sdk_file_end.go.tpl
+        template_path: hooks/replication_group/sdk_file_end.go.tpl
       sdk_file_end_set_output_post_populate:
         code: "rm.customSetOutput(obj, ko) // custom set output from obj"
   Snapshot:

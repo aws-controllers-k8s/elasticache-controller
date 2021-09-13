@@ -21,6 +21,7 @@ import (
 
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
@@ -40,6 +41,7 @@ var (
 	_ = &svcapitypes.ReplicationGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
+	_ = &ackcondition.NotManagedMessage
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -422,6 +424,40 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})
+	if isDeleting(r) {
+		// Setting resource synced condition to false will trigger a requeue of
+		// the resource. No need to return a requeue error here.
+		ackcondition.SetSynced(
+			&resource{ko},
+			corev1.ConditionFalse,
+			&condMsgCurrentlyDeleting,
+			nil,
+		)
+		return &resource{ko}, nil
+	}
+	if isModifying(r) {
+		// Setting resource synced condition to false will trigger a requeue of
+		// the resource. No need to return a requeue error here.
+		ackcondition.SetSynced(
+			&resource{ko},
+			corev1.ConditionFalse,
+			&condMsgNoDeleteWhileModifying,
+			nil,
+		)
+		return &resource{ko}, nil
+	}
+	if isCreateFailed(r) {
+		// This is a terminal state and by setting a Terminal condition on the
+		// resource, we will prevent it from being requeued.
+		ackcondition.SetTerminal(
+			&resource{ko},
+			corev1.ConditionTrue,
+			&condMsgTerminalCreateFailed,
+			nil,
+		)
+		return &resource{ko}, nil
+	}
+
 	return &resource{ko}, nil
 }
 
@@ -1573,9 +1609,27 @@ func (rm *resourceManager) sdkDelete(
 	rlog := ackrtlog.FromContext(ctx)
 	exit := rlog.Trace("rm.sdkDelete")
 	defer exit(err)
-	// if resource is already deleting, return requeue error; otherwise, initiate deletion
 	if isDeleting(r) {
-		return r, requeueWaitWhileDeleting
+		// Setting resource synced condition to false will trigger a requeue of
+		// the resource. No need to return a requeue error here.
+		ackcondition.SetSynced(
+			r,
+			corev1.ConditionFalse,
+			&condMsgCurrentlyDeleting,
+			nil,
+		)
+		return r, nil
+	}
+	if isModifying(r) {
+		// Setting resource synced condition to false will trigger a requeue of
+		// the resource. No need to return a requeue error here.
+		ackcondition.SetSynced(
+			r,
+			corev1.ConditionFalse,
+			&condMsgNoDeleteWhileModifying,
+			nil,
+		)
+		return r, nil
 	}
 
 	input, err := rm.newDeleteRequestPayload(r)
@@ -1589,8 +1643,17 @@ func (rm *resourceManager) sdkDelete(
 	// delete call successful
 	if err == nil {
 		rp, _ := rm.setReplicationGroupOutput(r, resp.ReplicationGroup)
-		return rp, requeueWaitWhileDeleting
+		// Setting resource synced condition to false will trigger a requeue of
+		// the resource. No need to return a requeue error here.
+		ackcondition.SetSynced(
+			r,
+			corev1.ConditionFalse,
+			&condMsgCurrentlyDeleting,
+			nil,
+		)
+		return rp, nil
 	}
+
 	return nil, err
 }
 
@@ -1694,9 +1757,7 @@ func (rm *resourceManager) updateConditions(
 	}
 	// Required to avoid the "declared but not used" error in the default case
 	_ = syncCondition
-	// custom update conditions
-	customUpdate := rm.CustomUpdateConditions(ko, r, err)
-	if terminalCondition != nil || recoverableCondition != nil || syncCondition != nil || customUpdate {
+	if terminalCondition != nil || recoverableCondition != nil || syncCondition != nil {
 		return &resource{ko}, true // updated
 	}
 	return nil, false // not updated
