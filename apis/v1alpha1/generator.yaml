@@ -36,6 +36,7 @@ resources:
         - InvalidCacheSecurityGroupState
         - CacheParameterGroupNotFound
         - InvalidKMSKeyFault
+        - CacheClusterNotFound
     fields:
       AllowedScaleUpModifications:
         is_read_only: true

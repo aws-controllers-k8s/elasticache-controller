@@ -1807,7 +1807,8 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"NodeGroupsPerReplicationGroupQuotaExceeded",
 		"InvalidCacheSecurityGroupState",
 		"CacheParameterGroupNotFound",
-		"InvalidKMSKeyFault":
+		"InvalidKMSKeyFault",
+		"CacheClusterNotFound":
 		return true
 	default:
 		return false
