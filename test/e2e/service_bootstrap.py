@@ -136,11 +136,15 @@ def service_bootstrap() -> dict:
 
     return TestBootstrapResources(
         create_sns_topic(),
+        create_sns_topic(),
         create_security_group(),
+        create_security_group(),
+        create_user_group(),
         create_user_group(),
         create_kms_key(),
         create_cc_snapshot(),
         create_non_default_user(),
+        create_log_group(),
         create_log_group(),
         create_cpg()
     ).__dict__
