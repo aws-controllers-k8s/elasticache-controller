@@ -402,7 +402,6 @@ class TestReplicationGroup:
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
 
     # if primaryClusterID is a nonexistent node, the terminal condition should be set
-    @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_invalid_primary(self, rg_invalid_primary):
         (reference, _) = rg_invalid_primary
         sleep(DEFAULT_WAIT_SECS)
