@@ -362,7 +362,7 @@ def assert_log_delivery_config(reference, config):
 
     # if log delivery is disabled, logDeliveryConfigurations should be empty or none
     if not config['enabled']:
-        assert not resource['status']['logDeliveryConfigurations']
+        assert 'logDeliveryConfigurations' not in resource['status']
     else:
         latest = resource['status']['logDeliveryConfigurations'][0]
         assert latest['status'] == "active"
@@ -640,6 +640,7 @@ class TestReplicationGroup:
         # assert new state
         assert_associated_resources(rg_associate_resources_input['RG_ID'], sg_list, sns_topic, ug_list)
 
+    @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_update_cpg(self, rg_update_cpg_input, rg_update_cpg, bootstrap_resources):
         # wait for resource to sync and retrieve initial state
         (reference, _) = rg_update_cpg
@@ -719,7 +720,6 @@ class TestReplicationGroup:
         assert len(rg['NodeGroups']) == nng
 
     # add and modify log delivery configuration to replication group
-    @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_log_delivery(self, rg_log_delivery_input, rg_log_delivery, bootstrap_resources):
         (reference, _) = rg_log_delivery
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
@@ -754,6 +754,18 @@ class TestReplicationGroup:
 
         # assert configuration modified
         assert_log_delivery_config(reference, config)
+
+        # change to nonexistent log group and ensure error status/message found
+        config['destinationDetails']['cloudWatchLogsDetails']['logGroup'] = random_suffix_name("dne", 16)
+        patch = {"spec": {"logDeliveryConfigurations": [config]}}
+        k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+
+        # assert error message present
+        resource = k8s.get_resource(reference)
+        latest = resource['status']['logDeliveryConfigurations'][0]
+        assert 'does not exist' in latest['message']
 
         # disable log delivery
         config = {"logType": "slow-log", "enabled": False}

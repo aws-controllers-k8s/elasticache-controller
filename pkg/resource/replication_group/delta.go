@@ -107,9 +107,6 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations) {
-		delta.Add("Spec.LogDeliveryConfigurations", a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations)
-	}
 	if ackcompare.HasNilDifference(a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled) {
 		delta.Add("Spec.MultiAZEnabled", a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled)
 	} else if a.ko.Spec.MultiAZEnabled != nil && b.ko.Spec.MultiAZEnabled != nil {
