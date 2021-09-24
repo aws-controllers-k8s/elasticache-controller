@@ -472,6 +472,20 @@ func (rm *resourceManager) newUpdateShardConfigurationRequestPayload(
 		res.SetNodeGroupCount(*desiredShardsCount)
 	}
 
+	// If desired nodegroup count (number of shards):
+	// - increases, then (optional) provide ReshardingConfiguration
+	// - decreases, then (mandatory) provide
+	//	 	either 	NodeGroupsToRemove
+	//	 	or 		NodeGroupsToRetain
+	var latestShardsCount *int64 = nil
+	if latestStatus.NodeGroups != nil {
+		numShards := int64(len(latestStatus.NodeGroups))
+		latestShardsCount = &numShards
+	}
+
+	increase := (desiredShardsCount != nil && latestShardsCount != nil && *desiredShardsCount > *latestShardsCount) ||
+		(desiredShardsCount != nil && latestShardsCount == nil)
+	decrease := desiredShardsCount != nil && latestShardsCount != nil && *desiredShardsCount < *latestShardsCount
 	// Additional arguments
 	shardsConfig := []*svcsdk.ReshardingConfiguration{}
 	shardsToRetain := []*string{}
@@ -494,21 +508,11 @@ func (rm *resourceManager) newUpdateShardConfigurationRequestPayload(
 			}
 			shardsConfig = append(shardsConfig, shardConfig)
 		}
+	} else if decrease {
+		for i := 0;  i < int(*desiredShardsCount); i++ {
+			shardsToRetain = append(shardsToRetain, desired.ko.Status.NodeGroups[i].NodeGroupID)
+		}
 	}
-	// If desired nodegroup count (number of shards):
-	// - increases, then (optional) provide ReshardingConfiguration
-	// - decreases, then (mandatory) provide
-	//	 	either 	NodeGroupsToRemove
-	//	 	or 		NodeGroupsToRetain
-	var latestShardsCount *int64 = nil
-	if latestStatus.NodeGroups != nil {
-		numShards := int64(len(latestStatus.NodeGroups))
-		latestShardsCount = &numShards
-	}
-
-	increase := (desiredShardsCount != nil && latestShardsCount != nil && *desiredShardsCount > *latestShardsCount) ||
-		(desiredShardsCount != nil && latestShardsCount == nil)
-	decrease := desiredShardsCount != nil && latestShardsCount != nil && *desiredShardsCount < *latestShardsCount
 
 	if increase {
 		if len(shardsConfig) > 0 {
