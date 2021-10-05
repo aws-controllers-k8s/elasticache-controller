@@ -34,7 +34,24 @@ class TestBootstrapResources:
     CWLogGroup2: str
     CPGName: str
 
+    def replacement_dict(self):
+        return {
+            "SNS_TOPIC_ARN": self.SnsTopic1,
+            "SNS_TOPIC_ARN_2": self.SnsTopic2,
+            "SG_ID": self.SecurityGroup1,
+            "SG_ID_2": self.SecurityGroup2,
+            "USERGROUP_ID": self.UserGroup1,
+            "USERGROUP_ID_2": self.UserGroup2,
+            "KMS_KEY_ID": self.KmsKeyID,
+            "SNAPSHOT_NAME": self.SnapshotName,
+            "NON_DEFAULT_USER": self.NonDefaultUser,
+            "LOG_GROUP": self.CWLogGroup1,
+            "LOG_GROUP_2": self.CWLogGroup2,
+            "CACHE_PARAMETER_GROUP_NAME": self.CPGName
+        }
+
 _bootstrap_resources = None
+
 
 def get_bootstrap_resources(bootstrap_file_name: str = "bootstrap.yaml"):
     global _bootstrap_resources
