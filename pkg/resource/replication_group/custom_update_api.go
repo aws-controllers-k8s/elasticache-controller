@@ -101,6 +101,19 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 		return rm.decreaseReplicaCount(ctx, desired, latest)
 	}
 
+	// If there is a scale up modification, then we would prioritize it
+	// over increase/decrease shards. This is important since performing
+	// scale in without scale up might fail due to insufficient memory.
+	if delta.DifferentAt("Spec.CacheNodeType") && desired.ko.Status.AllowedScaleUpModifications != nil {
+		if desired.ko.Spec.CacheNodeType != nil {
+			for _, scaleUpInstance := range desired.ko.Status.AllowedScaleUpModifications {
+				if *scaleUpInstance == *desired.ko.Spec.CacheNodeType {
+					return nil, nil
+				}
+			}
+		}
+	}
+
 	// increase/decrease shards
 	if rm.shardConfigurationsDiffer(desired, latest) {
 		return rm.updateShardConfiguration(ctx, desired, latest)

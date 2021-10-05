@@ -19,6 +19,7 @@ import (
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/testutil"
 	ackmetrics "github.com/aws-controllers-k8s/runtime/pkg/metrics"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zapcore"
@@ -389,6 +390,60 @@ func TestCustomModifyReplicationGroup_NodeGroup_available(t *testing.T) {
 		assert.Nil(res)
 		assert.Nil(err)
 	})
+}
+
+func TestCustomModifyReplicationGroup_ScaleUpAndDown_And_Resharding(t *testing.T)  {
+	assert := assert.New(t)
+
+	// Tests
+	t.Run("ScaleInAndScaleUp=Diff", func(t *testing.T) {
+		desired := provideResource()
+		latest := provideResource()
+		rgId := "RGID"
+		desired.ko.Spec.ReplicationGroupID = &rgId
+		latest.ko.Spec.ReplicationGroupID = &rgId
+
+		mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
+		rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
+
+		var delta ackcompare.Delta
+		delta.Add("Spec.CacheNodeType", "cache.t3.small", "cache.m5.large")
+		delta.Add("Spec.NumNodeGroups", 3, 4)
+
+		var ctx context.Context
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		assert.Nil(res)
+		assert.Nil(err)
+		assert.Empty(mocksdkapi.Calls)
+	})
+
+	t.Run("ScaleOutAndScaleDown=Diff", func(t *testing.T) {
+		desired := provideResource()
+		latest := provideResource()
+		rgId := "RGID"
+		desired.ko.Spec.ReplicationGroupID = &rgId
+		latest.ko.Spec.ReplicationGroupID = &rgId
+
+		mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
+		rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
+
+		var delta ackcompare.Delta
+		delta.Add("Spec.CacheNodeType", "cache.t3.small", "cache.t3.micro")
+		oldshardCount := int64(4)
+		newShardCount := int64(10)
+		delta.Add("Spec.NumNodeGroups", oldshardCount, newShardCount)
+		desired.ko.Spec.NumNodeGroups = &newShardCount
+		latest.ko.Spec.NumNodeGroups = &oldshardCount
+		mocksdkapi.On("ModifyReplicationGroupShardConfigurationWithContext", mock.Anything, mock.Anything).Return(nil,
+			awserr.New("Invalid", "Invalid error", nil))
+		var ctx context.Context
+		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		assert.Nil(res)
+		assert.NotNil(err)
+		assert.NotEmpty(mocksdkapi.Calls)
+		assert.Equal("ModifyReplicationGroupShardConfigurationWithContext", mocksdkapi.Calls[0].Method)
+	})
+
 }
 
 // TestReplicaCountDifference tests scenarios to check if desired, latest replica count
