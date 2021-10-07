@@ -1815,18 +1815,18 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	}
 }
 
-// This method copies the data from given ReplicationGroup by populating it
+// This method copies the data from given CreateReplicationGroupOutput by populating it
 // into copy of supplied resource and returns that.
-func (rm *resourceManager) setReplicationGroupOutput(
+func (rm *resourceManager) setCreateReplicationGroupOutputOutput(
 	r *resource,
-	obj *svcsdk.ReplicationGroup,
+	obj *svcsdk.CreateReplicationGroupOutput,
 ) (*resource, error) {
 	if obj == nil ||
 		r == nil ||
 		r.ko == nil {
 		return nil, nil
 	}
-	resp := &svcsdk.CreateReplicationGroupOutput{ReplicationGroup: obj}
+	resp := &svcsdk.CreateReplicationGroupOutput{CreateReplicationGroupOutput: obj}
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
 	ko := r.ko.DeepCopy()
