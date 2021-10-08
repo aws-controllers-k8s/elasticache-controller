@@ -522,7 +522,7 @@ func (rm *resourceManager) newUpdateShardConfigurationRequestPayload(
 			shardsConfig = append(shardsConfig, shardConfig)
 		}
 	} else if decrease {
-		for i := 0;  i < int(*desiredShardsCount); i++ {
+		for i := 0; i < int(*desiredShardsCount); i++ {
 			shardsToRetain = append(shardsToRetain, desired.ko.Status.NodeGroups[i].NodeGroupID)
 		}
 	}
