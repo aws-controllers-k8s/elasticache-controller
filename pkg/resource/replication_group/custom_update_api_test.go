@@ -392,7 +392,7 @@ func TestCustomModifyReplicationGroup_NodeGroup_available(t *testing.T) {
 	})
 }
 
-func TestCustomModifyReplicationGroup_ScaleUpAndDown_And_Resharding(t *testing.T)  {
+func TestCustomModifyReplicationGroup_ScaleUpAndDown_And_Resharding(t *testing.T) {
 	assert := assert.New(t)
 
 	// Tests
