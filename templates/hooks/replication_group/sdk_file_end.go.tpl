@@ -1,16 +1,15 @@
-{{ $outputShape := .CRD.GetOutputShape .CRD.Ops.Create }}
-// This method copies the data from given {{ $outputShape.ShapeName }} by populating it
+// This method copies the data from given {{ .CRD.Names.Camel }} by populating it
 // into copy of supplied resource and returns that.
-func (rm *resourceManager) set{{ $outputShape.ShapeName }}Output (
+func (rm *resourceManager) set{{ .CRD.Names.Camel }}Output (
 	r *resource,
-	obj *svcsdk.{{ $outputShape.ShapeName }},
+	obj *svcsdk.{{ .CRD.Names.Camel }},
 ) (*resource, error) {
 	if obj == nil ||
 		r == nil ||
 		r.ko == nil {
 		return nil, nil
 	}
-	resp := &svcsdk.{{ .CRD.Ops.Create.OutputRef.Shape.ShapeName }}{ {{ $outputShape.ShapeName }}:obj }
+	resp := &svcsdk.{{ .CRD.Ops.Create.OutputRef.Shape.ShapeName }}{ {{ .CRD.Names.Camel }}:obj }
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
 	ko := r.ko.DeepCopy()
