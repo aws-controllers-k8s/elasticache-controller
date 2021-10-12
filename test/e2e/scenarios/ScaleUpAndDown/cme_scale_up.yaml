@@ -1,0 +1,43 @@
+id: "CME_SCALE_UP"
+description: "Scale Up CME"
+resource:
+  apiVersion: $CRD_GROUP/$CRD_VERSION
+  kind: ReplicationGroup
+  metadata:
+    name: test$RANDOM_SUFFIX
+steps:
+  - id: "create_CMD_replication_group"
+    description: "Initial config"
+    create:
+      spec:
+        engine: redis
+        replicationGroupID: test$RANDOM_SUFFIX
+        replicationGroupDescription: Scale Up CME
+        cacheNodeType: cache.t3.micro
+        numNodeGroups: 2
+    wait:
+      status:
+        conditions:
+          ACK.ResourceSynced:
+            status: "True"
+            timeout: 1800
+    expect:
+      status:
+        status: "available"
+  - id: "scale_up"
+    description: "Scale up from t3.micro to t3.medium"
+    patch:
+      spec:
+        cacheNodeType: cache.t3.medium
+    wait:
+      status:
+        conditions:
+          ACK.ResourceSynced:
+            status: "True"
+            timeout: 5000
+      expect:
+        status:
+          status: "available"
+  - id: "delete_CMD_RG"
+    description: "Delete cluster mode disabled replication group"
+    delete: test$RANDOM_SUFFIX

@@ -76,6 +76,9 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 	}
 	ko.Spec.LogDeliveryConfigurations = logDeliveryConfig
 
+	// Keep the value of desired for CacheNodeType.
+	ko.Spec.CacheNodeType = r.ko.Spec.CacheNodeType
+
 	rm.setAnnotationsFields(r, ko)
 	return ko, nil
 }

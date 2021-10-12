@@ -1,0 +1,43 @@
+id: "CMD_SCALE_DOWN"
+description: "Scale down CMD"
+resource:
+  apiVersion: $CRD_GROUP/$CRD_VERSION
+  kind: ReplicationGroup
+  metadata:
+    name: test$RANDOM_SUFFIX
+steps:
+  - id: "create_CMD_replication_group"
+    description: "Initial config"
+    create:
+      spec:
+        engine: redis
+        replicationGroupID: test$RANDOM_SUFFIX
+        replicationGroupDescription: Scale down for CMD
+        cacheNodeType: cache.t3.medium
+        numNodeGroups: 1
+    wait:
+      status:
+        conditions:
+          ACK.ResourceSynced:
+            status: "True"
+            timeout: 2800
+    expect:
+      status:
+        status: "available"
+  - id: "scale_down"
+    description: "Scale down to t3.micro"
+    patch:
+      spec:
+        cacheNodeType: cache.t3.micro
+    wait:
+      status:
+        conditions:
+          ACK.ResourceSynced:
+            status: "True"
+            timeout: 5000
+      expect:
+        status:
+          status: "available"
+  - id: "delete_CMD_RG"
+    description: "Delete cluster mode disabled replication group"
+    delete: test$RANDOM_SUFFIX
