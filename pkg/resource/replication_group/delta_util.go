@@ -14,15 +14,18 @@
 package replication_group
 
 import (
+	"encoding/json"
+	"reflect"
 	"regexp"
 	"strings"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 
+	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
 )
 
-// remove non-meaningful differences from delta
+// filterDelta removes non-meaningful differences from the delta and adds additional differences if necessary
 func filterDelta(
 	delta *ackcompare.Delta,
 	desired *resource,
@@ -36,6 +39,20 @@ func filterDelta(
 			}
 		}
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
+	}
+
+	// if server has given PreferredMaintenanceWindow a default value, no action needs to be taken
+	if delta.DifferentAt("Spec.PreferredMaintenanceWindow") {
+		if desired.ko.Spec.PreferredMaintenanceWindow == nil && latest.ko.Spec.PreferredMaintenanceWindow != nil {
+			common.RemoveFromDelta(delta, "Spec.PreferredMaintenanceWindow")
+		}
+	}
+
+	// note that the comparison is actually done between desired.Spec.LogDeliveryConfigurations and
+	// the last requested configurations saved in annotations (as opposed to latest.Spec.LogDeliveryConfigurations)
+	if logDeliveryRequiresUpdate(desired) {
+		delta.Add("Spec.LogDeliveryConfigurations", desired.ko.Spec.LogDeliveryConfigurations,
+			unmarshalLastRequestedLDCs(desired))
 	}
 }
 
@@ -61,4 +78,25 @@ func engineVersionsMatch(
 	}
 
 	return false
+}
+
+// logDeliveryRequiresUpdate retrieves the last requested configurations saved in annotations and compares them
+// to the current desired configurations
+func logDeliveryRequiresUpdate(desired *resource) bool {
+	desiredConfigs := desired.ko.Spec.LogDeliveryConfigurations
+	lastRequestedConfigs := unmarshalLastRequestedLDCs(desired)
+	return !reflect.DeepEqual(desiredConfigs, lastRequestedConfigs)
+}
+
+// unmarshal the value found in annotations for the LogDeliveryConfigurations field requested in the last
+// successful create or modify call
+func unmarshalLastRequestedLDCs(desired *resource) []*svcapitypes.LogDeliveryConfigurationRequest {
+	var lastRequestedConfigs []*svcapitypes.LogDeliveryConfigurationRequest
+
+	annotations := desired.ko.ObjectMeta.GetAnnotations()
+	if val, ok := annotations[AnnotationLastRequestedLDCs]; ok {
+		_ = json.Unmarshal([]byte(val), &lastRequestedConfigs)
+	}
+
+	return lastRequestedConfigs
 }

@@ -15,6 +15,7 @@
 
 import boto3
 import logging
+import re
 from dataclasses import dataclass
 
 from acktest.aws.identity import get_account_id, get_region
@@ -80,7 +81,7 @@ def create_cc_snapshot():
     _ = ec.create_cache_cluster(
         CacheClusterId=cc_id,
         NumCacheNodes=1,
-        CacheNodeType="cache.m6g.large",
+        CacheNodeType="cache.t3.micro",
         Engine="redis"
     )
     waiter = ec.get_waiter('cache_cluster_available')
@@ -131,8 +132,26 @@ def create_cpg():
     return cpg_name
 
 
+# perform any cleanup tasks that need to be done before bootstrap and test execution
+def pre_bootstrap_cleanup():
+    # clear out relevant CW resource policy/policies
+    cw = boto3.client("logs")
+
+    deletion_list = []
+    response = cw.describe_resource_policies()
+    if 'resourcePolicies' in response:
+        for policy in response['resourcePolicies']:
+            if re.search('logdelivery', policy['policyName'], re.IGNORECASE):
+                deletion_list.append(policy['policyName'])
+
+    for policy in deletion_list:
+        cw.delete_resource_policy(policyName=policy)
+        logging.info(f'deleted resource policy {policy}')
+
+
 def service_bootstrap() -> dict:
     logging.getLogger().setLevel(logging.INFO)
+    pre_bootstrap_cleanup()
 
     return TestBootstrapResources(
         create_sns_topic(),

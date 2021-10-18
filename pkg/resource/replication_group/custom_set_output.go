@@ -15,6 +15,8 @@ package replication_group
 
 import (
 	"context"
+	"encoding/json"
+
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	"github.com/aws/aws-sdk-go/service/elasticache"
@@ -54,6 +56,7 @@ func (rm *resourceManager) CustomCreateReplicationGroupSetOutput(
 	ko *svcapitypes.ReplicationGroup,
 ) (*svcapitypes.ReplicationGroup, error) {
 	rm.customSetOutput(resp.ReplicationGroup, ko)
+	rm.setAnnotationsFields(r, ko)
 	return ko, nil
 }
 
@@ -64,6 +67,16 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 	ko *svcapitypes.ReplicationGroup,
 ) (*svcapitypes.ReplicationGroup, error) {
 	rm.customSetOutput(resp.ReplicationGroup, ko)
+
+	// reset latest.spec.LDC to original value in desired to prevent stale data
+	// from the modify API being merged back into desired upon spec patching
+	var logDeliveryConfig []*svcapitypes.LogDeliveryConfigurationRequest
+	for _, ldc := range r.ko.Spec.LogDeliveryConfigurations {
+		logDeliveryConfig = append(logDeliveryConfig, ldc.DeepCopy())
+	}
+	ko.Spec.LogDeliveryConfigurations = logDeliveryConfig
+
+	rm.setAnnotationsFields(r, ko)
 	return ko, nil
 }
 
@@ -142,31 +155,8 @@ func (rm *resourceManager) customSetOutput(
 		ko.Status.AllowedScaleDownModifications = nil
 		ko.Status.AllowedScaleUpModifications = nil
 	}
-}
 
-// newListAllowedNodeTypeModificationsPayLoad returns an SDK-specific struct for the HTTP request
-// payload of the ListAllowedNodeTypeModifications API call.
-func (rm *resourceManager) newListAllowedNodeTypeModificationsPayLoad(respRG *elasticache.ReplicationGroup) (
-	*svcsdk.ListAllowedNodeTypeModificationsInput, error) {
-	res := &svcsdk.ListAllowedNodeTypeModificationsInput{}
-
-	if respRG.ReplicationGroupId != nil {
-		res.SetReplicationGroupId(*respRG.ReplicationGroupId)
-	}
-
-	return res, nil
-}
-
-func (rm *resourceManager) customSetOutputSupplementAPIs(
-	ctx context.Context,
-	r *resource,
-	respRG *elasticache.ReplicationGroup,
-	ko *svcapitypes.ReplicationGroup,
-) error {
-	events, err := rm.provideEvents(ctx, r.ko.Spec.ReplicationGroupID, 20)
-	if err != nil {
-		return err
-	}
+	// populate status logDeliveryConfigurations struct
 	if respRG.LogDeliveryConfigurations != nil {
 		var f11 []*svcapitypes.LogDeliveryConfiguration
 		for _, f11iter := range respRG.LogDeliveryConfigurations {
@@ -210,6 +200,31 @@ func (rm *resourceManager) customSetOutputSupplementAPIs(
 	} else {
 		ko.Status.LogDeliveryConfigurations = nil
 	}
+}
+
+// newListAllowedNodeTypeModificationsPayLoad returns an SDK-specific struct for the HTTP request
+// payload of the ListAllowedNodeTypeModifications API call.
+func (rm *resourceManager) newListAllowedNodeTypeModificationsPayLoad(respRG *elasticache.ReplicationGroup) (
+	*svcsdk.ListAllowedNodeTypeModificationsInput, error) {
+	res := &svcsdk.ListAllowedNodeTypeModificationsInput{}
+
+	if respRG.ReplicationGroupId != nil {
+		res.SetReplicationGroupId(*respRG.ReplicationGroupId)
+	}
+
+	return res, nil
+}
+
+func (rm *resourceManager) customSetOutputSupplementAPIs(
+	ctx context.Context,
+	r *resource,
+	respRG *elasticache.ReplicationGroup,
+	ko *svcapitypes.ReplicationGroup,
+) error {
+	events, err := rm.provideEvents(ctx, r.ko.Spec.ReplicationGroupID, 20)
+	if err != nil {
+		return err
+	}
 	ko.Status.Events = events
 	return nil
 }
@@ -248,4 +263,37 @@ func (rm *resourceManager) provideEvents(
 		}
 	}
 	return events, nil
+}
+
+// setAnnotationsFields copies the desired object's annotations, populates any
+// relevant fields, and sets the latest object's annotations to this newly populated map.
+// This should only be called upon a successful create or modify call.
+func (rm *resourceManager) setAnnotationsFields(
+	r *resource,
+	ko *svcapitypes.ReplicationGroup,
+) {
+	desiredAnnotations := r.ko.ObjectMeta.GetAnnotations()
+	annotations := make(map[string]string)
+	for k, v := range desiredAnnotations {
+		annotations[k] = v
+	}
+
+	rm.setLastRequestedLogDeliveryConfigurations(r, annotations)
+
+	ko.ObjectMeta.Annotations = annotations
+}
+
+// setLastRequestedLogDeliveryConfigurations copies desired.Spec.LogDeliveryConfigurations
+// into the annotations of the object.
+// r is the desired resource, and annotations is the annotations map modified by this method
+func (rm *resourceManager) setLastRequestedLogDeliveryConfigurations(
+	r *resource,
+	annotations map[string]string,
+) {
+	lastRequestedConfigs, err := json.Marshal(r.ko.Spec.LogDeliveryConfigurations)
+	if err != nil {
+		annotations[AnnotationLastRequestedLDCs] = "null"
+	} else {
+		annotations[AnnotationLastRequestedLDCs] = string(lastRequestedConfigs)
+	}
 }
