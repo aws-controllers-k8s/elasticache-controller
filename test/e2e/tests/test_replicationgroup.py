@@ -640,7 +640,6 @@ class TestReplicationGroup:
         # assert new state
         assert_associated_resources(rg_associate_resources_input['RG_ID'], sg_list, sns_topic, ug_list)
 
-    @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_update_cpg(self, rg_update_cpg_input, rg_update_cpg, bootstrap_resources):
         # wait for resource to sync and retrieve initial state
         (reference, _) = rg_update_cpg

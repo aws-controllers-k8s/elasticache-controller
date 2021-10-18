@@ -53,7 +53,7 @@ tests:
               output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: ReadOne
         expect:
-          latest_state: "replication_group/cr/rg_cmd_create_completed.yaml"
+          latest_state: "replication_group/cr/rg_cmd_create_completed_latest.yaml"
           error: nil
       - name: "ReadOne=NoDiff"
         description: "Given desired state matches with server side resource data, ko.Status remain unchanged (resource is stable)"
@@ -70,7 +70,7 @@ tests:
               output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
         invoke: ReadOne
         expect:
-          latest_state: "replication_group/cr/rg_cmd_create_completed.yaml" #unchanged
+          latest_state: "replication_group/cr/rg_cmd_create_completed_latest.yaml"
           error: nil
       - name: "Update=IncreaseReplicaCount"
         description: "Ensure a replica is added once a new config is provided"
