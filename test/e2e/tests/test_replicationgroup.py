@@ -555,7 +555,6 @@ class TestReplicationGroup:
         assert_misc_fields(reference, rg_update_misc_input['RG_ID'], pmw, description, srl, sw)
 
     # test modifying properties related to tolerance: replica promotion, multi AZ, automatic failover
-    @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_fault_tolerance(self, rg_fault_tolerance):
         (reference, _) = rg_fault_tolerance
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
@@ -607,8 +606,8 @@ class TestReplicationGroup:
                 raise AssertionError(f"Unknown node {node['cacheClusterID']}")
 
         # assert AF and multi AZ
-        assert resource['status']['automaticFailover'] == "disabled"
-        assert resource['status']['multiAZ'] == "disabled"
+        assert resource['status']['automaticFailover'] == "enabled"
+        assert resource['status']['multiAZ'] == "enabled"
 
     # test association and disassociation of other resources (VPC security groups, SNS topic, user groups)
     @pytest.mark.blocked  # TODO: remove when passing

@@ -55,13 +55,6 @@ func newResourceDelta(
 			delta.Add("Spec.AuthToken", a.ko.Spec.AuthToken, b.ko.Spec.AuthToken)
 		}
 	}
-	if ackcompare.HasNilDifference(a.ko.Spec.AutomaticFailoverEnabled, b.ko.Spec.AutomaticFailoverEnabled) {
-		delta.Add("Spec.AutomaticFailoverEnabled", a.ko.Spec.AutomaticFailoverEnabled, b.ko.Spec.AutomaticFailoverEnabled)
-	} else if a.ko.Spec.AutomaticFailoverEnabled != nil && b.ko.Spec.AutomaticFailoverEnabled != nil {
-		if *a.ko.Spec.AutomaticFailoverEnabled != *b.ko.Spec.AutomaticFailoverEnabled {
-			delta.Add("Spec.AutomaticFailoverEnabled", a.ko.Spec.AutomaticFailoverEnabled, b.ko.Spec.AutomaticFailoverEnabled)
-		}
-	}
 	if ackcompare.HasNilDifference(a.ko.Spec.CacheNodeType, b.ko.Spec.CacheNodeType) {
 		delta.Add("Spec.CacheNodeType", a.ko.Spec.CacheNodeType, b.ko.Spec.CacheNodeType)
 	} else if a.ko.Spec.CacheNodeType != nil && b.ko.Spec.CacheNodeType != nil {
@@ -107,13 +100,6 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
-	if ackcompare.HasNilDifference(a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled) {
-		delta.Add("Spec.MultiAZEnabled", a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled)
-	} else if a.ko.Spec.MultiAZEnabled != nil && b.ko.Spec.MultiAZEnabled != nil {
-		if *a.ko.Spec.MultiAZEnabled != *b.ko.Spec.MultiAZEnabled {
-			delta.Add("Spec.MultiAZEnabled", a.ko.Spec.MultiAZEnabled, b.ko.Spec.MultiAZEnabled)
-		}
-	}
 	if !reflect.DeepEqual(a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration) {
 		delta.Add("Spec.NodeGroupConfiguration", a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration)
 	}
@@ -146,13 +132,6 @@ func newResourceDelta(
 	} else if a.ko.Spec.PreferredMaintenanceWindow != nil && b.ko.Spec.PreferredMaintenanceWindow != nil {
 		if *a.ko.Spec.PreferredMaintenanceWindow != *b.ko.Spec.PreferredMaintenanceWindow {
 			delta.Add("Spec.PreferredMaintenanceWindow", a.ko.Spec.PreferredMaintenanceWindow, b.ko.Spec.PreferredMaintenanceWindow)
-		}
-	}
-	if ackcompare.HasNilDifference(a.ko.Spec.PrimaryClusterID, b.ko.Spec.PrimaryClusterID) {
-		delta.Add("Spec.PrimaryClusterID", a.ko.Spec.PrimaryClusterID, b.ko.Spec.PrimaryClusterID)
-	} else if a.ko.Spec.PrimaryClusterID != nil && b.ko.Spec.PrimaryClusterID != nil {
-		if *a.ko.Spec.PrimaryClusterID != *b.ko.Spec.PrimaryClusterID {
-			delta.Add("Spec.PrimaryClusterID", a.ko.Spec.PrimaryClusterID, b.ko.Spec.PrimaryClusterID)
 		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.ReplicasPerNodeGroup, b.ko.Spec.ReplicasPerNodeGroup) {
@@ -217,6 +196,6 @@ func newResourceDelta(
 		delta.Add("Spec.UserGroupIDs", a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs)
 	}
 
-	filterDelta(delta, a, b)
+	modifyDelta(delta, a, b)
 	return delta
 }
