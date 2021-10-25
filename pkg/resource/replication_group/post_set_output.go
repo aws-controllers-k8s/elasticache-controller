@@ -43,6 +43,7 @@ func (rm *resourceManager) updateSpecFields(
 	if err == nil && latestCacheCluster != nil {
 		setEngineVersion(latestCacheCluster, resource)
 		setMaintenanceWindow(latestCacheCluster, resource)
+		setCacheParameterGroup(latestCacheCluster, resource)
 	}
 }
 
@@ -66,7 +67,7 @@ func setReplicasPerNodeGroup(
 	}
 }
 
-// if EngineVersion was specified in desired.Spec, update ko.Sepc with the latest observed value (if non-nil)
+// if EngineVersion was specified in desired.Spec, update ko.Spec with the latest observed value (if non-nil)
 func setEngineVersion(
 	latestCacheCluster *svcsdk.CacheCluster,
 	resource *resource,
@@ -86,5 +87,18 @@ func setMaintenanceWindow(
 	if latestCacheCluster.PreferredMaintenanceWindow != nil {
 		pmw := *latestCacheCluster.PreferredMaintenanceWindow
 		ko.Spec.PreferredMaintenanceWindow = &pmw
+	}
+}
+
+// setCacheParameterGroup updates the cache parameter group associated with the replication group
+//   (if non-nil in API response) regardless of whether it was specified in desired
+func setCacheParameterGroup(
+	latestCacheCluster *svcsdk.CacheCluster,
+	resource *resource,
+) {
+	ko := resource.ko
+	if latestCacheCluster.CacheParameterGroup != nil && latestCacheCluster.CacheParameterGroup.CacheParameterGroupName != nil {
+		cpgName := *latestCacheCluster.CacheParameterGroup.CacheParameterGroupName
+		ko.Spec.CacheParameterGroupName = &cpgName
 	}
 }
