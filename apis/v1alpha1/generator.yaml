@@ -48,6 +48,9 @@ resources:
         from:
           operation: ListAllowedNodeTypeModifications
           path: ScaleDownModifications
+      AutomaticFailoverEnabled:
+        compare:
+          is_ignored: true
       Events:
         is_read_only: true
         from:
@@ -62,6 +65,12 @@ resources:
           path: ReplicationGroup.LogDeliveryConfigurations
         compare: # removes the spec field from automatic delta comparison
           is_ignored: true
+      MultiAZEnabled:
+        compare:
+          is_ignored: true
+      PrimaryClusterId: # note: "PrimaryClusterID" will not function properly
+        compare:
+          is_ignored: true
     hooks:
       sdk_read_many_post_set_output:
         template_path: hooks/replication_group/sdk_read_many_post_set_output.go.tpl
@@ -72,7 +81,7 @@ resources:
       sdk_update_post_build_request:
         template_path: hooks/replication_group/sdk_update_post_build_request.go.tpl
       delta_post_compare:
-        code: "filterDelta(delta, a, b)"
+        code: "modifyDelta(delta, a, b)"
       sdk_file_end:
         template_path: hooks/replication_group/sdk_file_end.go.tpl
       sdk_file_end_set_output_post_populate:
