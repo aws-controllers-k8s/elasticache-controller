@@ -7,14 +7,14 @@ resource:
   apiVersion: $CRD_GROUP/$CRD_VERSION
   kind: ReplicationGroup
   metadata:
-    name: test$RANDOM_SUFFIX
+    name: scaling$RANDOM_SUFFIX
 steps:
   - id: "create_CMD_replication_group"
     description: "Initial config"
     create:
       spec:
         engine: redis
-        replicationGroupID: test$RANDOM_SUFFIX
+        replicationGroupID: scaling$RANDOM_SUFFIX
         replicationGroupDescription: Basic create and update of CMD RG
         cacheNodeType: cache.t3.micro
         numNodeGroups: 1
@@ -42,4 +42,4 @@ steps:
             # message: "Expected message ..."
   - id: "delete_CMD_RG"
     description: "Delete cluster mode disabled replication group"
-    delete: test$RANDOM_SUFFIX
+    delete: scaling$RANDOM_SUFFIX

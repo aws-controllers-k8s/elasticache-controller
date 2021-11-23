@@ -15,11 +15,14 @@ package replication_group
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/pkg/errors"
+	"reflect"
 	"sort"
+	"strconv"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
@@ -68,6 +71,28 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 			errors.New("Replication Group can not be modified, "+
 				"need to wait for member clusters and node group members."),
 			requeue.DefaultRequeueAfterDuration)
+	}
+
+	// Handle the asynchronous rollback case for while Scaling down.
+	// This means that we have already attempted to apply the CacheNodeType once and
+	// were not successful hence we will set a terminal condition.
+	if !cacheNodeTypeRequiresUpdate(desired) && delta.DifferentAt("Spec.CacheNodeType") {
+		return nil, awserr.New("InvalidParameterCombination", "Cannot update CacheNodeType, "+
+			"Please refer to Events for more details", nil)
+
+	}
+
+	// Handle the asynchronous rollback for Resharding.
+	if !nodeGroupRequiresUpdate(desired) && rm.shardConfigurationsDiffer(desired, latest) {
+
+		return nil, awserr.New("InvalidParameterCombination", "Cannot update NodeGroups, "+
+			"Please refer to Events for more details", nil)
+	}
+
+	// Handle NodeGroupConfiguration asynchronous rollback situations other than Resharding.
+	if !nodeGroupRequiresUpdate(desired) && (rm.replicaCountDifference(desired, latest) != 0 && !delta.DifferentAt("Spec.ReplicasPerNodeGroup")) {
+		return nil, awserr.New("InvalidParameterCombination", "Cannot update NodeGroupConfiguration, "+
+			"Please refer to Events for more details", nil)
 	}
 
 	// Order of operations when diffs map to multiple updates APIs:
@@ -316,7 +341,18 @@ func (rm *resourceManager) updateShardConfiguration(
 		rm.log.V(1).Info("Error during ModifyReplicationGroupShardConfiguration", "error", respErr)
 		return nil, respErr
 	}
-	return rm.setReplicationGroupOutput(desired, resp.ReplicationGroup)
+
+	r, err := rm.setReplicationGroupOutput(desired, resp.ReplicationGroup)
+
+	if err != nil {
+		return r, err
+	}
+
+	ko := r.ko.DeepCopy()
+	// Update the annotations since API call was successful
+	rm.setLastRequestedNodeGroupConfiguration(desired, ko)
+	rm.setLastRequestedNumNodeGroups(desired, ko)
+	return &resource{ko}, nil
 }
 
 // newIncreaseReplicaCountRequestPayload returns an SDK-specific struct for the HTTP request
@@ -690,4 +726,45 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 	}
 
 	return input
+}
+
+// cacheNodeTypeRequiresUpdate retrieves the last requested cacheNodeType saved in annotations and compares them
+// to the current desired cacheNodeType
+func cacheNodeTypeRequiresUpdate(desired *resource) bool {
+	annotations := desired.ko.ObjectMeta.GetAnnotations()
+	if val, ok := annotations[AnnotationLastRequestedCNT]; ok && desired.ko.Spec.CacheNodeType != nil {
+		return val != *desired.ko.Spec.CacheNodeType
+	}
+
+	// This means there is delta and no value in annotation or in Spec
+	return true
+}
+
+// nodeGroupRequiresUpdate retrieves the last applied NumNodeGroups and NodeGroupConfiguration and compares them
+// to the current desired NumNodeGroups and NodeGroupConfiguration
+func nodeGroupRequiresUpdate(desired *resource) bool {
+	annotations := desired.ko.ObjectMeta.GetAnnotations()
+
+	if val, ok := annotations[AnnotationLastRequestedNNG]; ok && val != "null" {
+		numNodes, err := strconv.ParseInt(val, 10, 64)
+
+		if err != nil {
+			return false
+		}
+
+		if numNodes != *desired.ko.Spec.NumNodeGroups {
+			return true
+		}
+
+		return false
+	}
+
+	desiredNodeGroupConfig := desired.ko.Spec.NodeGroupConfiguration
+	if val, ok := annotations[AnnotationLastRequestedNGC]; ok && val != "null" {
+		_ = json.Unmarshal([]byte(val), &desiredNodeGroupConfig)
+		return !reflect.DeepEqual(desiredNodeGroupConfig, val)
+	}
+
+	// This means there is delta and no value in annotation or in Spec
+	return true
 }

@@ -1,20 +1,24 @@
-id: "CME_SCALE_UP"
-description: "Scale Up CME"
+id: "RG_CME_SCALE_DOWN_ROLLBACK"
+description: "In this test we execute scale down which will rollback"
+#marks:
+#  - slow
+#  - blocked
 resource:
   apiVersion: $CRD_GROUP/$CRD_VERSION
   kind: ReplicationGroup
   metadata:
     name: scaling$RANDOM_SUFFIX
 steps:
-  - id: "create_CMD_replication_group"
+  - id: "create_CME_replication_group"
     description: "Initial config"
     create:
       spec:
         engine: redis
         replicationGroupID: scaling$RANDOM_SUFFIX
-        replicationGroupDescription: Scale Up CME
-        cacheNodeType: cache.t3.micro
+        replicationGroupDescription: Scalind down rollback
+        cacheNodeType: cache.m5.large
         numNodeGroups: 2
+        snapshotName: test-scale-down-rollback
     wait:
       status:
         conditions:
@@ -24,20 +28,18 @@ steps:
     expect:
       status:
         status: "available"
-  - id: "scale_up"
-    description: "Scale up from t3.micro to t3.medium"
+  - id: "smaller_instance_scale_down"
+    description: "Scaling down with smaller instance"
     patch:
       spec:
-        cacheNodeType: cache.t3.medium
-    wait:
+        cacheNodeType: cache.t3.micro
+    wait: 300
+    expect:
       status:
         conditions:
+          ACK.Terminal: "True"
           ACK.ResourceSynced:
-            status: "True"
-            timeout: 1800
-      expect:
-        status:
-          status: "available"
+            status: "False"
   - id: "delete_CME_RG"
     description: "Delete cluster mode enabled replication group"
     delete: scaling$RANDOM_SUFFIX

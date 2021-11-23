@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"path/filepath"
 	ctrlrtzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -290,8 +291,7 @@ func TestCustomModifyReplicationGroup(t *testing.T) {
 		desired := provideResource()
 		latest := provideResource()
 		var delta ackcompare.Delta
-		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.Nil(err)
 	})
@@ -306,8 +306,7 @@ func TestCustomModifyReplicationGroup_Unavailable(t *testing.T) {
 		desired := provideResource()
 		latest := provideResourceWithStatus("modifying")
 		var delta ackcompare.Delta
-		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err)
 		var requeueNeededAfter *requeue.RequeueNeededAfter
@@ -329,8 +328,7 @@ func TestCustomModifyReplicationGroup_NodeGroup_Unvailable(t *testing.T) {
 			nodeGroup.Status = &unavailableStatus
 		}
 		var delta ackcompare.Delta
-		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err)
 		var requeueNeededAfter *requeue.RequeueNeededAfter
@@ -357,9 +355,8 @@ func TestCustomModifyReplicationGroup_NodeGroup_MemberClusters_mismatch(t *testi
 			nodeGroup.Status = &availableStatus
 		}
 		var delta ackcompare.Delta
-		var ctx context.Context
 		require.NotNil(latest.ko.Status.MemberClusters)
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err) // due to surplus member cluster
 		var requeueNeededAfter *requeue.RequeueNeededAfter
@@ -384,14 +381,61 @@ func TestCustomModifyReplicationGroup_NodeGroup_available(t *testing.T) {
 			nodeGroup.Status = &availableStatus
 		}
 		var delta ackcompare.Delta
-		var ctx context.Context
 		require.NotNil(latest.ko.Status.MemberClusters)
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.Nil(err)
 	})
 }
 
+func TestCustomModifyReplicationGroup_Scaling_Async_Rollback(t *testing.T) {
+	assert := assert.New(t)
+	t.Run("ScaleDownRollback=Diff", func(t *testing.T) {
+		desired := provideResource()
+		latest := provideResource()
+		rgId := "RGID"
+		desired.ko.Spec.ReplicationGroupID = &rgId
+		latest.ko.Spec.ReplicationGroupID = &rgId
+		desired.ko.ObjectMeta.Annotations = make(map[string]string)
+		desiredCacheNodeType := "cache.t3.micro"
+		currentCacheNodeType := "cache.m5.large"
+		desired.ko.Annotations[AnnotationLastRequestedCNT] = desiredCacheNodeType
+		desired.ko.Spec.CacheNodeType = &desiredCacheNodeType
+
+		rm := provideResourceManager()
+
+		var delta ackcompare.Delta
+		delta.Add("Spec.CacheNodeType", currentCacheNodeType, desiredCacheNodeType)
+
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
+		assert.Nil(res)
+		assert.NotNil(err)
+		assert.Equal("InvalidParameterCombination: Cannot update CacheNodeType, Please refer to Events for more details", err.Error())
+	})
+
+	t.Run("ScaleInRollback=Diff", func(t *testing.T) {
+		desired := provideResource()
+		latest := provideResource()
+		rgId := "RGID"
+		desired.ko.Spec.ReplicationGroupID = &rgId
+		latest.ko.Spec.ReplicationGroupID = &rgId
+		desired.ko.ObjectMeta.Annotations = make(map[string]string)
+
+		desiredNodeGroup := int64(4)
+		currentNodeGroup := int64(3)
+		desired.ko.Annotations[AnnotationLastRequestedNNG] = strconv.Itoa(int(desiredNodeGroup))
+		desired.ko.Spec.NumNodeGroups = &desiredNodeGroup
+		rm := provideResourceManager()
+
+		var delta ackcompare.Delta
+		delta.Add("Spec.NumNodeGroups", currentNodeGroup, desiredNodeGroup)
+
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
+		assert.Nil(res)
+		assert.NotNil(err)
+		assert.Equal("InvalidParameterCombination: Cannot update NodeGroups, Please refer to Events for more details", err.Error())
+	})
+}
 func TestCustomModifyReplicationGroup_ScaleUpAndDown_And_Resharding(t *testing.T) {
 	assert := assert.New(t)
 
@@ -402,16 +446,26 @@ func TestCustomModifyReplicationGroup_ScaleUpAndDown_And_Resharding(t *testing.T
 		rgId := "RGID"
 		desired.ko.Spec.ReplicationGroupID = &rgId
 		latest.ko.Spec.ReplicationGroupID = &rgId
+		desired.ko.ObjectMeta.Annotations = make(map[string]string)
+		desiredCacheNodeType := "cache.m5.large"
+		currentCacheNodeType := "cache.t3.small"
+		desired.ko.Annotations[AnnotationLastRequestedCNT] = currentCacheNodeType
+		desired.ko.Spec.CacheNodeType = &desiredCacheNodeType
 
+		desiredNodeGroup := int64(4)
+		currentNodeGroup := int64(3)
+		desired.ko.Annotations[AnnotationLastRequestedNNG] = strconv.Itoa(int(currentNodeGroup))
+		desired.ko.Spec.NumNodeGroups = &desiredNodeGroup
+		allowedNodeModifications := []*string{&desiredCacheNodeType}
+		desired.ko.Status.AllowedScaleUpModifications = allowedNodeModifications
 		mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
 		rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
 
 		var delta ackcompare.Delta
-		delta.Add("Spec.CacheNodeType", "cache.t3.small", "cache.m5.large")
-		delta.Add("Spec.NumNodeGroups", 3, 4)
+		delta.Add("Spec.CacheNodeType", currentCacheNodeType, desiredCacheNodeType)
+		delta.Add("Spec.NumNodeGroups", currentNodeGroup, desiredNodeGroup)
 
-		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.Nil(err)
 		assert.Empty(mocksdkapi.Calls)
@@ -429,15 +483,19 @@ func TestCustomModifyReplicationGroup_ScaleUpAndDown_And_Resharding(t *testing.T
 
 		var delta ackcompare.Delta
 		delta.Add("Spec.CacheNodeType", "cache.t3.small", "cache.t3.micro")
+		desired.ko.ObjectMeta.Annotations = make(map[string]string)
+		cacheNodeType := "cache.t3.small"
+		desired.ko.Annotations[AnnotationLastRequestedCNT] = "cache.t3.micro"
+		desired.ko.Spec.CacheNodeType = &cacheNodeType
 		oldshardCount := int64(4)
 		newShardCount := int64(10)
 		delta.Add("Spec.NumNodeGroups", oldshardCount, newShardCount)
 		desired.ko.Spec.NumNodeGroups = &newShardCount
 		latest.ko.Spec.NumNodeGroups = &oldshardCount
+		desired.ko.Annotations[AnnotationLastRequestedNNG] = strconv.Itoa(int(oldshardCount))
 		mocksdkapi.On("ModifyReplicationGroupShardConfigurationWithContext", mock.Anything, mock.Anything).Return(nil,
 			awserr.New("Invalid", "Invalid error", nil))
-		var ctx context.Context
-		res, err := rm.CustomModifyReplicationGroup(ctx, desired, latest, &delta)
+		res, err := rm.CustomModifyReplicationGroup(context.TODO(), desired, latest, &delta)
 		assert.Nil(res)
 		assert.NotNil(err)
 		assert.NotEmpty(mocksdkapi.Calls)
