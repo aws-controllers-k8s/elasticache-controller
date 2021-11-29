@@ -46,6 +46,10 @@ samples:
   spec: '{}'
 - kind: Snapshot
   spec: '{}'
+- kind: UserGroup
+  spec: '{}'
+- kind: User
+  spec: '{}'
 maintainers:
 - name: "elasticache maintainer team"
   email: "ack-maintainers@amazon.com"
