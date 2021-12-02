@@ -24,7 +24,7 @@ steps:
         conditions:
           ACK.ResourceSynced:
             status: "True"
-            timeout: 1800
+            timeout: 2800
     expect:
       status:
         status: "available"

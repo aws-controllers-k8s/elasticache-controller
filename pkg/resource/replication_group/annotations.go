@@ -31,5 +31,5 @@ const (
 	// AnnotationLastRequestedNGC is an annotation whose value is the marshaled list of pointers to
 	// NodeGroupConfiguration structs passed in as input to either the create or modify API called most
 	// recently
-	AnnotationLastRequestedNGC = svcapitypes.AnnotationPrefix + "last-requested-num-group-configuration"
+	AnnotationLastRequestedNGC = svcapitypes.AnnotationPrefix + "last-requested-node-group-configuration"
 )

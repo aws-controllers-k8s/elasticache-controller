@@ -761,8 +761,9 @@ func nodeGroupRequiresUpdate(desired *resource) bool {
 
 	desiredNodeGroupConfig := desired.ko.Spec.NodeGroupConfiguration
 	if val, ok := annotations[AnnotationLastRequestedNGC]; ok && val != "null" {
-		_ = json.Unmarshal([]byte(val), &desiredNodeGroupConfig)
-		return !reflect.DeepEqual(desiredNodeGroupConfig, val)
+		var lastRequestedNodeGroupConfig []*svcapitypes.NodeGroupConfiguration
+		_ = json.Unmarshal([]byte(val), &lastRequestedNodeGroupConfig)
+		return !reflect.DeepEqual(desiredNodeGroupConfig, lastRequestedNodeGroupConfig)
 	}
 
 	// This means there is delta and no value in annotation or in Spec

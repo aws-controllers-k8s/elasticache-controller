@@ -15,6 +15,7 @@ package replication_group
 
 import (
 	"context"
+	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 )
@@ -35,8 +36,7 @@ func (rm *resourceManager) updateSpecFields(
 	}
 	// populate relevant ko.Spec fields with observed state of respRG.NodeGroups
 	setReplicasPerNodeGroup(respRG, resource)
-
-	//TODO: set Spec NodeGroupConfiguration
+	setNodeGroupConfiguration(respRG, resource)
 
 	// updating some Spec fields requires a DescribeCacheClusters call
 	latestCacheCluster, err := rm.describeCacheCluster(ctx, resource)
@@ -44,6 +44,50 @@ func (rm *resourceManager) updateSpecFields(
 		setEngineVersion(latestCacheCluster, resource)
 		setMaintenanceWindow(latestCacheCluster, resource)
 		setCacheParameterGroup(latestCacheCluster, resource)
+	}
+}
+
+// if NodeGroupConfiguration was given in the desired.Spec, update ko.Spec with the latest observed value
+func setNodeGroupConfiguration(
+	respRG *svcsdk.ReplicationGroup,
+	resource *resource,
+) {
+	ko := resource.ko
+	if respRG.NodeGroups != nil && ko.Spec.NodeGroupConfiguration != nil {
+		nodeGroupConfigurations := []*svcapitypes.NodeGroupConfiguration{}
+		for _, nodeGroup := range respRG.NodeGroups {
+			nodeGroupConfiguration := &svcapitypes.NodeGroupConfiguration{}
+
+			if nodeGroup.NodeGroupId != nil {
+				nodeGroupConfiguration.NodeGroupID = nodeGroup.NodeGroupId
+			}
+			replicaAZs := []*string{}
+
+			for _, nodeGroupMember := range nodeGroup.NodeGroupMembers {
+				if nodeGroupMember.CurrentRole != nil && *nodeGroupMember.CurrentRole == "primary" {
+					nodeGroupConfiguration.PrimaryAvailabilityZone = nodeGroupMember.PreferredAvailabilityZone
+				}
+
+				// In this case we cannot say what is primary AZ and replica AZ.
+				if nodeGroupMember.CurrentRole == nil && nodeGroupConfiguration.PrimaryAvailabilityZone == nil {
+					// We cannot determine the correct AZ so we would use the first node group member as primary
+					nodeGroupConfiguration.PrimaryAvailabilityZone = nodeGroupMember.PreferredAvailabilityZone
+				}
+
+				if nodeGroupConfiguration.PrimaryAvailabilityZone != nil || *nodeGroupMember.CurrentRole == "replica" {
+					replicaAZs = append(replicaAZs, nodeGroupMember.PreferredAvailabilityZone)
+				}
+			}
+
+			if len(replicaAZs) > 0 {
+				nodeGroupConfiguration.ReplicaAvailabilityZones = replicaAZs
+			}
+
+			replicaCount := int64(len(replicaAZs))
+			nodeGroupConfiguration.ReplicaCount = &replicaCount
+		}
+
+		ko.Spec.NodeGroupConfiguration = nodeGroupConfigurations
 	}
 }
 
