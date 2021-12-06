@@ -395,11 +395,11 @@ class TestReplicationGroup:
 
     def test_rg_input_coverage(self, rg_input_coverage):
         (reference, _) = rg_input_coverage
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=40)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
     def test_rg_cmd_fromsnapshot(self, rg_cmd_fromsnapshot):
         (reference, _) = rg_cmd_fromsnapshot
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
     # if primaryClusterID is a nonexistent node, the terminal condition should be set
     def test_rg_invalid_primary(self, rg_invalid_primary):
@@ -413,7 +413,7 @@ class TestReplicationGroup:
     @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_cme_uneven_shards(self, rg_cme_uneven_shards, rg_cme_uneven_shards_input):
         (reference, _) = rg_cme_uneven_shards
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
         ngid1 = rg_cme_uneven_shards_input['NGID1'][1:-1]  # need to strip double quotes off node group ID
         ngid2 = rg_cme_uneven_shards_input['NGID2'][1:-1]
 
@@ -447,7 +447,7 @@ class TestReplicationGroup:
         }
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
         resource = k8s.get_resource(reference)
@@ -463,7 +463,7 @@ class TestReplicationGroup:
     # increase and decrease replica count evenly across all shards in a CME RG
     def test_rg_cme_even_shards(self, rg_cme_even_shards, rg_cme_even_shards_input):
         (reference, _) = rg_cme_even_shards
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
         nng = int(rg_cme_even_shards_input['NUM_NODE_GROUPS'])
         rpng = int(rg_cme_even_shards_input['REPLICAS_PER_NODE_GROUP'])
 
@@ -477,7 +477,7 @@ class TestReplicationGroup:
         patch = {"spec": {"replicasPerNodeGroup": rpng}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert replica count has increased
         resource = k8s.get_resource(reference)
@@ -489,7 +489,7 @@ class TestReplicationGroup:
         patch = {"spec": {"replicasPerNodeGroup": rpng}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert replica count has decreased
         resource = k8s.get_resource(reference)
@@ -499,7 +499,7 @@ class TestReplicationGroup:
     # test update behavior of controller (engine version and replica count)
     def test_rg_upgrade_ev(self, rg_upgrade_ev_input, rg_upgrade_ev):
         (reference, _) = rg_upgrade_ev
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert initial state
         cc = retrieve_cache_cluster(rg_upgrade_ev_input['RG_ID'])
@@ -511,7 +511,7 @@ class TestReplicationGroup:
         patch = {"spec": {"engineVersion": desired_engine_version}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state after upgrading engine version
         resource = k8s.get_resource(reference)
@@ -524,7 +524,7 @@ class TestReplicationGroup:
     # test update of fields that can be changed quickly
     def test_rg_update_misc(self, rg_update_misc_input, rg_update_misc):
         (reference, _) = rg_update_misc
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # desired initial state
         pmw = rg_update_misc_input['PMW']
@@ -549,7 +549,7 @@ class TestReplicationGroup:
         }
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
         assert_misc_fields(reference, rg_update_misc_input['RG_ID'], pmw, description, srl, sw)
@@ -557,7 +557,7 @@ class TestReplicationGroup:
     # test modifying properties related to tolerance: replica promotion, multi AZ, automatic failover
     def test_rg_fault_tolerance(self, rg_fault_tolerance):
         (reference, _) = rg_fault_tolerance
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert initial state
         resource = k8s.get_resource(reference)
@@ -580,7 +580,7 @@ class TestReplicationGroup:
         patch = {"spec": {"automaticFailoverEnabled": False, "multiAZEnabled": False}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
         resource = k8s.get_resource(reference)
@@ -591,7 +591,7 @@ class TestReplicationGroup:
         patch = {"spec": {"primaryClusterID": node2, "automaticFailoverEnabled": True, "multiAZEnabled": True}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=15)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert roles
         resource = k8s.get_resource(reference)
@@ -613,7 +613,7 @@ class TestReplicationGroup:
     @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_associate_resources(self, rg_associate_resources_input, rg_associate_resources, bootstrap_resources):
         (reference, _) = rg_associate_resources
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # associate resources, wait for RG to sync
         sg_list = [bootstrap_resources.SecurityGroup1, bootstrap_resources.SecurityGroup2]
@@ -622,7 +622,7 @@ class TestReplicationGroup:
         patch = {"spec": {"securityGroupIDs": sg_list, "notificationTopicARN": sns_topic, "userGroupIDs": ug_list}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
         assert_associated_resources(rg_associate_resources_input['RG_ID'], sg_list, sns_topic, ug_list)
@@ -634,7 +634,7 @@ class TestReplicationGroup:
         patch = {"spec": {"securityGroupIDs": sg_list, "notificationTopicARN": sns_topic, "userGroupIDs": ug_list}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
         assert_associated_resources(rg_associate_resources_input['RG_ID'], sg_list, sns_topic, ug_list)
@@ -642,7 +642,7 @@ class TestReplicationGroup:
     def test_rg_update_cpg(self, rg_update_cpg_input, rg_update_cpg, bootstrap_resources):
         # wait for resource to sync and retrieve initial state
         (reference, _) = rg_update_cpg
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # update, wait for resource to sync
         patch = {"spec": {"cacheParameterGroupName": bootstrap_resources.CPGName}}
@@ -657,7 +657,7 @@ class TestReplicationGroup:
     @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_scale_vertically(self, rg_scale_vertically_input, rg_scale_vertically):
         (reference, _) = rg_scale_vertically
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert initial state
         rg = retrieve_replication_group(rg_scale_vertically_input['RG_ID'])
@@ -668,7 +668,7 @@ class TestReplicationGroup:
         patch = {"spec": {"cacheNodeType": cnt}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert scale up complete
         rg = retrieve_replication_group(rg_scale_vertically_input['RG_ID'])
@@ -679,7 +679,7 @@ class TestReplicationGroup:
         patch = {"spec": {"cacheNodeType": cnt}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert scale down complete
         rg = retrieve_replication_group(rg_scale_vertically_input['RG_ID'])
@@ -688,7 +688,7 @@ class TestReplicationGroup:
     @pytest.mark.blocked  # TODO: remove when passing
     def test_rg_scale_horizontally(self, rg_scale_horizontally_input, rg_scale_horizontally):
         (reference, _) = rg_scale_horizontally
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert initial state
         rg = retrieve_replication_group(rg_scale_horizontally_input['RG_ID'])
@@ -700,7 +700,7 @@ class TestReplicationGroup:
         patch = {"spec": {"numNodeGroups": nng}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert scale out complete
         rg = retrieve_replication_group(rg_scale_horizontally_input['RG_ID'])
@@ -711,7 +711,7 @@ class TestReplicationGroup:
         patch = {"spec": {"numNodeGroups": nng}}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert scale in complete
         rg = retrieve_replication_group(rg_scale_horizontally_input['RG_ID'])
@@ -720,7 +720,7 @@ class TestReplicationGroup:
     # add and modify log delivery configuration to replication group
     def test_rg_log_delivery(self, rg_log_delivery_input, rg_log_delivery, bootstrap_resources):
         (reference, _) = rg_log_delivery
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # add log delivery config
         config = {
@@ -737,7 +737,7 @@ class TestReplicationGroup:
         patch = {"spec": {"logDeliveryConfigurations": [config]}}
         k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert log delivery added
         assert_log_delivery_config(reference, config)
@@ -748,7 +748,7 @@ class TestReplicationGroup:
         patch = {"spec": {"logDeliveryConfigurations": [config]}}
         k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert configuration modified
         assert_log_delivery_config(reference, config)
@@ -758,7 +758,7 @@ class TestReplicationGroup:
         patch = {"spec": {"logDeliveryConfigurations": [config]}}
         k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert error message present
         resource = k8s.get_resource(reference)
@@ -770,23 +770,23 @@ class TestReplicationGroup:
         patch = {"spec": {"logDeliveryConfigurations": [config]}}
         k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=10)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert log delivery disabled
         assert_log_delivery_config(reference, config)
 
     def test_rg_auth_token(self, rg_auth_token, secrets):
         (reference, _) = rg_auth_token
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         patch = {"spec": {"authToken": {"name": secrets['NAME2'], "key": secrets['KEY2']}}}
         k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
     def test_rg_deletion(self, rg_deletion_input, rg_deletion, rg_deletion_waiter):
         (reference, _) = rg_deletion
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=30)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assertions after initial creation
         resource = k8s.get_resource(reference)

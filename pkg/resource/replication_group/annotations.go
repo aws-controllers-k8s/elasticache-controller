@@ -22,4 +22,14 @@ const (
 	// LogDeliveryConfigurationRequest structs passed in as input to either the create or modify API called most
 	// recently
 	AnnotationLastRequestedLDCs = svcapitypes.AnnotationPrefix + "last-requested-log-delivery-configurations"
+	// AnnotationLastRequestedCNT is an annotation whose value is passed in as input to either the create or modify API
+	// called most recently
+	AnnotationLastRequestedCNT = svcapitypes.AnnotationPrefix + "last-requested-cache-node-type"
+	// AnnotationLastRequestedNNG is an annotation whose value is passed in as input to either the create or modify API
+	// called most recently
+	AnnotationLastRequestedNNG = svcapitypes.AnnotationPrefix + "last-requested-num-node-groups"
+	// AnnotationLastRequestedNGC is an annotation whose value is the marshaled list of pointers to
+	// NodeGroupConfiguration structs passed in as input to either the create or modify API called most
+	// recently
+	AnnotationLastRequestedNGC = svcapitypes.AnnotationPrefix + "last-requested-node-group-configuration"
 )

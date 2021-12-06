@@ -16,6 +16,7 @@ package replication_group
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
@@ -57,6 +58,8 @@ func (rm *resourceManager) CustomCreateReplicationGroupSetOutput(
 ) (*svcapitypes.ReplicationGroup, error) {
 	rm.customSetOutput(resp.ReplicationGroup, ko)
 	rm.setAnnotationsFields(r, ko)
+	rm.setLastRequestedNodeGroupConfiguration(r, ko)
+	rm.setLastRequestedNumNodeGroups(r, ko)
 	return ko, nil
 }
 
@@ -75,6 +78,9 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 		logDeliveryConfig = append(logDeliveryConfig, ldc.DeepCopy())
 	}
 	ko.Spec.LogDeliveryConfigurations = logDeliveryConfig
+
+	// Keep the value of desired for CacheNodeType.
+	ko.Spec.CacheNodeType = r.ko.Spec.CacheNodeType
 
 	rm.setAnnotationsFields(r, ko)
 	return ko, nil
@@ -267,20 +273,36 @@ func (rm *resourceManager) provideEvents(
 
 // setAnnotationsFields copies the desired object's annotations, populates any
 // relevant fields, and sets the latest object's annotations to this newly populated map.
+// Fields that are handled by custom modify implementation are not set here.
 // This should only be called upon a successful create or modify call.
 func (rm *resourceManager) setAnnotationsFields(
 	r *resource,
 	ko *svcapitypes.ReplicationGroup,
 ) {
+	annotations := getAnnotationsFields(r, ko)
+
+	rm.setLastRequestedLogDeliveryConfigurations(r, annotations)
+	rm.setLastRequestedCacheNodeType(r, annotations)
+	ko.ObjectMeta.Annotations = annotations
+}
+
+// getAnnotationsFields return the annotations map that would be used to set the fields
+func getAnnotationsFields(
+	r *resource,
+	ko *svcapitypes.ReplicationGroup) map[string]string {
+
+	if ko.ObjectMeta.Annotations != nil {
+		return ko.ObjectMeta.Annotations
+	}
+
 	desiredAnnotations := r.ko.ObjectMeta.GetAnnotations()
 	annotations := make(map[string]string)
 	for k, v := range desiredAnnotations {
 		annotations[k] = v
 	}
 
-	rm.setLastRequestedLogDeliveryConfigurations(r, annotations)
-
 	ko.ObjectMeta.Annotations = annotations
+	return annotations
 }
 
 // setLastRequestedLogDeliveryConfigurations copies desired.Spec.LogDeliveryConfigurations
@@ -295,5 +317,45 @@ func (rm *resourceManager) setLastRequestedLogDeliveryConfigurations(
 		annotations[AnnotationLastRequestedLDCs] = "null"
 	} else {
 		annotations[AnnotationLastRequestedLDCs] = string(lastRequestedConfigs)
+	}
+}
+
+// setLastRequestedCacheNodeType copies desired.Spec.CacheNodeType into the annotation
+// of the object.
+func (rm *resourceManager) setLastRequestedCacheNodeType(
+	r *resource,
+	annotations map[string]string,
+) {
+	if r.ko.Spec.CacheNodeType != nil {
+		annotations[AnnotationLastRequestedCNT] = *r.ko.Spec.CacheNodeType
+	}
+}
+
+// setLastRequestedNodeGroupConfiguration copies desired.spec.NodeGroupConfiguration into the
+// annotation of the object
+func (rm *resourceManager) setLastRequestedNodeGroupConfiguration(
+	r *resource,
+	ko *svcapitypes.ReplicationGroup,
+) {
+	annotations := getAnnotationsFields(r, ko)
+	lastRequestedConfigs, err := json.Marshal(r.ko.Spec.NodeGroupConfiguration)
+	if err != nil {
+		annotations[AnnotationLastRequestedNGC] = "null"
+	} else {
+		annotations[AnnotationLastRequestedNGC] = string(lastRequestedConfigs)
+	}
+}
+
+// setLastRequestedNumNodeGroups copies desired.spec.NumNodeGroups into the
+// annotation of the object
+func (rm *resourceManager) setLastRequestedNumNodeGroups(
+	r *resource,
+	ko *svcapitypes.ReplicationGroup,
+) {
+	annotations := getAnnotationsFields(r, ko)
+	if r.ko.Spec.NumNodeGroups != nil {
+		annotations[AnnotationLastRequestedNNG] = strconv.Itoa(int(*r.ko.Spec.NumNodeGroups))
+	} else {
+		annotations[AnnotationLastRequestedNNG] = "null"
 	}
 }

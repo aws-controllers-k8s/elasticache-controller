@@ -17,9 +17,10 @@
 from e2e.declarative_test_fwk import model
 import pytest
 import os
+import glob
 from typing import Iterable, List
 from pathlib import Path
-from os.path import isfile, join
+from os.path import isfile, join, isdir
 from acktest.resources import load_resource_file, random_suffix_name
 
 
@@ -34,11 +35,11 @@ def list_scenarios(scenarios_directory: Path) -> Iterable:
     """
 
     scenarios_list = []
-    for scenario_file in sorted(os.listdir(scenarios_directory)):
-        scenario_file_full_path = join(scenarios_directory, scenario_file)
-        if not isfile(scenario_file_full_path) or not scenario_file.endswith(".yaml"):
-            continue
-        scenarios_list.append(pytest.param(Path(scenario_file_full_path), marks=marks(Path(scenario_file_full_path))))
+    scenario_files = glob.glob(str(scenarios_directory) + "/**/*.yaml", recursive=True)
+
+    for scenario_file in scenario_files:
+        scenarios_list.append(pytest.param(Path(scenario_file), marks=marks(Path(scenario_file))))
+
     return scenarios_list
 
 
