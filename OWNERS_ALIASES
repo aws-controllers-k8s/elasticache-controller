@@ -11,5 +11,4 @@ aliases:
   # TODO: Add your team members to your team controller alias
   service-team:
     - nmvk
-    - echen-98
     - kumargauravsharma
