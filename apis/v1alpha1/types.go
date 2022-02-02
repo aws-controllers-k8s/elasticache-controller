@@ -288,9 +288,9 @@ type GlobalNodeGroup struct {
 }
 
 // Consists of a primary cluster that accepts writes and an associated secondary
-// cluster that resides in a different AWS region. The secondary cluster accepts
-// only reads. The primary cluster automatically replicates updates to the secondary
-// cluster.
+// cluster that resides in a different Amazon region. The secondary cluster
+// accepts only reads. The primary cluster automatically replicates updates
+// to the secondary cluster.
 //
 //    * The GlobalReplicationGroupIdSuffix represents the name of the Global
 //    datastore, which is what you use to associate a secondary cluster.
@@ -316,7 +316,7 @@ type GlobalReplicationGroupInfo struct {
 }
 
 // A member of a Global datastore. It contains the Replication Group Id, the
-// AWS region and the role of the replication group.
+// Amazon region and the role of the replication group.
 type GlobalReplicationGroupMember struct {
 	AutomaticFailover      *string `json:"automaticFailover,omitempty"`
 	ReplicationGroupID     *string `json:"replicationGroupID,omitempty"`
@@ -529,14 +529,15 @@ type ReplicationGroup_SDK struct {
 	NodeGroups                 []*NodeGroup                `json:"nodeGroups,omitempty"`
 	// The settings to be applied to the Redis replication group, either immediately
 	// or during the next maintenance window.
-	PendingModifiedValues    *ReplicationGroupPendingModifiedValues `json:"pendingModifiedValues,omitempty"`
-	ReplicationGroupID       *string                                `json:"replicationGroupID,omitempty"`
-	SnapshotRetentionLimit   *int64                                 `json:"snapshotRetentionLimit,omitempty"`
-	SnapshotWindow           *string                                `json:"snapshotWindow,omitempty"`
-	SnapshottingClusterID    *string                                `json:"snapshottingClusterID,omitempty"`
-	Status                   *string                                `json:"status,omitempty"`
-	TransitEncryptionEnabled *bool                                  `json:"transitEncryptionEnabled,omitempty"`
-	UserGroupIDs             []*string                              `json:"userGroupIDs,omitempty"`
+	PendingModifiedValues      *ReplicationGroupPendingModifiedValues `json:"pendingModifiedValues,omitempty"`
+	ReplicationGroupCreateTime *metav1.Time                           `json:"replicationGroupCreateTime,omitempty"`
+	ReplicationGroupID         *string                                `json:"replicationGroupID,omitempty"`
+	SnapshotRetentionLimit     *int64                                 `json:"snapshotRetentionLimit,omitempty"`
+	SnapshotWindow             *string                                `json:"snapshotWindow,omitempty"`
+	SnapshottingClusterID      *string                                `json:"snapshottingClusterID,omitempty"`
+	Status                     *string                                `json:"status,omitempty"`
+	TransitEncryptionEnabled   *bool                                  `json:"transitEncryptionEnabled,omitempty"`
+	UserGroupIDs               []*string                              `json:"userGroupIDs,omitempty"`
 }
 
 // Represents the output of a PurchaseReservedCacheNodesOffering operation.

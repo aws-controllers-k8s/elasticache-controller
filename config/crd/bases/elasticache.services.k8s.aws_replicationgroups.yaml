@@ -704,6 +704,10 @@ spec:
                         type: array
                     type: object
                 type: object
+              replicationGroupCreateTime:
+                description: The date and time when the cluster was created.
+                format: date-time
+                type: string
               snapshottingClusterID:
                 description: The cluster ID that is used as the daily snapshot source
                   for the replication group.

@@ -129,7 +129,7 @@ spec:
                   type: object
                 type: array
               pendingChanges:
-                description: A list of updates being applied to the user groups.
+                description: A list of updates being applied to the user group.
                 properties:
                   userIDsToAdd:
                     items:

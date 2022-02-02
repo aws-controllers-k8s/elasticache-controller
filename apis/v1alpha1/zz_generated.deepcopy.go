@@ -2448,6 +2448,10 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 		*out = new(ReplicationGroupPendingModifiedValues)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ReplicationGroupCreateTime != nil {
+		in, out := &in.ReplicationGroupCreateTime, &out.ReplicationGroupCreateTime
+		*out = (*in).DeepCopy()
+	}
 	if in.SnapshottingClusterID != nil {
 		in, out := &in.SnapshottingClusterID, &out.SnapshottingClusterID
 		*out = new(string)
@@ -2580,6 +2584,10 @@ func (in *ReplicationGroup_SDK) DeepCopyInto(out *ReplicationGroup_SDK) {
 		in, out := &in.PendingModifiedValues, &out.PendingModifiedValues
 		*out = new(ReplicationGroupPendingModifiedValues)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ReplicationGroupCreateTime != nil {
+		in, out := &in.ReplicationGroupCreateTime, &out.ReplicationGroupCreateTime
+		*out = (*in).DeepCopy()
 	}
 	if in.ReplicationGroupID != nil {
 		in, out := &in.ReplicationGroupID, &out.ReplicationGroupID

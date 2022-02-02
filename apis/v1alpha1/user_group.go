@@ -50,7 +50,7 @@ type UserGroupStatus struct {
 	// resource
 	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
-	// A list of updates being applied to the user groups.
+	// A list of updates being applied to the user group.
 	// +kubebuilder:validation:Optional
 	PendingChanges *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
 	// A list of replication groups that the user group can access.

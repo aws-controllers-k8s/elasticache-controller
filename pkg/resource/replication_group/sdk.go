@@ -371,6 +371,11 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.PendingModifiedValues = nil
 		}
+		if elem.ReplicationGroupCreateTime != nil {
+			ko.Status.ReplicationGroupCreateTime = &metav1.Time{*elem.ReplicationGroupCreateTime}
+		} else {
+			ko.Status.ReplicationGroupCreateTime = nil
+		}
 		if elem.ReplicationGroupId != nil {
 			ko.Spec.ReplicationGroupID = elem.ReplicationGroupId
 		} else {
@@ -402,13 +407,13 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.TransitEncryptionEnabled = nil
 		}
 		if elem.UserGroupIds != nil {
-			f23 := []*string{}
-			for _, f23iter := range elem.UserGroupIds {
-				var f23elem string
-				f23elem = *f23iter
-				f23 = append(f23, &f23elem)
+			f24 := []*string{}
+			for _, f24iter := range elem.UserGroupIds {
+				var f24elem string
+				f24elem = *f24iter
+				f24 = append(f24, &f24elem)
 			}
-			ko.Spec.UserGroupIDs = f23
+			ko.Spec.UserGroupIDs = f24
 		} else {
 			ko.Spec.UserGroupIDs = nil
 		}
@@ -803,6 +808,11 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
+	if resp.ReplicationGroup.ReplicationGroupCreateTime != nil {
+		ko.Status.ReplicationGroupCreateTime = &metav1.Time{*resp.ReplicationGroup.ReplicationGroupCreateTime}
+	} else {
+		ko.Status.ReplicationGroupCreateTime = nil
+	}
 	if resp.ReplicationGroup.ReplicationGroupId != nil {
 		ko.Spec.ReplicationGroupID = resp.ReplicationGroup.ReplicationGroupId
 	} else {
@@ -834,13 +844,13 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
 	if resp.ReplicationGroup.UserGroupIds != nil {
-		f23 := []*string{}
-		for _, f23iter := range resp.ReplicationGroup.UserGroupIds {
-			var f23elem string
-			f23elem = *f23iter
-			f23 = append(f23, &f23elem)
+		f24 := []*string{}
+		for _, f24iter := range resp.ReplicationGroup.UserGroupIds {
+			var f24elem string
+			f24elem = *f24iter
+			f24 = append(f24, &f24elem)
 		}
-		ko.Spec.UserGroupIDs = f23
+		ko.Spec.UserGroupIDs = f24
 	} else {
 		ko.Spec.UserGroupIDs = nil
 	}
@@ -1450,6 +1460,11 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
+	if resp.ReplicationGroup.ReplicationGroupCreateTime != nil {
+		ko.Status.ReplicationGroupCreateTime = &metav1.Time{*resp.ReplicationGroup.ReplicationGroupCreateTime}
+	} else {
+		ko.Status.ReplicationGroupCreateTime = nil
+	}
 	if resp.ReplicationGroup.ReplicationGroupId != nil {
 		ko.Spec.ReplicationGroupID = resp.ReplicationGroup.ReplicationGroupId
 	} else {
@@ -1481,13 +1496,13 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
 	if resp.ReplicationGroup.UserGroupIds != nil {
-		f23 := []*string{}
-		for _, f23iter := range resp.ReplicationGroup.UserGroupIds {
-			var f23elem string
-			f23elem = *f23iter
-			f23 = append(f23, &f23elem)
+		f24 := []*string{}
+		for _, f24iter := range resp.ReplicationGroup.UserGroupIds {
+			var f24elem string
+			f24elem = *f24iter
+			f24 = append(f24, &f24elem)
 		}
-		ko.Spec.UserGroupIDs = f23
+		ko.Spec.UserGroupIDs = f24
 	} else {
 		ko.Spec.UserGroupIDs = nil
 	}
@@ -2123,6 +2138,11 @@ func (rm *resourceManager) setReplicationGroupOutput(
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
+	if resp.ReplicationGroup.ReplicationGroupCreateTime != nil {
+		ko.Status.ReplicationGroupCreateTime = &metav1.Time{*resp.ReplicationGroup.ReplicationGroupCreateTime}
+	} else {
+		ko.Status.ReplicationGroupCreateTime = nil
+	}
 	if resp.ReplicationGroup.ReplicationGroupId != nil {
 		ko.Spec.ReplicationGroupID = resp.ReplicationGroup.ReplicationGroupId
 	} else {
@@ -2154,13 +2174,13 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
 	if resp.ReplicationGroup.UserGroupIds != nil {
-		f23 := []*string{}
-		for _, f23iter := range resp.ReplicationGroup.UserGroupIds {
-			var f23elem string
-			f23elem = *f23iter
-			f23 = append(f23, &f23elem)
+		f24 := []*string{}
+		for _, f24iter := range resp.ReplicationGroup.UserGroupIds {
+			var f24elem string
+			f24elem = *f24iter
+			f24 = append(f24, &f24elem)
 		}
-		ko.Spec.UserGroupIDs = f23
+		ko.Spec.UserGroupIDs = f24
 	} else {
 		ko.Spec.UserGroupIDs = nil
 	}

@@ -388,6 +388,9 @@ type ReplicationGroupStatus struct {
 	// or during the next maintenance window.
 	// +kubebuilder:validation:Optional
 	PendingModifiedValues *ReplicationGroupPendingModifiedValues `json:"pendingModifiedValues,omitempty"`
+	// The date and time when the cluster was created.
+	// +kubebuilder:validation:Optional
+	ReplicationGroupCreateTime *metav1.Time `json:"replicationGroupCreateTime,omitempty"`
 	// The cluster ID that is used as the daily snapshot source for the replication
 	// group.
 	// +kubebuilder:validation:Optional
