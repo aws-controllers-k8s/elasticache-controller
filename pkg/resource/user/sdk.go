@@ -578,7 +578,6 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"InvalidParameterValue",
 		"InvalidParameterCombination",
 		"InvalidUserState",
-		"UserNotFound",
 		"DefaultUserAssociatedToUserGroup":
 		return true
 	default:

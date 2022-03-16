@@ -1814,8 +1814,6 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"InvalidParameterValue",
 		"InvalidParameterCombination",
 		"InsufficientCacheClusterCapacity",
-		"CacheSecurityGroupNotFound",
-		"CacheSubnetGroupNotFoundFault",
 		"ClusterQuotaForCustomerExceeded",
 		"NodeQuotaForClusterExceeded",
 		"NodeQuotaForCustomerExceeded",
@@ -1823,9 +1821,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"TagQuotaPerResourceExceeded",
 		"NodeGroupsPerReplicationGroupQuotaExceeded",
 		"InvalidCacheSecurityGroupState",
-		"CacheParameterGroupNotFound",
-		"InvalidKMSKeyFault",
-		"CacheClusterNotFound":
+		"InvalidKMSKeyFault":
 		return true
 	default:
 		return false
