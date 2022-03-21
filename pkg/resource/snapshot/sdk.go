@@ -747,8 +747,6 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"InvalidParameterValue",
 		"InvalidParameterCombination",
 		"SnapshotAlreadyExistsFault",
-		"CacheClusterNotFound",
-		"ReplicationGroupNotFoundFault",
 		"SnapshotQuotaExceededFault",
 		"SnapshotFeatureNotSupportedFault":
 		return true

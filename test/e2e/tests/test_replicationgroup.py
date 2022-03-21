@@ -24,7 +24,7 @@ from acktest.k8s import resource as k8s
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.util import retrieve_cache_cluster, assert_even_shards_replica_count, retrieve_replication_group, \
-    assert_terminal_condition_set
+    assert_recoverable_condition_set
 
 RESOURCE_PLURAL = "replicationgroups"
 DEFAULT_WAIT_SECS = 30
@@ -401,13 +401,13 @@ class TestReplicationGroup:
         (reference, _) = rg_cmd_fromsnapshot
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
-    # if primaryClusterID is a nonexistent node, the terminal condition should be set
+    # if primaryClusterID is a nonexistent node, the recoverable condition should be set
     def test_rg_invalid_primary(self, rg_invalid_primary):
         (reference, _) = rg_invalid_primary
         sleep(DEFAULT_WAIT_SECS)
 
         resource = k8s.get_resource(reference)
-        assert_terminal_condition_set(resource)
+        assert_recoverable_condition_set(resource)
 
     # increase and decrease replica counts per-shard in a CME RG
     @pytest.mark.blocked  # TODO: remove when passing

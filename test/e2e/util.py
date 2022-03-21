@@ -112,6 +112,15 @@ def assert_terminal_condition_set(resource):
     assert terminal is not None
     assert terminal['status'] == "True"
 
+# given the latest state of the resource, assert that the recoverable condition is set
+def assert_recoverable_condition_set(resource):
+    recoverable = None
+    for cond in resource['status']['conditions']:
+        if cond['type'] == "ACK.Recoverable":
+            recoverable = cond
+
+    assert recoverable is not None
+    assert recoverable['status'] == "True"
 
 # provide a basic nodeGroupConfiguration object of desired size
 def provide_node_group_configuration(size: int):

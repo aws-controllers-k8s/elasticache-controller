@@ -488,8 +488,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"InvalidParameterValueException",
 		"DefaultUserRequired",
 		"UserGroupQuotaExceededFault",
-		"TagQuotaPerResourceExceeded",
-		"UserNotFoundFault":
+		"TagQuotaPerResourceExceeded":
 		return true
 	default:
 		return false
