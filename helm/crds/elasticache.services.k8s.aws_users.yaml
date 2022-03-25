@@ -120,8 +120,13 @@ spec:
                     description: OwnerAccountID is the AWS Account ID of the account
                       that owns the backend AWS service API resource.
                     type: string
+                  region:
+                    description: Region is the AWS region in which the resource exists
+                      or will exist.
+                    type: string
                 required:
                 - ownerAccountID
+                - region
                 type: object
               authentication:
                 description: Denotes whether the user requires a password to authenticate.
