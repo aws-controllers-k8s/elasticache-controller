@@ -30,6 +30,7 @@ status:
   ackResourceMetadata:
     arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cme
     ownerAccountID: ""
+    region: ""
   automaticFailover: enabled
   clusterEnabled: true
   conditions:

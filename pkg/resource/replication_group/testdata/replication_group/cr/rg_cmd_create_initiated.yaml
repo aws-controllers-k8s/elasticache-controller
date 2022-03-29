@@ -16,6 +16,7 @@ status:
   ackResourceMetadata:
     arn: arn:aws:elasticache:us-east-1:012345678910:replicationgroup:rg-cmd
     ownerAccountID: "" # for tests the ownerAccountID of the resource manager is empty (see implementations of TestRunnerDelegate's ResourceManager function)
+    region: ""
   automaticFailover: disabled
   clusterEnabled: false
   conditions:
