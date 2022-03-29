@@ -11,6 +11,7 @@ spec:
 status:
   ackResourceMetadata:
     ownerAccountID: ""
+    region: ""
   conditions:
     - message: "InvalidParameterValue: The number of replicas per node group must be within 0 and 5.\n\tstatus code: 0, request id: "
       status: "True"
