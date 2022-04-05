@@ -17,6 +17,7 @@ package cache_subnet_group
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 
@@ -475,8 +476,8 @@ func (rm *resourceManager) updateConditions(
 			syncCondition = condition
 		}
 	}
-
-	if rm.terminalAWSError(err) || err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound {
+	var termError *ackerr.TerminalError
+	if rm.terminalAWSError(err) || err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound || errors.As(err, &termError) {
 		if terminalCondition == nil {
 			terminalCondition = &ackv1alpha1.Condition{
 				Type: ackv1alpha1.ConditionTypeTerminal,
@@ -484,7 +485,7 @@ func (rm *resourceManager) updateConditions(
 			ko.Status.Conditions = append(ko.Status.Conditions, terminalCondition)
 		}
 		var errorMessage = ""
-		if err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound {
+		if err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound || errors.As(err, &termError) {
 			errorMessage = err.Error()
 		} else {
 			awsErr, _ := ackerr.AWSError(err)
