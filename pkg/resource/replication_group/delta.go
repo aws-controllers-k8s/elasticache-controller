@@ -79,6 +79,13 @@ func newResourceDelta(
 			delta.Add("Spec.CacheSubnetGroupName", a.ko.Spec.CacheSubnetGroupName, b.ko.Spec.CacheSubnetGroupName)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.Description, b.ko.Spec.Description) {
+		delta.Add("Spec.Description", a.ko.Spec.Description, b.ko.Spec.Description)
+	} else if a.ko.Spec.Description != nil && b.ko.Spec.Description != nil {
+		if *a.ko.Spec.Description != *b.ko.Spec.Description {
+			delta.Add("Spec.Description", a.ko.Spec.Description, b.ko.Spec.Description)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.Engine, b.ko.Spec.Engine) {
 		delta.Add("Spec.Engine", a.ko.Spec.Engine, b.ko.Spec.Engine)
 	} else if a.ko.Spec.Engine != nil && b.ko.Spec.Engine != nil {
@@ -139,13 +146,6 @@ func newResourceDelta(
 	} else if a.ko.Spec.ReplicasPerNodeGroup != nil && b.ko.Spec.ReplicasPerNodeGroup != nil {
 		if *a.ko.Spec.ReplicasPerNodeGroup != *b.ko.Spec.ReplicasPerNodeGroup {
 			delta.Add("Spec.ReplicasPerNodeGroup", a.ko.Spec.ReplicasPerNodeGroup, b.ko.Spec.ReplicasPerNodeGroup)
-		}
-	}
-	if ackcompare.HasNilDifference(a.ko.Spec.ReplicationGroupDescription, b.ko.Spec.ReplicationGroupDescription) {
-		delta.Add("Spec.ReplicationGroupDescription", a.ko.Spec.ReplicationGroupDescription, b.ko.Spec.ReplicationGroupDescription)
-	} else if a.ko.Spec.ReplicationGroupDescription != nil && b.ko.Spec.ReplicationGroupDescription != nil {
-		if *a.ko.Spec.ReplicationGroupDescription != *b.ko.Spec.ReplicationGroupDescription {
-			delta.Add("Spec.ReplicationGroupDescription", a.ko.Spec.ReplicationGroupDescription, b.ko.Spec.ReplicationGroupDescription)
 		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID) {

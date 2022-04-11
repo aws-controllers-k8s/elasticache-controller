@@ -2139,6 +2139,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Description != nil {
+		in, out := &in.Description, &out.Description
+		*out = new(string)
+		**out = **in
+	}
 	if in.Engine != nil {
 		in, out := &in.Engine, &out.Engine
 		*out = new(string)
@@ -2220,11 +2225,6 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 	if in.ReplicasPerNodeGroup != nil {
 		in, out := &in.ReplicasPerNodeGroup, &out.ReplicasPerNodeGroup
 		*out = new(int64)
-		**out = **in
-	}
-	if in.ReplicationGroupDescription != nil {
-		in, out := &in.ReplicationGroupDescription, &out.ReplicationGroupDescription
-		*out = new(string)
 		**out = **in
 	}
 	if in.ReplicationGroupID != nil {
@@ -2372,11 +2372,6 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 		in, out := &in.ConfigurationEndpoint, &out.ConfigurationEndpoint
 		*out = new(Endpoint)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.Description != nil {
-		in, out := &in.Description, &out.Description
-		*out = new(string)
-		**out = **in
 	}
 	if in.Events != nil {
 		in, out := &in.Events, &out.Events

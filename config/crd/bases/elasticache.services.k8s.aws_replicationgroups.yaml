@@ -144,6 +144,9 @@ spec:
                   creating a cluster. For more information, see Subnets and Subnet
                   Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SubnetGroups.html)."
                 type: string
+              description:
+                description: A user-created description for the replication group.
+                type: string
               engine:
                 description: The name of the cache engine to be used for the clusters
                   in this replication group. Must be Redis.
@@ -293,9 +296,6 @@ spec:
                   nodes in each node group (shard). Valid values are 0 to 5.
                 format: int64
                 type: integer
-              replicationGroupDescription:
-                description: A user-created description for the replication group.
-                type: string
               replicationGroupID:
                 description: "The replication group identifier. This parameter is
                   stored as a lowercase string. \n Constraints: \n    * A name must
@@ -383,7 +383,7 @@ spec:
                   type: string
                 type: array
             required:
-            - replicationGroupDescription
+            - description
             - replicationGroupID
             type: object
           status:
@@ -496,9 +496,6 @@ spec:
                     format: int64
                     type: integer
                 type: object
-              description:
-                description: The user supplied description of the replication group.
-                type: string
               events:
                 description: A list of events. Each element in the list contains detailed
                   information about one event.

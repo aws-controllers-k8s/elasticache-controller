@@ -131,6 +131,9 @@ type ReplicationGroupSpec struct {
 	// a subnet group before you start creating a cluster. For more information,
 	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SubnetGroups.html).
 	CacheSubnetGroupName *string `json:"cacheSubnetGroupName,omitempty"`
+	// A user-created description for the replication group.
+	// +kubebuilder:validation:Required
+	Description *string `json:"description"`
 	// The name of the cache engine to be used for the clusters in this replication
 	// group. Must be Redis.
 	Engine *string `json:"engine,omitempty"`
@@ -228,9 +231,6 @@ type ReplicationGroupSpec struct {
 	// An optional parameter that specifies the number of replica nodes in each
 	// node group (shard). Valid values are 0 to 5.
 	ReplicasPerNodeGroup *int64 `json:"replicasPerNodeGroup,omitempty"`
-	// A user-created description for the replication group.
-	// +kubebuilder:validation:Required
-	ReplicationGroupDescription *string `json:"replicationGroupDescription"`
 	// The replication group identifier. This parameter is stored as a lowercase
 	// string.
 	//
@@ -354,9 +354,6 @@ type ReplicationGroupStatus struct {
 	// endpoint to connect to this replication group.
 	// +kubebuilder:validation:Optional
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
-	// The user supplied description of the replication group.
-	// +kubebuilder:validation:Optional
-	Description *string `json:"description,omitempty"`
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
 	// +kubebuilder:validation:Optional

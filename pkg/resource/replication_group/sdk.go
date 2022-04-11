@@ -17,6 +17,7 @@ package replication_group
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 
@@ -131,9 +132,9 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.ConfigurationEndpoint = nil
 		}
 		if elem.Description != nil {
-			ko.Status.Description = elem.Description
+			ko.Spec.Description = elem.Description
 		} else {
-			ko.Status.Description = nil
+			ko.Spec.Description = nil
 		}
 		if elem.GlobalReplicationGroupInfo != nil {
 			f9 := &svcapitypes.GlobalReplicationGroupInfo{}
@@ -568,9 +569,9 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.ConfigurationEndpoint = nil
 	}
 	if resp.ReplicationGroup.Description != nil {
-		ko.Status.Description = resp.ReplicationGroup.Description
+		ko.Spec.Description = resp.ReplicationGroup.Description
 	} else {
-		ko.Status.Description = nil
+		ko.Spec.Description = nil
 	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
@@ -1023,8 +1024,8 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.ReplicasPerNodeGroup != nil {
 		res.SetReplicasPerNodeGroup(*r.ko.Spec.ReplicasPerNodeGroup)
 	}
-	if r.ko.Spec.ReplicationGroupDescription != nil {
-		res.SetReplicationGroupDescription(*r.ko.Spec.ReplicationGroupDescription)
+	if r.ko.Spec.Description != nil {
+		res.SetReplicationGroupDescription(*r.ko.Spec.Description)
 	}
 	if r.ko.Spec.ReplicationGroupID != nil {
 		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
@@ -1220,9 +1221,9 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.ConfigurationEndpoint = nil
 	}
 	if resp.ReplicationGroup.Description != nil {
-		ko.Status.Description = resp.ReplicationGroup.Description
+		ko.Spec.Description = resp.ReplicationGroup.Description
 	} else {
-		ko.Status.Description = nil
+		ko.Spec.Description = nil
 	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
@@ -1602,8 +1603,8 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	if r.ko.Spec.PrimaryClusterID != nil {
 		res.SetPrimaryClusterId(*r.ko.Spec.PrimaryClusterID)
 	}
-	if r.ko.Spec.ReplicationGroupDescription != nil {
-		res.SetReplicationGroupDescription(*r.ko.Spec.ReplicationGroupDescription)
+	if r.ko.Spec.Description != nil {
+		res.SetReplicationGroupDescription(*r.ko.Spec.Description)
 	}
 	if r.ko.Spec.ReplicationGroupID != nil {
 		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
@@ -1749,8 +1750,8 @@ func (rm *resourceManager) updateConditions(
 			syncCondition = condition
 		}
 	}
-
-	if rm.terminalAWSError(err) || err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound {
+	var termError *ackerr.TerminalError
+	if rm.terminalAWSError(err) || err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound || errors.As(err, &termError) {
 		if terminalCondition == nil {
 			terminalCondition = &ackv1alpha1.Condition{
 				Type: ackv1alpha1.ConditionTypeTerminal,
@@ -1758,7 +1759,7 @@ func (rm *resourceManager) updateConditions(
 			ko.Status.Conditions = append(ko.Status.Conditions, terminalCondition)
 		}
 		var errorMessage = ""
-		if err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound {
+		if err == ackerr.SecretTypeNotSupported || err == ackerr.SecretNotFound || errors.As(err, &termError) {
 			errorMessage = err.Error()
 		} else {
 			awsErr, _ := ackerr.AWSError(err)
@@ -1897,9 +1898,9 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Status.ConfigurationEndpoint = nil
 	}
 	if resp.ReplicationGroup.Description != nil {
-		ko.Status.Description = resp.ReplicationGroup.Description
+		ko.Spec.Description = resp.ReplicationGroup.Description
 	} else {
-		ko.Status.Description = nil
+		ko.Spec.Description = nil
 	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f9 := &svcapitypes.GlobalReplicationGroupInfo{}
