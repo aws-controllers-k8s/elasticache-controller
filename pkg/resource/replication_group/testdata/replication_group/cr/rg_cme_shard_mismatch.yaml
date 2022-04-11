@@ -21,7 +21,7 @@ spec:
       replicaCount: 3
       slots: 6000-16383
   numNodeGroups: 3 # this is the mismatch; 3 shards indicated but only 2 are specified in above nodeGroupConfiguration
-  replicationGroupDescription: cluster-mode enabled RG
+  description: cluster-mode enabled RG
   replicationGroupID: rg-cme
 status:
   ackResourceMetadata:

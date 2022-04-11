@@ -10,5 +10,5 @@ spec:
   multiAZEnabled: $MAZ_ENABLED
   numNodeGroups: 1
   replicasPerNodeGroup: 1
-  replicationGroupDescription: description
+  description: description
   replicationGroupID: $RG_ID

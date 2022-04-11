@@ -15,7 +15,7 @@ steps:
       spec:
         engine: redis
         replicationGroupID: reshard$RANDOM_SUFFIX
-        replicationGroupDescription: Scaling in rollback
+        description: Scaling in rollback
         cacheNodeType: cache.m5.large
         numNodeGroups: 2
         snapshotName: test-scale-in-rollback

@@ -6,7 +6,7 @@ spec:
   engine: redis
   numNodeGroups: 1
   replicasPerNodeGroup: 2 # new replica hasn't been added, but 2 comes from desired and isn't overwritten in custom modify code
-  replicationGroupDescription: cluster-mode disabled RG
+  description: cluster-mode disabled RG
   replicationGroupID: rg-cmd
   atRestEncryptionEnabled: false
   snapshotRetentionLimit: 0

@@ -7,6 +7,6 @@ spec:
   # cache node type and engine cannot be used when specifying existing primary node, even if DNE
   numNodeGroups: 1
   replicasPerNodeGroup: 1
-  replicationGroupDescription: cluster-mode disabled RG
+  description: cluster-mode disabled RG
   replicationGroupID: $RG_ID
   primaryClusterID: $PRIMARY_NODE

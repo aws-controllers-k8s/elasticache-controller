@@ -16,6 +16,10 @@ package replication_group
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strconv"
+	"testing"
+
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/testutil"
 	ackmetrics "github.com/aws-controllers-k8s/runtime/pkg/metrics"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
@@ -23,10 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zapcore"
-	"path/filepath"
 	ctrlrtzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"strconv"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -267,7 +268,7 @@ func validatePayloadReplicaConfig(
 func TestDecreaseReplicaCountMock(t *testing.T) {
 	assert := assert.New(t)
 	// Setup mock API response
-	var mockReplicationGroupDescription = "mock_replication_group_description"
+	var mockDescription = "mock_replication_group_description"
 	var mockOutput svcsdk.DecreaseReplicaCountOutput
 	testutil.LoadFromFixture(filepath.Join("testdata", "DecreaseReplicaCountOutput.json"), &mockOutput)
 	mocksdkapi := &mocksvcsdkapi.ElastiCacheAPI{}
@@ -278,7 +279,7 @@ func TestDecreaseReplicaCountMock(t *testing.T) {
 		desired := provideResource()
 		latest := provideResource()
 		res, _ := rm.decreaseReplicaCount(context.Background(), desired, latest)
-		assert.Equal(mockReplicationGroupDescription, *res.ko.Status.Description)
+		assert.Equal(mockDescription, *res.ko.Spec.Description)
 	})
 }
 

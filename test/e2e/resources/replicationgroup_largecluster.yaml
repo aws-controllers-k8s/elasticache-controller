@@ -7,5 +7,5 @@ spec:
   engine: redis
   numNodeGroups: $NUM_NODE_GROUPS
   replicasPerNodeGroup: $REPLICAS_PER_NODE_GROUP
-  replicationGroupDescription: large cluster mode enabled RG
+  description: large cluster mode enabled RG
   replicationGroupID: $RG_ID

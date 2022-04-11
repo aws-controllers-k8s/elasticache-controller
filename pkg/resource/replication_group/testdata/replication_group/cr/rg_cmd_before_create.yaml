@@ -6,5 +6,5 @@ spec:
   engine: redis
   numNodeGroups: 1
   replicasPerNodeGroup: 1
-  replicationGroupDescription: cluster-mode disabled RG
+  description: cluster-mode disabled RG
   replicationGroupID: rg-cmd

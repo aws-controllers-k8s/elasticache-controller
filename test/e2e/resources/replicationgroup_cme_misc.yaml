@@ -10,7 +10,7 @@ spec:
   numNodeGroups: 2
   preferredMaintenanceWindow: $PMW
   replicasPerNodeGroup: 1
-  replicationGroupDescription: $DESCRIPTION
+  description: $DESCRIPTION
   replicationGroupID: $RG_ID
   snapshotRetentionLimit: $SRL
   snapshotWindow: $SW

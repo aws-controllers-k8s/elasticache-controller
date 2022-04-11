@@ -6,7 +6,7 @@ spec:
   engine: redis
   numNodeGroups: 1
   replicasPerNodeGroup: 1 # as this is the latest state, replicasPerNodeGroup should be consistent with memberClusters/nodeGroups
-  replicationGroupDescription: cluster-mode disabled RG
+  description: cluster-mode disabled RG
   replicationGroupID: rg-cmd
   atRestEncryptionEnabled: false
   snapshotRetentionLimit: 0

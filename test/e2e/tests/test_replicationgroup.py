@@ -542,7 +542,7 @@ class TestReplicationGroup:
         sw = "15:00-17:00"
         patch = {"spec": {
                 "preferredMaintenanceWindow": pmw,
-                "replicationGroupDescription": description,
+                "description": description,
                 "snapshotRetentionLimit": srl,
                 "snapshotWindow": sw
             }

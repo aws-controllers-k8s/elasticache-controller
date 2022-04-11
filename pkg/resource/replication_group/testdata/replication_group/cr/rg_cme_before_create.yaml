@@ -20,5 +20,5 @@ spec:
       replicaCount: 3
       slots: 6000-16383
   numNodeGroups: 2
-  replicationGroupDescription: cluster-mode enabled RG
+  description: cluster-mode enabled RG
   replicationGroupID: rg-cme
