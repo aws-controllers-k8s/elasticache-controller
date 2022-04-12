@@ -232,7 +232,7 @@ def assert_misc_fields(reference, rg_id, pmw, description, srl, sw):
     rg = retrieve_replication_group(rg_id)
     assert cc is not None
     assert cc['PreferredMaintenanceWindow'] == pmw
-    assert resource['status']['description'] == description
+    assert resource['spec']['description'] == description
     assert rg['SnapshotRetentionLimit'] == srl
     assert rg['SnapshotWindow'] == sw
 
