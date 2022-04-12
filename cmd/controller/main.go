@@ -18,6 +18,7 @@ package main
 import (
 	"os"
 
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcfg "github.com/aws-controllers-k8s/runtime/pkg/config"
 	ackrt "github.com/aws-controllers-k8s/runtime/pkg/runtime"
 	ackrtutil "github.com/aws-controllers-k8s/runtime/pkg/util"
@@ -31,7 +32,6 @@ import (
 
 	svctypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	svcresource "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource"
-	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_parameter_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_subnet_group"
@@ -39,6 +39,8 @@ import (
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/snapshot"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/user"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/user_group"
+
+	"github.com/aws-controllers-k8s/elasticache-controller/pkg/version"
 )
 
 var (
@@ -104,7 +106,11 @@ func main() {
 	)
 	sc := ackrt.NewServiceController(
 		awsServiceAlias, awsServiceAPIGroup, awsServiceEndpointsID,
-		ackrt.VersionInfo{}, // TODO: populate version info
+		ackrt.VersionInfo{
+			version.GitCommit,
+			version.GitVersion,
+			version.BuildDate,
+		},
 	).WithLogger(
 		ctrlrt.Log,
 	).WithResourceManagerFactories(
