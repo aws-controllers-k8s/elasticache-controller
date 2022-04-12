@@ -7,7 +7,7 @@ spec:
   engineVersion: 5.0.6 # new config has been applied; this is the new engine version but no action has been taken yet
   numNodeGroups: 1
   replicasPerNodeGroup: 1
-  replicationGroupDescription: cluster-mode disabled RG
+  description: cluster-mode disabled RG
   replicationGroupID: rg-cmd
   atRestEncryptionEnabled: false
   snapshotRetentionLimit: 0

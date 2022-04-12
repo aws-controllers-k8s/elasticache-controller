@@ -9,5 +9,5 @@ spec:
   engineVersion: $ENGINE_VERSION
   numNodeGroups: $NUM_NODE_GROUPS
   replicasPerNodeGroup: $REPLICAS_PER_NODE_GROUP
-  replicationGroupDescription: cluster-mode disabled RG
+  description: cluster-mode disabled RG
   replicationGroupID: $RG_ID

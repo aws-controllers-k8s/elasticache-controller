@@ -82,6 +82,14 @@ resources:
         template_path: hooks/replication_group/sdk_file_end.go.tpl
       sdk_file_end_set_output_post_populate:
         code: "rm.customSetOutput(obj, ko) // custom set output from obj"
+    renames:
+      operations:
+        CreateReplicationGroup:
+          input_fields:
+            ReplicationGroupDescription: Description
+        ModifyReplicationGroup:
+          input_fields:
+            ReplicationGroupDescription: Description
   Snapshot:
     update_conditions_custom_method_name: CustomUpdateConditions
     exceptions:

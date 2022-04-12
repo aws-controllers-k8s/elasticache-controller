@@ -5,7 +5,7 @@ metadata:
 spec:
   cacheNodeType: cache.t3.micro
   engine: redis
-  replicationGroupDescription: test replication group for input field coverage
+  description: test replication group for input field coverage
   replicationGroupID: $RG_ID
   snapshotName: $SNAPSHOT_NAME
   numNodeGroups: 1

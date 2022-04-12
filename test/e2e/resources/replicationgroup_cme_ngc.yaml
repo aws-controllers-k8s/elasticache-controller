@@ -20,5 +20,5 @@ spec:
         - us-west-2c
         - us-west-2a
       replicaCount: 2
-  replicationGroupDescription: cluster-mode enabled RG
+  description: cluster-mode enabled RG
   replicationGroupID: $RG_ID

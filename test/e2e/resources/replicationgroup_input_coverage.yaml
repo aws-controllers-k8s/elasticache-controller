@@ -32,7 +32,7 @@ spec:
   numNodeGroups: 2
   port: 6380
   preferredMaintenanceWindow: sun:23:00-mon:01:30
-  replicationGroupDescription: test replication group for input field coverage
+  description: test replication group for input field coverage
   replicationGroupID: $RG_ID
   securityGroupIDs:
     - $SG_ID

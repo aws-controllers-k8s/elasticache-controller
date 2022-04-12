@@ -15,7 +15,7 @@ steps:
       spec:
         engine: redis
         replicationGroupID: scaling$RANDOM_SUFFIX
-        replicationGroupDescription: Scalind down rollback
+        description: Scaling down rollback
         cacheNodeType: cache.m5.large
         numNodeGroups: 2
         snapshotName: test-scale-down-rollback
