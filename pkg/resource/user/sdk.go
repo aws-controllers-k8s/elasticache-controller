@@ -18,6 +18,7 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
@@ -45,6 +47,8 @@ var (
 	_ = &ackerr.NotFound
 	_ = &ackcondition.NotManagedMessage
 	_ = &reflect.Value{}
+	_ = fmt.Sprintf("")
+	_ = &ackrequeue.NoRequeue{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -293,7 +297,7 @@ func (rm *resourceManager) newCreateRequestPayload(
 			if f3iter != nil {
 				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f3iter)
 				if err != nil {
-					return nil, err
+					return nil, ackrequeue.Needed(err)
 				}
 				if tmpSecret != "" {
 					f3elem = tmpSecret
