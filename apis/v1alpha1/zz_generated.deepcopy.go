@@ -2139,6 +2139,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.DataTieringEnabled != nil {
+		in, out := &in.DataTieringEnabled, &out.DataTieringEnabled
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Description != nil {
 		in, out := &in.Description, &out.Description
 		*out = new(string)
@@ -2358,6 +2363,11 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 		in, out := &in.AuthTokenLastModifiedDate, &out.AuthTokenLastModifiedDate
 		*out = (*in).DeepCopy()
 	}
+	if in.AutoMinorVersionUpgrade != nil {
+		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
+		*out = new(bool)
+		**out = **in
+	}
 	if in.AutomaticFailover != nil {
 		in, out := &in.AutomaticFailover, &out.AutomaticFailover
 		*out = new(string)
@@ -2372,6 +2382,11 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 		in, out := &in.ConfigurationEndpoint, &out.ConfigurationEndpoint
 		*out = new(Endpoint)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.DataTiering != nil {
+		in, out := &in.DataTiering, &out.DataTiering
+		*out = new(string)
+		**out = **in
 	}
 	if in.Events != nil {
 		in, out := &in.Events, &out.Events
@@ -2491,6 +2506,11 @@ func (in *ReplicationGroup_SDK) DeepCopyInto(out *ReplicationGroup_SDK) {
 		in, out := &in.AuthTokenLastModifiedDate, &out.AuthTokenLastModifiedDate
 		*out = (*in).DeepCopy()
 	}
+	if in.AutoMinorVersionUpgrade != nil {
+		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
+		*out = new(bool)
+		**out = **in
+	}
 	if in.AutomaticFailover != nil {
 		in, out := &in.AutomaticFailover, &out.AutomaticFailover
 		*out = new(string)
@@ -2510,6 +2530,11 @@ func (in *ReplicationGroup_SDK) DeepCopyInto(out *ReplicationGroup_SDK) {
 		in, out := &in.ConfigurationEndpoint, &out.ConfigurationEndpoint
 		*out = new(Endpoint)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.DataTiering != nil {
+		in, out := &in.DataTiering, &out.DataTiering
+		*out = new(string)
+		**out = **in
 	}
 	if in.Description != nil {
 		in, out := &in.Description, &out.Description
@@ -3072,6 +3097,11 @@ func (in *SnapshotStatus) DeepCopyInto(out *SnapshotStatus) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.DataTiering != nil {
+		in, out := &in.DataTiering, &out.DataTiering
+		*out = new(string)
+		**out = **in
+	}
 	if in.Engine != nil {
 		in, out := &in.Engine, &out.Engine
 		*out = new(string)
@@ -3209,6 +3239,11 @@ func (in *Snapshot_SDK) DeepCopyInto(out *Snapshot_SDK) {
 	}
 	if in.CacheSubnetGroupName != nil {
 		in, out := &in.CacheSubnetGroupName, &out.CacheSubnetGroupName
+		*out = new(string)
+		**out = **in
+	}
+	if in.DataTiering != nil {
+		in, out := &in.DataTiering, &out.DataTiering
 		*out = new(string)
 		**out = **in
 	}
@@ -3713,6 +3748,11 @@ func (in *UserGroupStatus) DeepCopyInto(out *UserGroupStatus) {
 			}
 		}
 	}
+	if in.MinimumEngineVersion != nil {
+		in, out := &in.MinimumEngineVersion, &out.MinimumEngineVersion
+		*out = new(string)
+		**out = **in
+	}
 	if in.PendingChanges != nil {
 		in, out := &in.PendingChanges, &out.PendingChanges
 		*out = new(UserGroupPendingChanges)
@@ -3756,6 +3796,11 @@ func (in *UserGroup_SDK) DeepCopyInto(out *UserGroup_SDK) {
 	}
 	if in.Engine != nil {
 		in, out := &in.Engine, &out.Engine
+		*out = new(string)
+		**out = **in
+	}
+	if in.MinimumEngineVersion != nil {
+		in, out := &in.MinimumEngineVersion, &out.MinimumEngineVersion
 		*out = new(string)
 		**out = **in
 	}
@@ -3973,6 +4018,11 @@ func (in *UserStatus) DeepCopyInto(out *UserStatus) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.MinimumEngineVersion != nil {
+		in, out := &in.MinimumEngineVersion, &out.MinimumEngineVersion
+		*out = new(string)
+		**out = **in
+	}
 	if in.Status != nil {
 		in, out := &in.Status, &out.Status
 		*out = new(string)
@@ -4021,6 +4071,11 @@ func (in *User_SDK) DeepCopyInto(out *User_SDK) {
 	}
 	if in.Engine != nil {
 		in, out := &in.Engine, &out.Engine
+		*out = new(string)
+		**out = **in
+	}
+	if in.MinimumEngineVersion != nil {
+		in, out := &in.MinimumEngineVersion, &out.MinimumEngineVersion
 		*out = new(string)
 		**out = **in
 	}

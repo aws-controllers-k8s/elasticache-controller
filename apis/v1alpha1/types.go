@@ -86,22 +86,31 @@ type CacheEngineVersion struct {
 // the current generation types provide more memory and computational power
 // at lower cost when compared to their equivalent previous generation counterparts.
 //
-//    * General purpose: Current generation: M6g node types (available only
+//    * General purpose: Current generation: M6g node types: (available only
 //    for Redis engine version 5.0.6 onward and for Memcached engine version
-//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
+//    1.5.16 onward): cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 //    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
 //    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
 //    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 //    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
-//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
-//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
-//    cache.t2.medium Previous generation: (not recommended) T1 node types:
-//    cache.t1.micro M1 node types: cache.m1.small, cache.m1.medium, cache.m1.large,
-//    cache.m1.xlarge M3 node types: cache.m3.medium, cache.m3.large, cache.m3.xlarge,
-//    cache.m3.2xlarge
+//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T4g node types (available
+//    only for Redis engine version 5.0.6 onward and for Memcached engine version
+//    1.5.16 onward): cache.t4g.micro, cache.t4g.small, cache.t4g.medium T3
+//    node types: cache.t3.micro, cache.t3.small, cache.t3.medium T2 node types:
+//    cache.t2.micro, cache.t2.small, cache.t2.medium Previous generation: (not
+//    recommended. Existing clusters are still supported but creation of new
+//    clusters is not supported for these types.) T1 node types: cache.t1.micro
+//    M1 node types: cache.m1.small, cache.m1.medium, cache.m1.large, cache.m1.xlarge
+//    M3 node types: cache.m3.medium, cache.m3.large, cache.m3.xlarge, cache.m3.2xlarge
 //
-//    * Compute optimized: Previous generation: (not recommended) C1 node types:
-//    cache.c1.xlarge
+//    * Compute optimized: Previous generation: (not recommended. Existing clusters
+//    are still supported but creation of new clusters is not supported for
+//    these types.) C1 node types: cache.c1.xlarge
+//
+//    * Memory optimized with data tiering: Current generation: R6gd node types
+//    (available only for Redis engine version 6.2 onward). cache.r6gd.xlarge,
+//    cache.r6gd.2xlarge, cache.r6gd.4xlarge, cache.r6gd.8xlarge, cache.r6gd.12xlarge,
+//    cache.r6gd.16xlarge
 //
 //    * Memory optimized: Current generation: R6g node types (available only
 //    for Redis engine version 5.0.6 onward and for Memcached engine version
@@ -111,9 +120,10 @@ type CacheEngineVersion struct {
 //    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 //    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 //    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
-//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
-//    cache.m2.2xlarge, cache.m2.4xlarge R3 node types: cache.r3.large, cache.r3.xlarge,
-//    cache.r3.2xlarge, cache.r3.4xlarge, cache.r3.8xlarge
+//    Previous generation: (not recommended. Existing clusters are still supported
+//    but creation of new clusters is not supported for these types.) M2 node
+//    types: cache.m2.xlarge, cache.m2.2xlarge, cache.m2.4xlarge R3 node types:
+//    cache.r3.large, cache.r3.xlarge, cache.r3.2xlarge, cache.r3.4xlarge, cache.r3.8xlarge
 //
 // Additional node type info
 //
@@ -511,12 +521,14 @@ type ReplicationGroup_SDK struct {
 	AtRestEncryptionEnabled   *bool        `json:"atRestEncryptionEnabled,omitempty"`
 	AuthTokenEnabled          *bool        `json:"authTokenEnabled,omitempty"`
 	AuthTokenLastModifiedDate *metav1.Time `json:"authTokenLastModifiedDate,omitempty"`
+	AutoMinorVersionUpgrade   *bool        `json:"autoMinorVersionUpgrade,omitempty"`
 	AutomaticFailover         *string      `json:"automaticFailover,omitempty"`
 	CacheNodeType             *string      `json:"cacheNodeType,omitempty"`
 	ClusterEnabled            *bool        `json:"clusterEnabled,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
+	DataTiering           *string   `json:"dataTiering,omitempty"`
 	Description           *string   `json:"description,omitempty"`
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
@@ -615,6 +627,7 @@ type Snapshot_SDK struct {
 	CacheNodeType               *string         `json:"cacheNodeType,omitempty"`
 	CacheParameterGroupName     *string         `json:"cacheParameterGroupName,omitempty"`
 	CacheSubnetGroupName        *string         `json:"cacheSubnetGroupName,omitempty"`
+	DataTiering                 *string         `json:"dataTiering,omitempty"`
 	Engine                      *string         `json:"engine,omitempty"`
 	EngineVersion               *string         `json:"engineVersion,omitempty"`
 	KMSKeyID                    *string         `json:"kmsKeyID,omitempty"`
@@ -701,8 +714,9 @@ type UserGroupPendingChanges struct {
 }
 
 type UserGroup_SDK struct {
-	ARN    *string `json:"arn,omitempty"`
-	Engine *string `json:"engine,omitempty"`
+	ARN                  *string `json:"arn,omitempty"`
+	Engine               *string `json:"engine,omitempty"`
+	MinimumEngineVersion *string `json:"minimumEngineVersion,omitempty"`
 	// Returns the updates being applied to the user group.
 	PendingChanges    *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
 	ReplicationGroups []*string                `json:"replicationGroups,omitempty"`
@@ -721,10 +735,11 @@ type User_SDK struct {
 	ARN          *string `json:"arn,omitempty"`
 	AccessString *string `json:"accessString,omitempty"`
 	// Indicates whether the user requires a password to authenticate.
-	Authentication *Authentication `json:"authentication,omitempty"`
-	Engine         *string         `json:"engine,omitempty"`
-	Status         *string         `json:"status,omitempty"`
-	UserGroupIDs   []*string       `json:"userGroupIDs,omitempty"`
-	UserID         *string         `json:"userID,omitempty"`
-	UserName       *string         `json:"userName,omitempty"`
+	Authentication       *Authentication `json:"authentication,omitempty"`
+	Engine               *string         `json:"engine,omitempty"`
+	MinimumEngineVersion *string         `json:"minimumEngineVersion,omitempty"`
+	Status               *string         `json:"status,omitempty"`
+	UserGroupIDs         []*string       `json:"userGroupIDs,omitempty"`
+	UserID               *string         `json:"userID,omitempty"`
+	UserName             *string         `json:"userName,omitempty"`
 }

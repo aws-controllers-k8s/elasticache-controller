@@ -50,6 +50,9 @@ type UserGroupStatus struct {
 	// resource
 	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
+	// The minimum engine version required, which is Redis 6.0
+	// +kubebuilder:validation:Optional
+	MinimumEngineVersion *string `json:"minimumEngineVersion,omitempty"`
 	// A list of updates being applied to the user group.
 	// +kubebuilder:validation:Optional
 	PendingChanges *UserGroupPendingChanges `json:"pendingChanges,omitempty"`

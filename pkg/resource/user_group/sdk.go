@@ -18,6 +18,7 @@ package user_group
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
@@ -45,6 +47,8 @@ var (
 	_ = &ackerr.NotFound
 	_ = &ackcondition.NotManagedMessage
 	_ = &reflect.Value{}
+	_ = fmt.Sprintf("")
+	_ = &ackrequeue.NoRequeue{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -96,38 +100,43 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.Engine = nil
 		}
+		if elem.MinimumEngineVersion != nil {
+			ko.Status.MinimumEngineVersion = elem.MinimumEngineVersion
+		} else {
+			ko.Status.MinimumEngineVersion = nil
+		}
 		if elem.PendingChanges != nil {
-			f2 := &svcapitypes.UserGroupPendingChanges{}
+			f3 := &svcapitypes.UserGroupPendingChanges{}
 			if elem.PendingChanges.UserIdsToAdd != nil {
-				f2f0 := []*string{}
-				for _, f2f0iter := range elem.PendingChanges.UserIdsToAdd {
-					var f2f0elem string
-					f2f0elem = *f2f0iter
-					f2f0 = append(f2f0, &f2f0elem)
+				f3f0 := []*string{}
+				for _, f3f0iter := range elem.PendingChanges.UserIdsToAdd {
+					var f3f0elem string
+					f3f0elem = *f3f0iter
+					f3f0 = append(f3f0, &f3f0elem)
 				}
-				f2.UserIDsToAdd = f2f0
+				f3.UserIDsToAdd = f3f0
 			}
 			if elem.PendingChanges.UserIdsToRemove != nil {
-				f2f1 := []*string{}
-				for _, f2f1iter := range elem.PendingChanges.UserIdsToRemove {
-					var f2f1elem string
-					f2f1elem = *f2f1iter
-					f2f1 = append(f2f1, &f2f1elem)
+				f3f1 := []*string{}
+				for _, f3f1iter := range elem.PendingChanges.UserIdsToRemove {
+					var f3f1elem string
+					f3f1elem = *f3f1iter
+					f3f1 = append(f3f1, &f3f1elem)
 				}
-				f2.UserIDsToRemove = f2f1
+				f3.UserIDsToRemove = f3f1
 			}
-			ko.Status.PendingChanges = f2
+			ko.Status.PendingChanges = f3
 		} else {
 			ko.Status.PendingChanges = nil
 		}
 		if elem.ReplicationGroups != nil {
-			f3 := []*string{}
-			for _, f3iter := range elem.ReplicationGroups {
-				var f3elem string
-				f3elem = *f3iter
-				f3 = append(f3, &f3elem)
+			f4 := []*string{}
+			for _, f4iter := range elem.ReplicationGroups {
+				var f4elem string
+				f4elem = *f4iter
+				f4 = append(f4, &f4elem)
 			}
-			ko.Status.ReplicationGroups = f3
+			ko.Status.ReplicationGroups = f4
 		} else {
 			ko.Status.ReplicationGroups = nil
 		}
@@ -142,13 +151,13 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.UserGroupID = nil
 		}
 		if elem.UserIds != nil {
-			f6 := []*string{}
-			for _, f6iter := range elem.UserIds {
-				var f6elem string
-				f6elem = *f6iter
-				f6 = append(f6, &f6elem)
+			f7 := []*string{}
+			for _, f7iter := range elem.UserIds {
+				var f7elem string
+				f7elem = *f7iter
+				f7 = append(f7, &f7elem)
 			}
-			ko.Spec.UserIDs = f6
+			ko.Spec.UserIDs = f7
 		} else {
 			ko.Spec.UserIDs = nil
 		}
@@ -232,38 +241,43 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.Engine = nil
 	}
+	if resp.MinimumEngineVersion != nil {
+		ko.Status.MinimumEngineVersion = resp.MinimumEngineVersion
+	} else {
+		ko.Status.MinimumEngineVersion = nil
+	}
 	if resp.PendingChanges != nil {
-		f2 := &svcapitypes.UserGroupPendingChanges{}
+		f3 := &svcapitypes.UserGroupPendingChanges{}
 		if resp.PendingChanges.UserIdsToAdd != nil {
-			f2f0 := []*string{}
-			for _, f2f0iter := range resp.PendingChanges.UserIdsToAdd {
-				var f2f0elem string
-				f2f0elem = *f2f0iter
-				f2f0 = append(f2f0, &f2f0elem)
+			f3f0 := []*string{}
+			for _, f3f0iter := range resp.PendingChanges.UserIdsToAdd {
+				var f3f0elem string
+				f3f0elem = *f3f0iter
+				f3f0 = append(f3f0, &f3f0elem)
 			}
-			f2.UserIDsToAdd = f2f0
+			f3.UserIDsToAdd = f3f0
 		}
 		if resp.PendingChanges.UserIdsToRemove != nil {
-			f2f1 := []*string{}
-			for _, f2f1iter := range resp.PendingChanges.UserIdsToRemove {
-				var f2f1elem string
-				f2f1elem = *f2f1iter
-				f2f1 = append(f2f1, &f2f1elem)
+			f3f1 := []*string{}
+			for _, f3f1iter := range resp.PendingChanges.UserIdsToRemove {
+				var f3f1elem string
+				f3f1elem = *f3f1iter
+				f3f1 = append(f3f1, &f3f1elem)
 			}
-			f2.UserIDsToRemove = f2f1
+			f3.UserIDsToRemove = f3f1
 		}
-		ko.Status.PendingChanges = f2
+		ko.Status.PendingChanges = f3
 	} else {
 		ko.Status.PendingChanges = nil
 	}
 	if resp.ReplicationGroups != nil {
-		f3 := []*string{}
-		for _, f3iter := range resp.ReplicationGroups {
-			var f3elem string
-			f3elem = *f3iter
-			f3 = append(f3, &f3elem)
+		f4 := []*string{}
+		for _, f4iter := range resp.ReplicationGroups {
+			var f4elem string
+			f4elem = *f4iter
+			f4 = append(f4, &f4elem)
 		}
-		ko.Status.ReplicationGroups = f3
+		ko.Status.ReplicationGroups = f4
 	} else {
 		ko.Status.ReplicationGroups = nil
 	}
@@ -278,13 +292,13 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.UserGroupID = nil
 	}
 	if resp.UserIds != nil {
-		f6 := []*string{}
-		for _, f6iter := range resp.UserIds {
-			var f6elem string
-			f6elem = *f6iter
-			f6 = append(f6, &f6elem)
+		f7 := []*string{}
+		for _, f7iter := range resp.UserIds {
+			var f7elem string
+			f7elem = *f7iter
+			f7 = append(f7, &f7elem)
 		}
-		ko.Spec.UserIDs = f6
+		ko.Spec.UserIDs = f7
 	} else {
 		ko.Spec.UserIDs = nil
 	}
