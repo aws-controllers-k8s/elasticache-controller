@@ -18,6 +18,7 @@ package snapshot
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
@@ -45,6 +47,8 @@ var (
 	_ = &ackerr.NotFound
 	_ = &ackcondition.NotManagedMessage
 	_ = &reflect.Value{}
+	_ = fmt.Sprintf("")
+	_ = &ackrequeue.NoRequeue{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -126,6 +130,11 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.CacheSubnetGroupName = nil
 		}
+		if elem.DataTiering != nil {
+			ko.Status.DataTiering = elem.DataTiering
+		} else {
+			ko.Status.DataTiering = nil
+		}
 		if elem.Engine != nil {
 			ko.Status.Engine = elem.Engine
 		} else {
@@ -142,67 +151,67 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.KMSKeyID = nil
 		}
 		if elem.NodeSnapshots != nil {
-			f11 := []*svcapitypes.NodeSnapshot{}
-			for _, f11iter := range elem.NodeSnapshots {
-				f11elem := &svcapitypes.NodeSnapshot{}
-				if f11iter.CacheClusterId != nil {
-					f11elem.CacheClusterID = f11iter.CacheClusterId
+			f12 := []*svcapitypes.NodeSnapshot{}
+			for _, f12iter := range elem.NodeSnapshots {
+				f12elem := &svcapitypes.NodeSnapshot{}
+				if f12iter.CacheClusterId != nil {
+					f12elem.CacheClusterID = f12iter.CacheClusterId
 				}
-				if f11iter.CacheNodeCreateTime != nil {
-					f11elem.CacheNodeCreateTime = &metav1.Time{*f11iter.CacheNodeCreateTime}
+				if f12iter.CacheNodeCreateTime != nil {
+					f12elem.CacheNodeCreateTime = &metav1.Time{*f12iter.CacheNodeCreateTime}
 				}
-				if f11iter.CacheNodeId != nil {
-					f11elem.CacheNodeID = f11iter.CacheNodeId
+				if f12iter.CacheNodeId != nil {
+					f12elem.CacheNodeID = f12iter.CacheNodeId
 				}
-				if f11iter.CacheSize != nil {
-					f11elem.CacheSize = f11iter.CacheSize
+				if f12iter.CacheSize != nil {
+					f12elem.CacheSize = f12iter.CacheSize
 				}
-				if f11iter.NodeGroupConfiguration != nil {
-					f11elemf4 := &svcapitypes.NodeGroupConfiguration{}
-					if f11iter.NodeGroupConfiguration.NodeGroupId != nil {
-						f11elemf4.NodeGroupID = f11iter.NodeGroupConfiguration.NodeGroupId
+				if f12iter.NodeGroupConfiguration != nil {
+					f12elemf4 := &svcapitypes.NodeGroupConfiguration{}
+					if f12iter.NodeGroupConfiguration.NodeGroupId != nil {
+						f12elemf4.NodeGroupID = f12iter.NodeGroupConfiguration.NodeGroupId
 					}
-					if f11iter.NodeGroupConfiguration.PrimaryAvailabilityZone != nil {
-						f11elemf4.PrimaryAvailabilityZone = f11iter.NodeGroupConfiguration.PrimaryAvailabilityZone
+					if f12iter.NodeGroupConfiguration.PrimaryAvailabilityZone != nil {
+						f12elemf4.PrimaryAvailabilityZone = f12iter.NodeGroupConfiguration.PrimaryAvailabilityZone
 					}
-					if f11iter.NodeGroupConfiguration.PrimaryOutpostArn != nil {
-						f11elemf4.PrimaryOutpostARN = f11iter.NodeGroupConfiguration.PrimaryOutpostArn
+					if f12iter.NodeGroupConfiguration.PrimaryOutpostArn != nil {
+						f12elemf4.PrimaryOutpostARN = f12iter.NodeGroupConfiguration.PrimaryOutpostArn
 					}
-					if f11iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
-						f11elemf4f3 := []*string{}
-						for _, f11elemf4f3iter := range f11iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
-							var f11elemf4f3elem string
-							f11elemf4f3elem = *f11elemf4f3iter
-							f11elemf4f3 = append(f11elemf4f3, &f11elemf4f3elem)
+					if f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
+						f12elemf4f3 := []*string{}
+						for _, f12elemf4f3iter := range f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
+							var f12elemf4f3elem string
+							f12elemf4f3elem = *f12elemf4f3iter
+							f12elemf4f3 = append(f12elemf4f3, &f12elemf4f3elem)
 						}
-						f11elemf4.ReplicaAvailabilityZones = f11elemf4f3
+						f12elemf4.ReplicaAvailabilityZones = f12elemf4f3
 					}
-					if f11iter.NodeGroupConfiguration.ReplicaCount != nil {
-						f11elemf4.ReplicaCount = f11iter.NodeGroupConfiguration.ReplicaCount
+					if f12iter.NodeGroupConfiguration.ReplicaCount != nil {
+						f12elemf4.ReplicaCount = f12iter.NodeGroupConfiguration.ReplicaCount
 					}
-					if f11iter.NodeGroupConfiguration.ReplicaOutpostArns != nil {
-						f11elemf4f5 := []*string{}
-						for _, f11elemf4f5iter := range f11iter.NodeGroupConfiguration.ReplicaOutpostArns {
-							var f11elemf4f5elem string
-							f11elemf4f5elem = *f11elemf4f5iter
-							f11elemf4f5 = append(f11elemf4f5, &f11elemf4f5elem)
+					if f12iter.NodeGroupConfiguration.ReplicaOutpostArns != nil {
+						f12elemf4f5 := []*string{}
+						for _, f12elemf4f5iter := range f12iter.NodeGroupConfiguration.ReplicaOutpostArns {
+							var f12elemf4f5elem string
+							f12elemf4f5elem = *f12elemf4f5iter
+							f12elemf4f5 = append(f12elemf4f5, &f12elemf4f5elem)
 						}
-						f11elemf4.ReplicaOutpostARNs = f11elemf4f5
+						f12elemf4.ReplicaOutpostARNs = f12elemf4f5
 					}
-					if f11iter.NodeGroupConfiguration.Slots != nil {
-						f11elemf4.Slots = f11iter.NodeGroupConfiguration.Slots
+					if f12iter.NodeGroupConfiguration.Slots != nil {
+						f12elemf4.Slots = f12iter.NodeGroupConfiguration.Slots
 					}
-					f11elem.NodeGroupConfiguration = f11elemf4
+					f12elem.NodeGroupConfiguration = f12elemf4
 				}
-				if f11iter.NodeGroupId != nil {
-					f11elem.NodeGroupID = f11iter.NodeGroupId
+				if f12iter.NodeGroupId != nil {
+					f12elem.NodeGroupID = f12iter.NodeGroupId
 				}
-				if f11iter.SnapshotCreateTime != nil {
-					f11elem.SnapshotCreateTime = &metav1.Time{*f11iter.SnapshotCreateTime}
+				if f12iter.SnapshotCreateTime != nil {
+					f12elem.SnapshotCreateTime = &metav1.Time{*f12iter.SnapshotCreateTime}
 				}
-				f11 = append(f11, f11elem)
+				f12 = append(f12, f12elem)
 			}
-			ko.Status.NodeSnapshots = f11
+			ko.Status.NodeSnapshots = f12
 		} else {
 			ko.Status.NodeSnapshots = nil
 		}
@@ -395,6 +404,11 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.CacheSubnetGroupName = nil
 	}
+	if resp.Snapshot.DataTiering != nil {
+		ko.Status.DataTiering = resp.Snapshot.DataTiering
+	} else {
+		ko.Status.DataTiering = nil
+	}
 	if resp.Snapshot.Engine != nil {
 		ko.Status.Engine = resp.Snapshot.Engine
 	} else {
@@ -411,67 +425,67 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.KMSKeyID = nil
 	}
 	if resp.Snapshot.NodeSnapshots != nil {
-		f11 := []*svcapitypes.NodeSnapshot{}
-		for _, f11iter := range resp.Snapshot.NodeSnapshots {
-			f11elem := &svcapitypes.NodeSnapshot{}
-			if f11iter.CacheClusterId != nil {
-				f11elem.CacheClusterID = f11iter.CacheClusterId
+		f12 := []*svcapitypes.NodeSnapshot{}
+		for _, f12iter := range resp.Snapshot.NodeSnapshots {
+			f12elem := &svcapitypes.NodeSnapshot{}
+			if f12iter.CacheClusterId != nil {
+				f12elem.CacheClusterID = f12iter.CacheClusterId
 			}
-			if f11iter.CacheNodeCreateTime != nil {
-				f11elem.CacheNodeCreateTime = &metav1.Time{*f11iter.CacheNodeCreateTime}
+			if f12iter.CacheNodeCreateTime != nil {
+				f12elem.CacheNodeCreateTime = &metav1.Time{*f12iter.CacheNodeCreateTime}
 			}
-			if f11iter.CacheNodeId != nil {
-				f11elem.CacheNodeID = f11iter.CacheNodeId
+			if f12iter.CacheNodeId != nil {
+				f12elem.CacheNodeID = f12iter.CacheNodeId
 			}
-			if f11iter.CacheSize != nil {
-				f11elem.CacheSize = f11iter.CacheSize
+			if f12iter.CacheSize != nil {
+				f12elem.CacheSize = f12iter.CacheSize
 			}
-			if f11iter.NodeGroupConfiguration != nil {
-				f11elemf4 := &svcapitypes.NodeGroupConfiguration{}
-				if f11iter.NodeGroupConfiguration.NodeGroupId != nil {
-					f11elemf4.NodeGroupID = f11iter.NodeGroupConfiguration.NodeGroupId
+			if f12iter.NodeGroupConfiguration != nil {
+				f12elemf4 := &svcapitypes.NodeGroupConfiguration{}
+				if f12iter.NodeGroupConfiguration.NodeGroupId != nil {
+					f12elemf4.NodeGroupID = f12iter.NodeGroupConfiguration.NodeGroupId
 				}
-				if f11iter.NodeGroupConfiguration.PrimaryAvailabilityZone != nil {
-					f11elemf4.PrimaryAvailabilityZone = f11iter.NodeGroupConfiguration.PrimaryAvailabilityZone
+				if f12iter.NodeGroupConfiguration.PrimaryAvailabilityZone != nil {
+					f12elemf4.PrimaryAvailabilityZone = f12iter.NodeGroupConfiguration.PrimaryAvailabilityZone
 				}
-				if f11iter.NodeGroupConfiguration.PrimaryOutpostArn != nil {
-					f11elemf4.PrimaryOutpostARN = f11iter.NodeGroupConfiguration.PrimaryOutpostArn
+				if f12iter.NodeGroupConfiguration.PrimaryOutpostArn != nil {
+					f12elemf4.PrimaryOutpostARN = f12iter.NodeGroupConfiguration.PrimaryOutpostArn
 				}
-				if f11iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
-					f11elemf4f3 := []*string{}
-					for _, f11elemf4f3iter := range f11iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
-						var f11elemf4f3elem string
-						f11elemf4f3elem = *f11elemf4f3iter
-						f11elemf4f3 = append(f11elemf4f3, &f11elemf4f3elem)
+				if f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
+					f12elemf4f3 := []*string{}
+					for _, f12elemf4f3iter := range f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
+						var f12elemf4f3elem string
+						f12elemf4f3elem = *f12elemf4f3iter
+						f12elemf4f3 = append(f12elemf4f3, &f12elemf4f3elem)
 					}
-					f11elemf4.ReplicaAvailabilityZones = f11elemf4f3
+					f12elemf4.ReplicaAvailabilityZones = f12elemf4f3
 				}
-				if f11iter.NodeGroupConfiguration.ReplicaCount != nil {
-					f11elemf4.ReplicaCount = f11iter.NodeGroupConfiguration.ReplicaCount
+				if f12iter.NodeGroupConfiguration.ReplicaCount != nil {
+					f12elemf4.ReplicaCount = f12iter.NodeGroupConfiguration.ReplicaCount
 				}
-				if f11iter.NodeGroupConfiguration.ReplicaOutpostArns != nil {
-					f11elemf4f5 := []*string{}
-					for _, f11elemf4f5iter := range f11iter.NodeGroupConfiguration.ReplicaOutpostArns {
-						var f11elemf4f5elem string
-						f11elemf4f5elem = *f11elemf4f5iter
-						f11elemf4f5 = append(f11elemf4f5, &f11elemf4f5elem)
+				if f12iter.NodeGroupConfiguration.ReplicaOutpostArns != nil {
+					f12elemf4f5 := []*string{}
+					for _, f12elemf4f5iter := range f12iter.NodeGroupConfiguration.ReplicaOutpostArns {
+						var f12elemf4f5elem string
+						f12elemf4f5elem = *f12elemf4f5iter
+						f12elemf4f5 = append(f12elemf4f5, &f12elemf4f5elem)
 					}
-					f11elemf4.ReplicaOutpostARNs = f11elemf4f5
+					f12elemf4.ReplicaOutpostARNs = f12elemf4f5
 				}
-				if f11iter.NodeGroupConfiguration.Slots != nil {
-					f11elemf4.Slots = f11iter.NodeGroupConfiguration.Slots
+				if f12iter.NodeGroupConfiguration.Slots != nil {
+					f12elemf4.Slots = f12iter.NodeGroupConfiguration.Slots
 				}
-				f11elem.NodeGroupConfiguration = f11elemf4
+				f12elem.NodeGroupConfiguration = f12elemf4
 			}
-			if f11iter.NodeGroupId != nil {
-				f11elem.NodeGroupID = f11iter.NodeGroupId
+			if f12iter.NodeGroupId != nil {
+				f12elem.NodeGroupID = f12iter.NodeGroupId
 			}
-			if f11iter.SnapshotCreateTime != nil {
-				f11elem.SnapshotCreateTime = &metav1.Time{*f11iter.SnapshotCreateTime}
+			if f12iter.SnapshotCreateTime != nil {
+				f12elem.SnapshotCreateTime = &metav1.Time{*f12iter.SnapshotCreateTime}
 			}
-			f11 = append(f11, f11elem)
+			f12 = append(f12, f12elem)
 		}
-		ko.Status.NodeSnapshots = f11
+		ko.Status.NodeSnapshots = f12
 	} else {
 		ko.Status.NodeSnapshots = nil
 	}

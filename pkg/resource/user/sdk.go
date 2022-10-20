@@ -18,6 +18,7 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go/aws"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
@@ -45,6 +47,8 @@ var (
 	_ = &ackerr.NotFound
 	_ = &ackcondition.NotManagedMessage
 	_ = &reflect.Value{}
+	_ = fmt.Sprintf("")
+	_ = &ackrequeue.NoRequeue{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -113,19 +117,24 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.Engine = nil
 		}
+		if elem.MinimumEngineVersion != nil {
+			ko.Status.MinimumEngineVersion = elem.MinimumEngineVersion
+		} else {
+			ko.Status.MinimumEngineVersion = nil
+		}
 		if elem.Status != nil {
 			ko.Status.Status = elem.Status
 		} else {
 			ko.Status.Status = nil
 		}
 		if elem.UserGroupIds != nil {
-			f5 := []*string{}
-			for _, f5iter := range elem.UserGroupIds {
-				var f5elem string
-				f5elem = *f5iter
-				f5 = append(f5, &f5elem)
+			f6 := []*string{}
+			for _, f6iter := range elem.UserGroupIds {
+				var f6elem string
+				f6elem = *f6iter
+				f6 = append(f6, &f6elem)
 			}
-			ko.Status.UserGroupIDs = f5
+			ko.Status.UserGroupIDs = f6
 		} else {
 			ko.Status.UserGroupIDs = nil
 		}
@@ -232,19 +241,24 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.Engine = nil
 	}
+	if resp.MinimumEngineVersion != nil {
+		ko.Status.MinimumEngineVersion = resp.MinimumEngineVersion
+	} else {
+		ko.Status.MinimumEngineVersion = nil
+	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
 	} else {
 		ko.Status.Status = nil
 	}
 	if resp.UserGroupIds != nil {
-		f5 := []*string{}
-		for _, f5iter := range resp.UserGroupIds {
-			var f5elem string
-			f5elem = *f5iter
-			f5 = append(f5, &f5elem)
+		f6 := []*string{}
+		for _, f6iter := range resp.UserGroupIds {
+			var f6elem string
+			f6elem = *f6iter
+			f6 = append(f6, &f6elem)
 		}
-		ko.Status.UserGroupIDs = f5
+		ko.Status.UserGroupIDs = f6
 	} else {
 		ko.Status.UserGroupIDs = nil
 	}
@@ -293,7 +307,7 @@ func (rm *resourceManager) newCreateRequestPayload(
 			if f3iter != nil {
 				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f3iter)
 				if err != nil {
-					return nil, err
+					return nil, ackrequeue.Needed(err)
 				}
 				if tmpSecret != "" {
 					f3elem = tmpSecret
@@ -390,19 +404,24 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Spec.Engine = nil
 	}
+	if resp.MinimumEngineVersion != nil {
+		ko.Status.MinimumEngineVersion = resp.MinimumEngineVersion
+	} else {
+		ko.Status.MinimumEngineVersion = nil
+	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
 	} else {
 		ko.Status.Status = nil
 	}
 	if resp.UserGroupIds != nil {
-		f5 := []*string{}
-		for _, f5iter := range resp.UserGroupIds {
-			var f5elem string
-			f5elem = *f5iter
-			f5 = append(f5, &f5elem)
+		f6 := []*string{}
+		for _, f6iter := range resp.UserGroupIds {
+			var f6elem string
+			f6elem = *f6iter
+			f6 = append(f6, &f6elem)
 		}
-		ko.Status.UserGroupIDs = f5
+		ko.Status.UserGroupIDs = f6
 	} else {
 		ko.Status.UserGroupIDs = nil
 	}
