@@ -13,7 +13,10 @@
         "kms:DisconnectCustomKeyStore",
         "kms:CreateKey",
         "kms:ConnectCustomKeyStore",
-        "kms:CreateCustomKeyStore"
+        "kms:CreateCustomKeyStore",
+        "logs:DescribeResourcePolicies",
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup"
       ],
       "Resource": "*"
     },

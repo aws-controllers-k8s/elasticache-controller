@@ -1,10 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: cachesubnetgroups.elasticache.services.k8s.aws
 spec:
@@ -35,8 +34,8 @@ spec:
             type: object
           spec:
             description: "CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup.
-              \n Represents the output of one of the following operations: \n    *
-              CreateCacheSubnetGroup \n    * ModifyCacheSubnetGroup"
+              \n Represents the output of one of the following operations: \n * CreateCacheSubnetGroup
+              \n * ModifyCacheSubnetGroup"
             properties:
               cacheSubnetGroupDescription:
                 description: A description for the cache subnet group.
@@ -192,9 +191,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

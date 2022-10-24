@@ -79,6 +79,13 @@ func newResourceDelta(
 			delta.Add("Spec.CacheSubnetGroupName", a.ko.Spec.CacheSubnetGroupName, b.ko.Spec.CacheSubnetGroupName)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled) {
+		delta.Add("Spec.DataTieringEnabled", a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled)
+	} else if a.ko.Spec.DataTieringEnabled != nil && b.ko.Spec.DataTieringEnabled != nil {
+		if *a.ko.Spec.DataTieringEnabled != *b.ko.Spec.DataTieringEnabled {
+			delta.Add("Spec.DataTieringEnabled", a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.Description, b.ko.Spec.Description) {
 		delta.Add("Spec.Description", a.ko.Spec.Description, b.ko.Spec.Description)
 	} else if a.ko.Spec.Description != nil && b.ko.Spec.Description != nil {

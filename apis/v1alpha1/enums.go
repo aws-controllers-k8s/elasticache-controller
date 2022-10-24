@@ -60,6 +60,13 @@ const (
 	ChangeType_requires_reboot ChangeType = "requires-reboot"
 )
 
+type DataTieringStatus string
+
+const (
+	DataTieringStatus_enabled  DataTieringStatus = "enabled"
+	DataTieringStatus_disabled DataTieringStatus = "disabled"
+)
+
 type DestinationType string
 
 const (
@@ -87,7 +94,8 @@ const (
 type LogType string
 
 const (
-	LogType_slow_log LogType = "slow-log"
+	LogType_slow_log   LogType = "slow-log"
+	LogType_engine_log LogType = "engine-log"
 )
 
 type MultiAZStatus string
