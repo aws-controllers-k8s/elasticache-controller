@@ -28,6 +28,7 @@ import (
 //
 //    * ModifyCacheSubnetGroup
 type CacheSubnetGroupSpec struct {
+
 	// A description for the cache subnet group.
 	// +kubebuilder:validation:Required
 	CacheSubnetGroupDescription *string `json:"cacheSubnetGroupDescription"`

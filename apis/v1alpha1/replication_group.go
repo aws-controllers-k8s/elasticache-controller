@@ -24,6 +24,7 @@ import (
 //
 // Contains all of the attributes of a specific Redis replication group.
 type ReplicationGroupSpec struct {
+
 	// A flag that enables encryption at rest when set to true.
 	//
 	// You cannot modify the value of AtRestEncryptionEnabled after the replication
