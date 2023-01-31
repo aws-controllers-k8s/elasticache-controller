@@ -24,6 +24,7 @@ import (
 //
 
 type UserGroupSpec struct {
+
 	// The current supported value is Redis.
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`

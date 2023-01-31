@@ -24,10 +24,11 @@ import (
 //
 // Represents the output of one of the following operations:
 //
-//    * CreateCacheSubnetGroup
+//   - CreateCacheSubnetGroup
 //
-//    * ModifyCacheSubnetGroup
+//   - ModifyCacheSubnetGroup
 type CacheSubnetGroupSpec struct {
+
 	// A description for the cache subnet group.
 	// +kubebuilder:validation:Required
 	CacheSubnetGroupDescription *string `json:"cacheSubnetGroupDescription"`
