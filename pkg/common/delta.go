@@ -16,7 +16,7 @@ package common
 import ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 
 // remove the Difference corresponding to the given subject from the delta struct
-//TODO: ideally this would have a common implementation in compare/delta.go
+// TODO: ideally this would have a common implementation in compare/delta.go
 func RemoveFromDelta(
 	delta *ackcompare.Delta,
 	subject string,

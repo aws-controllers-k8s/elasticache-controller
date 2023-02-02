@@ -50,9 +50,9 @@ spec:
                   protected server. \n AuthToken can be specified only on replication
                   groups where TransitEncryptionEnabled is true. \n For HIPAA compliance,
                   you must specify TransitEncryptionEnabled as true, an AuthToken,
-                  and a CacheSubnetGroup. \n Password constraints: \n * Must be only
-                  printable ASCII characters. \n * Must be at least 16 characters
-                  and no more than 128 characters in length. \n * The only permitted
+                  and a CacheSubnetGroup. \n Password constraints: \n - Must be only
+                  printable ASCII characters. \n - Must be at least 16 characters
+                  and no more than 128 characters in length. \n - The only permitted
                   printable special characters are !, &, #, $, ^, <, >, and -. Other
                   printable special characters cannot be used in the AUTH token. \n
                   For more information, see AUTH password (http://redis.io/commands/AUTH)
@@ -84,7 +84,7 @@ spec:
                   node group (shard). \n The following node types are supported by
                   ElastiCache. Generally speaking, the current generation types provide
                   more memory and computational power at lower cost when compared
-                  to their equivalent previous generation counterparts. \n * General
+                  to their equivalent previous generation counterparts. \n - General
                   purpose: Current generation: M6g node types (available only for
                   Redis engine version 5.0.6 onward and for Memcached engine version
                   1.5.16 onward): cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
@@ -102,14 +102,14 @@ spec:
                   is not supported for these types.) T1 node types: cache.t1.micro
                   M1 node types: cache.m1.small, cache.m1.medium, cache.m1.large,
                   cache.m1.xlarge M3 node types: cache.m3.medium, cache.m3.large,
-                  cache.m3.xlarge, cache.m3.2xlarge \n * Compute optimized: Previous
+                  cache.m3.xlarge, cache.m3.2xlarge \n - Compute optimized: Previous
                   generation: (not recommended. Existing clusters are still supported
                   but creation of new clusters is not supported for these types.)
-                  C1 node types: cache.c1.xlarge \n * Memory optimized with data tiering:
+                  C1 node types: cache.c1.xlarge \n - Memory optimized with data tiering:
                   Current generation: R6gd node types (available only for Redis engine
                   version 6.2 onward). cache.r6gd.xlarge, cache.r6gd.2xlarge, cache.r6gd.4xlarge,
                   cache.r6gd.8xlarge, cache.r6gd.12xlarge, cache.r6gd.16xlarge \n
-                  * Memory optimized: Current generation: R6g node types (available
+                  - Memory optimized: Current generation: R6g node types (available
                   only for Redis engine version 5.0.6 onward and for Memcached engine
                   version 1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
                   cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
@@ -122,11 +122,11 @@ spec:
                   is not supported for these types.) M2 node types: cache.m2.xlarge,
                   cache.m2.2xlarge, cache.m2.4xlarge R3 node types: cache.r3.large,
                   cache.r3.xlarge, cache.r3.2xlarge, cache.r3.4xlarge, cache.r3.8xlarge
-                  \n Additional node type info \n * All current generation instance
-                  types are created in Amazon VPC by default. \n * Redis append-only
-                  files (AOF) are not supported for T1 or T2 instances. \n * Redis
+                  \n Additional node type info \n - All current generation instance
+                  types are created in Amazon VPC by default. \n - Redis append-only
+                  files (AOF) are not supported for T1 or T2 instances. \n - Redis
                   Multi-AZ with automatic failover is not supported on T1 instances.
-                  \n * Redis configuration variables appendonly and appendfsync are
+                  \n - Redis configuration variables appendonly and appendfsync are
                   not supported on Redis version 2.8.22 and later."
                 type: string
               cacheParameterGroupName:
@@ -135,9 +135,9 @@ spec:
                   parameter group for the specified engine is used. \n If you are
                   running Redis version 3.2.4 or later, only one node group (shard),
                   and want to use a default parameter group, we recommend that you
-                  specify the parameter group by name. \n * To create a Redis (cluster
+                  specify the parameter group by name. \n - To create a Redis (cluster
                   mode disabled) replication group, use CacheParameterGroupName=default.redis3.2.
-                  \n * To create a Redis (cluster mode enabled) replication group,
+                  \n - To create a Redis (cluster mode enabled) replication group,
                   use CacheParameterGroupName=default.redis3.2.cluster.on."
                 type: string
               cacheSecurityGroupNames:
@@ -297,8 +297,8 @@ spec:
                   the weekly time range during which maintenance on the cluster is
                   performed. It is specified as a range in the format ddd:hh24:mi-ddd:hh24:mi
                   (24H Clock UTC). The minimum maintenance window is a 60 minute period.
-                  \n Valid values for ddd are: \n * sun \n * mon \n * tue \n * wed
-                  \n * thu \n * fri \n * sat \n Example: sun:23:00-mon:01:30"
+                  \n Valid values for ddd are: \n - sun \n - mon \n - tue \n - wed
+                  \n - thu \n - fri \n - sat \n Example: sun:23:00-mon:01:30"
                 type: string
               primaryClusterID:
                 description: "The identifier of the cluster that serves as the primary
@@ -313,9 +313,9 @@ spec:
                 type: integer
               replicationGroupID:
                 description: "The replication group identifier. This parameter is
-                  stored as a lowercase string. \n Constraints: \n * A name must contain
-                  from 1 to 40 alphanumeric characters or hyphens. \n * The first
-                  character must be a letter. \n * A name cannot end with a hyphen
+                  stored as a lowercase string. \n Constraints: \n - A name must contain
+                  from 1 to 40 alphanumeric characters or hyphens. \n - The first
+                  character must be a letter. \n - A name cannot end with a hyphen
                   or contain two consecutive hyphens."
                 type: string
               securityGroupIDs:
