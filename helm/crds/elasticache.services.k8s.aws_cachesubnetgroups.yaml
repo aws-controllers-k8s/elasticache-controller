@@ -34,8 +34,8 @@ spec:
             type: object
           spec:
             description: "CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup.
-              \n Represents the output of one of the following operations: \n * CreateCacheSubnetGroup
-              \n * ModifyCacheSubnetGroup"
+              \n Represents the output of one of the following operations: \n - CreateCacheSubnetGroup
+              \n - ModifyCacheSubnetGroup"
             properties:
               cacheSubnetGroupDescription:
                 description: A description for the cache subnet group.

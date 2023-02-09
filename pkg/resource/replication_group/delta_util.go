@@ -72,7 +72,8 @@ func modifyDelta(
 // returns true if desired and latest engine versions match and false otherwise
 // precondition: both desiredEV and latestEV are non-nil
 // this handles the case where only the major EV is specified, e.g. "6.x" (or similar), but the latest
-//   version shows the minor version, e.g. "6.0.5"
+//
+//	version shows the minor version, e.g. "6.0.5"
 func engineVersionsMatch(
 	desiredEV string,
 	latestEV string,

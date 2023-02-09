@@ -21,10 +21,10 @@ import (
 )
 
 /*
-	To be called in sdkFind, this function updates the replication group's Spec fields with the latest observed state
-	This requires extra processing of the API response as well as additional API calls, and is necessary because
-	sdkFind does not update many of these Spec fields by default. "resource" is a wrapper around "ko", the object
-	which will eventually be returned as "latest".
+To be called in sdkFind, this function updates the replication group's Spec fields with the latest observed state
+This requires extra processing of the API response as well as additional API calls, and is necessary because
+sdkFind does not update many of these Spec fields by default. "resource" is a wrapper around "ko", the object
+which will eventually be returned as "latest".
 */
 func (rm *resourceManager) updateSpecFields(
 	ctx context.Context,
@@ -135,7 +135,8 @@ func setMaintenanceWindow(
 }
 
 // setCacheParameterGroup updates the cache parameter group associated with the replication group
-//   (if non-nil in API response) regardless of whether it was specified in desired
+//
+//	(if non-nil in API response) regardless of whether it was specified in desired
 func setCacheParameterGroup(
 	latestCacheCluster *svcsdk.CacheCluster,
 	resource *resource,

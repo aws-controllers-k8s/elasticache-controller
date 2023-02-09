@@ -24,6 +24,7 @@ import (
 //
 // Represents the output of a CreateCacheParameterGroup operation.
 type CacheParameterGroupSpec struct {
+
 	// The name of the cache parameter group family that the cache parameter group
 	// can be used with.
 	//

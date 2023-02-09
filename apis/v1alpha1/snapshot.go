@@ -25,6 +25,7 @@ import (
 // Represents a copy of an entire Redis cluster as of the time when the snapshot
 // was taken.
 type SnapshotSpec struct {
+
 	// The identifier of an existing cluster. The snapshot is created from this
 	// cluster.
 	CacheClusterID *string `json:"cacheClusterID,omitempty"`
