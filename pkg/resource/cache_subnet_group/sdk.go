@@ -150,6 +150,15 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
+
+	if ko.Status.Subnets != nil {
+		for _, subnetIdIter := range ko.Status.Subnets {
+			if subnetIdIter.SubnetIdentifier != nil {
+				ko.Spec.SubnetIDs = append(ko.Spec.SubnetIDs, subnetIdIter.SubnetIdentifier)
+			}
+		}
+	}
+
 	return &resource{ko}, nil
 }
 
