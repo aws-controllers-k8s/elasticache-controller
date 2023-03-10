@@ -21,6 +21,8 @@ resources:
     hooks:
       sdk_read_many_post_set_output:
         template_path: hooks/cache_subnet_group/sdk_read_many_post_set_output.go.tpl
+    update_operation:
+      custom_method_name: customUpdateCacheSubnetGroup
   ReplicationGroup:
     exceptions:
       terminal_codes:
