@@ -18,6 +18,9 @@ resources:
         from:
           operation: DescribeEvents
           path: Events
+    hooks:
+      sdk_read_many_post_set_output:
+        template_path: hooks/cache_subnet_group/sdk_read_many_post_set_output.go.tpl
   ReplicationGroup:
     exceptions:
       terminal_codes:
