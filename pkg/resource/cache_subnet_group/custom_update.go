@@ -7,7 +7,6 @@ import (
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 )
 
@@ -32,12 +31,6 @@ func (rm *resourceManager) customUpdateCacheSubnetGroup(
 	resp, err = rm.sdkapi.ModifyCacheSubnetGroupWithContext(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyCacheSubnetGroup", err)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Message() {
-			case "No modifications were requested.":
-				return desired, nil
-			}
-		}
 		return nil, err
 	}
 	// Merge in the information we read from the API call above to the copy of
