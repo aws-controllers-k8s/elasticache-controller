@@ -151,13 +151,13 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 
-	if len(ko.Spec.SubnetIDs) == 0 {
-		for _, subnetIdIter := range ko.Status.Subnets {
-			if subnetIdIter.SubnetIdentifier != nil {
-				ko.Spec.SubnetIDs = append(ko.Spec.SubnetIDs, subnetIdIter.SubnetIdentifier)
-			}
+	subnets := make([]*string, 0, len(ko.Status.Subnets))
+	for _, subnetIdIter := range ko.Status.Subnets {
+		if subnetIdIter.SubnetIdentifier != nil {
+			subnets = append(subnets, subnetIdIter.SubnetIdentifier)
 		}
 	}
+	ko.Spec.SubnetIDs = subnets
 
 	return &resource{ko}, nil
 }
