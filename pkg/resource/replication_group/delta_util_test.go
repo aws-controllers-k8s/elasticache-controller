@@ -19,6 +19,7 @@ import "github.com/stretchr/testify/require"
 func TestEngineVersionsMatch(t *testing.T) {
 	require := require.New(t)
 
+	require.True(engineVersionsMatch("6.2", "6.2.6"))
 	require.True(engineVersionsMatch("6.x", "6.0.5"))
 	require.False(engineVersionsMatch("13.x", "6.0.6"))
 	require.True(engineVersionsMatch("5.0.3", "5.0.3"))

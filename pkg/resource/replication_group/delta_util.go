@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"strconv"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 
@@ -88,6 +89,13 @@ func engineVersionsMatch(
 		// cut off the "x" and replace all occurrences of '.' with '\.' (as '.' is a special regex character)
 		desired := strings.Replace(desiredEV[:last], ".", "\\.", -1)
 		r, _ := regexp.Compile(desired + ".*")
+		return r.MatchString(latestEV)
+	}
+
+	// if the version is higher than 6, skip the upstream patch version when comparing.
+	majorVersion, _ := strconv.Atoi(desiredEV[0:1])
+	if majorVersion >= 6 {
+		r, _ := regexp.Compile(desiredEV + ".*")
 		return r.MatchString(latestEV)
 	}
 
