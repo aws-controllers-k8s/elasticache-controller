@@ -17,8 +17,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 
@@ -93,6 +93,7 @@ func engineVersionsMatch(
 	}
 
 	// if the version is higher than 6, skip the upstream patch version when comparing.
+	// See https://github.com/aws-controllers-k8s/community/issues/1737
 	majorVersion, _ := strconv.Atoi(desiredEV[0:1])
 	if majorVersion >= 6 {
 		r, _ := regexp.Compile(desiredEV + ".*")
