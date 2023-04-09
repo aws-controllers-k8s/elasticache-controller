@@ -1141,6 +1141,12 @@ func (rm *resourceManager) sdkUpdate(
 	defer func() {
 		exit(err)
 	}()
+	if delta.DifferentAt("Spec.Tags") {
+		if err = rm.syncTags(ctx, desired, latest); err != nil {
+			return nil, err
+		}
+	}
+
 	updated, err = rm.CustomModifyReplicationGroup(ctx, desired, latest, delta)
 	if updated != nil || err != nil {
 		return updated, err

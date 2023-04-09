@@ -17,7 +17,9 @@ import (
 	"context"
 	"errors"
 
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
@@ -91,4 +93,94 @@ func (rm *resourceManager) getTags(
 		})
 	}
 	return tags, nil
+}
+
+// syncTags keeps the resource's tags in sync
+//
+// NOTE(jaypipes): Elasticache's Tagging APIs differ from other AWS APIs in the
+// following ways:
+//
+//  1. The names of the tagging API operations are different. Other APIs use the
+//     Tagris `ListTagsForResource`, `TagResource` and `UntagResource` API
+//     calls. RDS uses `ListTagsForResource`, `AddTagsToResource` and
+//     `RemoveTagsFromResource`.
+//
+//  2. Even though the name of the `ListTagsForResource` API call is the same,
+//     the structure of the input and the output are different from other APIs.
+//     For the input, instead of a `ResourceArn` field, Elasticache names the field
+//     `ResourceName`, but actually expects an ARN, not the replication group
+//     name.  This is the same for the `AddTagsToResource` and
+//     `RemoveTagsFromResource` input shapes. For the output shape, the field is
+//     called `TagList` instead of `Tags` but is otherwise the same struct with
+//     a `Key` and `Value` member field.
+func (rm *resourceManager) syncTags(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+) (err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.syncTags")
+	defer func() { exit(err) }()
+
+	arn := (*string)(latest.ko.Status.ACKResourceMetadata.ARN)
+
+	from := ToACKTags(latest.ko.Spec.Tags)
+	to := ToACKTags(desired.ko.Spec.Tags)
+
+	added, _, removed := ackcompare.GetTagsDifference(from, to)
+
+	// NOTE(jaypipes): According to the elasticache API documentation, adding a tag
+	// with a new value overwrites any existing tag with the same key. So, we
+	// don't need to do anything to "update" a Tag. Simply including it in the
+	// AddTagsToResource call is enough.
+	for key := range removed {
+		if _, ok := added[key]; ok {
+			delete(removed, key)
+		}
+	}
+
+	if len(removed) > 0 {
+		toRemove := make([]*string, 0, len(removed))
+		for key := range removed {
+			key := key
+			toRemove = append(toRemove, &key)
+		}
+		rlog.Debug("removing tags from replication group", "tags", removed)
+		_, err = rm.sdkapi.RemoveTagsFromResourceWithContext(
+			ctx,
+			&svcsdk.RemoveTagsFromResourceInput{
+				ResourceName: arn,
+				TagKeys:      toRemove,
+			},
+		)
+		rm.metrics.RecordAPICall("UPDATE", "RemoveTagsFromResource", err)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(added) > 0 {
+		toAdd := make([]*svcsdk.Tag, 0, len(added))
+		for key, val := range added {
+			key, val := key, val
+			toAdd = append(toAdd, &svcsdk.Tag{
+				Key:   &key,
+				Value: &val,
+			})
+		}
+
+		rlog.Debug("adding tags to replication group", "tags", added)
+		_, err = rm.sdkapi.AddTagsToResourceWithContext(
+			ctx,
+			&svcsdk.AddTagsToResourceInput{
+				ResourceName: arn,
+				Tags:         toAdd,
+			},
+		)
+		rm.metrics.RecordAPICall("UPDATE", "AddTagsToResource", err)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
