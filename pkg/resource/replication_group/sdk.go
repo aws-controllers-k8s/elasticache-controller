@@ -447,6 +447,16 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
+
+	if ko.Status.ACKResourceMetadata != nil && ko.Status.ACKResourceMetadata.ARN != nil {
+		resourceARN := (*string)(ko.Status.ACKResourceMetadata.ARN)
+		tags, err := rm.getTags(ctx, *resourceARN)
+		if err != nil {
+			return nil, err
+		}
+		ko.Spec.Tags = tags
+	}
+
 	rm.updateSpecFields(ctx, resp.ReplicationGroups[0], &resource{ko})
 	if isDeleting(r) {
 		// Setting resource synced condition to false will trigger a requeue of
