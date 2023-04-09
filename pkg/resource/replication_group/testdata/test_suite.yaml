@@ -51,6 +51,8 @@ tests:
               output_fixture: "events/read_many/rg_cmd_events.json"
             - operation: DescribeCacheClustersWithContext
               output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
+            - operation: ListTagsForResourceWithContext
+              output_fixture: "replication_group/read_one/tags.json"
         invoke: ReadOne
         expect:
           latest_state: "replication_group/cr/rg_cmd_create_completed_latest.yaml"
@@ -68,6 +70,8 @@ tests:
               output_fixture: "events/read_many/rg_cmd_events.json"
             - operation: DescribeCacheClustersWithContext
               output_fixture: "cache_clusters/read_many/rg_cmd_primary_cache_node.json"
+            - operation: ListTagsForResourceWithContext
+              output_fixture: "replication_group/read_one/tags.json"
         invoke: ReadOne
         expect:
           latest_state: "replication_group/cr/rg_cmd_create_completed_latest.yaml"
