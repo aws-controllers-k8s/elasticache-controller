@@ -16,7 +16,6 @@ package replication_group
 import (
 	"encoding/json"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 
