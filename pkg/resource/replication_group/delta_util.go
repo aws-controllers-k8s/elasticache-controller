@@ -83,21 +83,14 @@ func engineVersionsMatch(
 		return true
 	}
 
-	// if the last character of desiredEV is "x", only check for a major version match
+	dMaj, dMin, _ := versionNumbersFromString(desiredEV)
+	lMaj, lMin, _ := versionNumbersFromString(latestEV)
 	last := len(desiredEV) - 1
-	if desiredEV[last:] == "x" {
-		// cut off the "x" and replace all occurrences of '.' with '\.' (as '.' is a special regex character)
-		desired := strings.Replace(desiredEV[:last], ".", "\\.", -1)
-		r, _ := regexp.Compile(desired + ".*")
-		return r.MatchString(latestEV)
-	}
 
-	// if the version is higher than 6, skip the upstream patch version when comparing.
+	// if the last character of desiredEV is "x" or the major version is higher than 5, ignore patch version when comparing.
 	// See https://github.com/aws-controllers-k8s/community/issues/1737
-	majorVersion, _ := strconv.Atoi(desiredEV[0:1])
-	if majorVersion >= 6 {
-		r, _ := regexp.Compile(desiredEV + ".*")
-		return r.MatchString(latestEV)
+	if dMaj > 5 || desiredEV[last:] == "x" {
+		return dMaj == lMaj && (dMin < 0 || dMin == lMin)
 	}
 
 	return false
@@ -195,4 +188,29 @@ func primaryClusterIDRequiresUpdate(desired *resource, latest *resource) (bool, 
 	}
 
 	return false, nil
+}
+
+// versionNumbersFromString takes a version string like "6.2", "6.x" or "7.0.4" and
+// returns the major, minor and patch numbers. If no minor or patch numbers are present
+// or contain the "x" placeholder, -1 is returned for that version number.
+func versionNumbersFromString(version string) (int, int, int) {
+	parts := strings.Split(version, ".")
+	major := -1
+	minor := -1
+	patch := -1
+	if len(parts) == 0 {
+		return major, minor, patch
+	}
+	major, _ = strconv.Atoi(parts[0])
+	if len(parts) > 1 {
+		if !strings.EqualFold(parts[1], "x") {
+			minor, _ = strconv.Atoi(parts[1])
+		}
+	}
+	if len(parts) > 2 {
+		if !strings.EqualFold(parts[2], "x") {
+			patch, _ = strconv.Atoi(parts[2])
+		}
+	}
+	return major, minor, patch
 }
