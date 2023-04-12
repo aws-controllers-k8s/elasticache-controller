@@ -17,13 +17,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	mocksvcsdkapi "github.com/aws-controllers-k8s/elasticache-controller/mocks/aws-sdk-go/elasticache"
-	acktypes "github.com/aws-controllers-k8s/runtime/pkg/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	acktypes "github.com/aws-controllers-k8s/runtime/pkg/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	mocksvcsdkapi "github.com/aws-controllers-k8s/elasticache-controller/mocks/aws-sdk-go/elasticache"
 )
 
 // TestSuiteRunner runs given test suite config with the help of delegate supplied to it

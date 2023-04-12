@@ -55,7 +55,7 @@ tests:
               output_fixture: "replication_group/read_one/tags.json"
         invoke: ReadOne
         expect:
-          latest_state: "replication_group/cr/rg_cmd_create_completed_latest.yaml"
+          latest_state: "replication_group/cr/rg_cmd_create_completed_not_yet_latest.yaml"
           error: nil
       - name: "ReadOne=NoDiff"
         description: "Given desired state matches with server side resource data, ko.Status remain unchanged (resource is stable)"

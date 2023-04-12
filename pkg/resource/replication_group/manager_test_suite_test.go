@@ -102,6 +102,13 @@ func (d *testRunnerDelegate) Equal(a acktypes.AWSResource, b acktypes.AWSResourc
 	bc := b.(*resource)
 	opts := []cmp.Option{cmpopts.EquateEmpty()}
 
+	for i := range ac.ko.Status.Conditions {
+		ac.ko.Status.Conditions[i].LastTransitionTime = nil
+	}
+	for i := range bc.ko.Status.Conditions {
+		bc.ko.Status.Conditions[i].LastTransitionTime = nil
+	}
+
 	var specMatch = false
 	if cmp.Equal(ac.ko.Spec, bc.ko.Spec, opts...) {
 		specMatch = true
