@@ -20,15 +20,19 @@ func Test_resourceManager_syncTags(t *testing.T) {
 		rm := provideResourceManagerWithMockSDKAPI(mocksdkapi)
 		return rm, mocksdkapi
 	}
-	t.Run("add and remove tags", func(t *testing.T) {
+	t.Run("add and remove tags, only execute add tags", func(t *testing.T) {
 		rm, mocksdkapi := testhelper()
 		_ = rm.syncTags(context.Background(),
 			&resource{ko: &svcapitypes.ReplicationGroup{
 				Spec: svcapitypes.ReplicationGroupSpec{
 					Tags: []*svcapitypes.Tag{
 						{
-							Key:   aws.String("key1"),
-							Value: aws.String("value1"),
+							Key:   aws.String("add 1"),
+							Value: aws.String("to add"),
+						},
+						{
+							Key:   aws.String("add 2"),
+							Value: aws.String("to add"),
 						},
 					},
 				},
@@ -37,8 +41,39 @@ func Test_resourceManager_syncTags(t *testing.T) {
 				Spec: svcapitypes.ReplicationGroupSpec{
 					Tags: []*svcapitypes.Tag{
 						{
-							Key:   aws.String("key2"),
-							Value: aws.String("value2"),
+							Key:   aws.String("remove"),
+							Value: aws.String("to remove"),
+						},
+					},
+				},
+				Status: svcapitypes.ReplicationGroupStatus{
+					ACKResourceMetadata: &ackv1alpha1.ResourceMetadata{
+						ARN: (*ackv1alpha1.AWSResourceName)(aws.String("testARN")),
+					},
+				},
+			}})
+		mocksdkapi.AssertNumberOfCalls(t, "RemoveTagsFromResourceWithContext", 0)
+		mocksdkapi.AssertNumberOfCalls(t, "AddTagsToResourceWithContext", 1)
+	})
+
+	t.Run("remove tags", func(t *testing.T) {
+		rm, mocksdkapi := testhelper()
+		_ = rm.syncTags(context.Background(),
+			&resource{ko: &svcapitypes.ReplicationGroup{
+				Spec: svcapitypes.ReplicationGroupSpec{
+					Tags: []*svcapitypes.Tag{},
+				},
+			}},
+			&resource{ko: &svcapitypes.ReplicationGroup{
+				Spec: svcapitypes.ReplicationGroupSpec{
+					Tags: []*svcapitypes.Tag{
+						{
+							Key:   aws.String("remove 1"),
+							Value: aws.String("to remove"),
+						},
+						{
+							Key:   aws.String("remove 2"),
+							Value: aws.String("to remove"),
 						},
 					},
 				},
@@ -49,7 +84,7 @@ func Test_resourceManager_syncTags(t *testing.T) {
 				},
 			}})
 		mocksdkapi.AssertNumberOfCalls(t, "RemoveTagsFromResourceWithContext", 1)
-		mocksdkapi.AssertNumberOfCalls(t, "AddTagsToResourceWithContext", 1)
+		mocksdkapi.AssertNumberOfCalls(t, "AddTagsToResourceWithContext", 0)
 	})
 
 	t.Run("modify existent tags, not remove call", func(t *testing.T) {
