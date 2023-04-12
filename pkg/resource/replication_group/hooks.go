@@ -26,6 +26,7 @@ import (
 )
 
 var (
+	condMsgCurrentlyCreating      string = "replication group currently being created."
 	condMsgCurrentlyDeleting      string = "replication group currently being deleted."
 	condMsgNoDeleteWhileModifying string = "replication group currently being modified. cannot delete."
 	condMsgTerminalCreateFailed   string = "replication group in create-failed status."
@@ -58,6 +59,15 @@ func isModifying(r *resource) bool {
 	}
 	status := *r.ko.Status.Status
 	return status == "modifying"
+}
+
+// isCreating returns true if supplied replication group resource state is 'modifying'
+func isCreating(r *resource) bool {
+	if r == nil || r.ko.Status.Status == nil {
+		return false
+	}
+	status := *r.ko.Status.Status
+	return status == "creating"
 }
 
 // isCreateFailed returns true if supplied replication group resource state is
@@ -139,26 +149,6 @@ func (rm *resourceManager) syncTags(
 		}
 	}
 
-	if len(removed) > 0 {
-		toRemove := make([]*string, 0, len(removed))
-		for key := range removed {
-			key := key
-			toRemove = append(toRemove, &key)
-		}
-		rlog.Debug("removing tags from replication group", "tags", removed)
-		_, err = rm.sdkapi.RemoveTagsFromResourceWithContext(
-			ctx,
-			&svcsdk.RemoveTagsFromResourceInput{
-				ResourceName: arn,
-				TagKeys:      toRemove,
-			},
-		)
-		rm.metrics.RecordAPICall("UPDATE", "RemoveTagsFromResource", err)
-		if err != nil {
-			return err
-		}
-	}
-
 	if len(added) > 0 {
 		toAdd := make([]*svcsdk.Tag, 0, len(added))
 		for key, val := range added {
@@ -178,9 +168,25 @@ func (rm *resourceManager) syncTags(
 			},
 		)
 		rm.metrics.RecordAPICall("UPDATE", "AddTagsToResource", err)
-		if err != nil {
-			return err
+		return err
+	}
+
+	if len(removed) > 0 {
+		toRemove := make([]*string, 0, len(removed))
+		for key := range removed {
+			key := key
+			toRemove = append(toRemove, &key)
 		}
+		rlog.Debug("removing tags from replication group", "tags", removed)
+		_, err = rm.sdkapi.RemoveTagsFromResourceWithContext(
+			ctx,
+			&svcsdk.RemoveTagsFromResourceInput{
+				ResourceName: arn,
+				TagKeys:      toRemove,
+			},
+		)
+		rm.metrics.RecordAPICall("UPDATE", "RemoveTagsFromResource", err)
+		return err
 	}
 	return nil
 }
