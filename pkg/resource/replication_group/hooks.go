@@ -149,6 +149,9 @@ func (rm *resourceManager) syncTags(
 		}
 	}
 
+	// Modify tags causing the replication group to be modified and become unavailable temporarily
+	// so after adding or removing tags, we have to wait for the replication group to be available again
+	// process: add tags -> requeue -> remove tags -> requeue -> other update
 	if len(added) > 0 {
 		toAdd := make([]*svcsdk.Tag, 0, len(added))
 		for key, val := range added {
@@ -168,10 +171,10 @@ func (rm *resourceManager) syncTags(
 			},
 		)
 		rm.metrics.RecordAPICall("UPDATE", "AddTagsToResource", err)
-		return err
-	}
-
-	if len(removed) > 0 {
+		if err != nil {
+			return err
+		}
+	} else if len(removed) > 0 {
 		toRemove := make([]*string, 0, len(removed))
 		for key := range removed {
 			key := key
@@ -186,7 +189,10 @@ func (rm *resourceManager) syncTags(
 			},
 		)
 		rm.metrics.RecordAPICall("UPDATE", "RemoveTagsFromResource", err)
-		return err
+		if err != nil {
+			return err
+		}
 	}
-	return nil
+
+	return ackrequeue.Needed(errors.New("tags updated, requeuing"))
 }
