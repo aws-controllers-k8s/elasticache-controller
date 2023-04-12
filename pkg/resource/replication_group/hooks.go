@@ -32,6 +32,13 @@ var (
 	condMsgTerminalCreateFailed   string = "replication group in create-failed status."
 )
 
+const (
+	statusDeleting     string = "deleting"
+	statusModifying    string = "modifying"
+	statusCreating     string = "creating"
+	statusCreateFailed string = "create-failed"
+)
+
 var (
 	requeueWaitWhileDeleting = ackrequeue.NeededAfter(
 		errors.New("Delete is in progress."),
@@ -39,6 +46,10 @@ var (
 	)
 	requeueWaitWhileModifying = ackrequeue.NeededAfter(
 		errors.New("Modify is in progress."),
+		ackrequeue.DefaultRequeueAfterDuration,
+	)
+	requeueWaitWhileTagUpdated = ackrequeue.NeededAfter(
+		errors.New("tags Update is in progress"),
 		ackrequeue.DefaultRequeueAfterDuration,
 	)
 )
@@ -49,7 +60,7 @@ func isDeleting(r *resource) bool {
 		return false
 	}
 	status := *r.ko.Status.Status
-	return status == "deleting"
+	return status == statusDeleting
 }
 
 // isModifying returns true if supplied replication group resource state is 'modifying'
@@ -58,7 +69,7 @@ func isModifying(r *resource) bool {
 		return false
 	}
 	status := *r.ko.Status.Status
-	return status == "modifying"
+	return status == statusModifying
 }
 
 // isCreating returns true if supplied replication group resource state is 'modifying'
@@ -67,7 +78,7 @@ func isCreating(r *resource) bool {
 		return false
 	}
 	status := *r.ko.Status.Status
-	return status == "creating"
+	return status == statusCreating
 }
 
 // isCreateFailed returns true if supplied replication group resource state is
@@ -77,7 +88,7 @@ func isCreateFailed(r *resource) bool {
 		return false
 	}
 	status := *r.ko.Status.Status
-	return status == "create-failed"
+	return status == statusCreateFailed
 }
 
 // getTags retrieves the resource's associated tags
@@ -194,5 +205,5 @@ func (rm *resourceManager) syncTags(
 		}
 	}
 
-	return ackrequeue.Needed(errors.New("tags updated, requeuing"))
+	return requeueWaitWhileTagUpdated
 }
