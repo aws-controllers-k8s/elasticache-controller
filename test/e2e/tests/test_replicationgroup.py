@@ -573,17 +573,27 @@ class TestReplicationGroup:
             "description": description,
             "snapshotRetentionLimit": srl,
             "snapshotWindow": sw,
-            "tags": new_tags
         }
         }
-        res = k8s.patch_custom_resource(reference, patch)
-        print(res)
+        _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
         assert_misc_fields(reference, rg_id, pmw, description, srl, sw)
-        assert_spec_tags(rg_id, tags)
+
+        patch = {"spec": {
+               "tags": new_tags
+            }
+        }
+        _ = k8s.patch_custom_resource(reference, patch)
+        # patching tags can make cluster unavailable for a while(status: modifying)
+        LONG_WAIT_SECS = 180
+        sleep(LONG_WAIT_SECS)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+        # assert new tags
+        assert_spec_tags(rg_id, new_tags)
 
     # test modifying properties related to tolerance: replica promotion, multi AZ, automatic failover
     def test_rg_fault_tolerance(self, rg_fault_tolerance):
