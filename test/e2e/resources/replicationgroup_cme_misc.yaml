@@ -14,3 +14,8 @@ spec:
   replicationGroupID: $RG_ID
   snapshotRetentionLimit: $SRL
   snapshotWindow: $SW
+  tags:
+    - key: tag_to_remove
+      value: should_be_removed
+    - key: tag_to_update
+      value: old_value

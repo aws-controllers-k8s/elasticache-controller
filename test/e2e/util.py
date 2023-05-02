@@ -22,8 +22,8 @@ ec = boto3.client("elasticache")
 
 
 def wait_usergroup_active(usergroup_id: str,
-                           wait_periods: int = 10,
-                           period_length: int = 60) -> bool:
+                          wait_periods: int = 10,
+                          period_length: int = 60) -> bool:
     for i in range(wait_periods):
         logging.debug(f"Waiting for user group {usergroup_id} to be active ({i})")
         response = ec.describe_user_groups(UserGroupId=usergroup_id)
@@ -112,6 +112,7 @@ def assert_terminal_condition_set(resource):
     assert terminal is not None
     assert terminal['status'] == "True"
 
+
 # given the latest state of the resource, assert that the recoverable condition is set
 def assert_recoverable_condition_set(resource):
     recoverable = None
@@ -122,10 +123,11 @@ def assert_recoverable_condition_set(resource):
     assert recoverable is not None
     assert recoverable['status'] == "True"
 
+
 # provide a basic nodeGroupConfiguration object of desired size
 def provide_node_group_configuration(size: int):
     ngc = []
-    for i in range(1, size+1):
+    for i in range(1, size + 1):
         ngc.append({"nodeGroupID": str(i).rjust(4, '0')})
     return ngc
 
@@ -144,3 +146,8 @@ def retrieve_cache_cluster(rg_id: str):
 def retrieve_replication_group(rg_id: str):
     rg_response = ec.describe_replication_groups(ReplicationGroupId=rg_id)
     return rg_response['ReplicationGroups'][0]
+
+
+def retrieve_replication_group_tags(rg_arn: str):
+    taglist_response = ec.list_tags_for_resource(ResourceName=rg_arn)
+    return taglist_response['TagList']
