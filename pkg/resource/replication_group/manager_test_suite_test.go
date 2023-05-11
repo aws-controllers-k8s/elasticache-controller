@@ -16,14 +16,16 @@ package replication_group
 import (
 	"errors"
 	"fmt"
-	mocksvcsdkapi "github.com/aws-controllers-k8s/elasticache-controller/mocks/aws-sdk-go/elasticache"
-	"github.com/aws-controllers-k8s/elasticache-controller/pkg/testutil"
+	"path/filepath"
+	"testing"
+
 	acktypes "github.com/aws-controllers-k8s/runtime/pkg/types"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"path/filepath"
-	"testing"
+
+	mocksvcsdkapi "github.com/aws-controllers-k8s/elasticache-controller/mocks/aws-sdk-go/elasticache"
+	"github.com/aws-controllers-k8s/elasticache-controller/pkg/testutil"
 )
 
 // TestDeclarativeTestSuite runs the test suite for replication group
@@ -88,6 +90,9 @@ func (d *testRunnerDelegate) EmptyServiceAPIOutput(apiName string) (interface{},
 	case "ModifyReplicationGroupWithContext":
 		var output svcsdk.ModifyReplicationGroupOutput
 		return &output, nil
+	case "ListTagsForResourceWithContext":
+		var output svcsdk.TagListMessage
+		return &output, nil
 	}
 	return nil, errors.New(fmt.Sprintf("no matching API name found for: %s", apiName))
 }
@@ -96,6 +101,13 @@ func (d *testRunnerDelegate) Equal(a acktypes.AWSResource, b acktypes.AWSResourc
 	ac := a.(*resource)
 	bc := b.(*resource)
 	opts := []cmp.Option{cmpopts.EquateEmpty()}
+
+	for i := range ac.ko.Status.Conditions {
+		ac.ko.Status.Conditions[i].LastTransitionTime = nil
+	}
+	for i := range bc.ko.Status.Conditions {
+		bc.ko.Status.Conditions[i].LastTransitionTime = nil
+	}
 
 	var specMatch = false
 	if cmp.Equal(ac.ko.Spec, bc.ko.Spec, opts...) {

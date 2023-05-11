@@ -24,7 +24,8 @@ from acktest.k8s import resource as k8s
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.util import retrieve_cache_cluster, assert_even_shards_replica_count, retrieve_replication_group, \
-    assert_recoverable_condition_set
+    assert_recoverable_condition_set, retrieve_replication_group_tags
+
 
 RESOURCE_PLURAL = "replicationgroups"
 DEFAULT_WAIT_SECS = 30
@@ -213,7 +214,7 @@ def rg_update_misc_input(make_rg_name):
         "PMW": "sun:23:00-mon:02:00",
         "DESCRIPTION": "description1",
         "SRL": "5",
-        "SW": "05:00-09:00"
+        "SW": "05:00-09:00",
     }
 
 
@@ -235,6 +236,23 @@ def assert_misc_fields(reference, rg_id, pmw, description, srl, sw):
     assert resource['spec']['description'] == description
     assert rg['SnapshotRetentionLimit'] == srl
     assert rg['SnapshotWindow'] == sw
+
+
+def assert_spec_tags(rg_id: str, spec_tags: list):
+    rg = retrieve_replication_group(rg_id)
+    spec_tags_dict = {tag['key']: tag['value'] for tag in spec_tags}
+
+    print("spec:", spec_tags_dict)
+    aws_tag_list = retrieve_replication_group_tags(rg['ARN'])
+    aws_tags_dict = {tag['Key']: tag['Value'] for tag in aws_tag_list}
+    controller_tag_version = "services.k8s.aws/controller-version"
+    controller_tag_namespace = "services.k8s.aws/namespace"
+    del aws_tags_dict[controller_tag_version]
+    del aws_tags_dict[controller_tag_namespace]
+
+    print("aws", aws_tags_dict)
+    assert aws_tags_dict == spec_tags_dict
+
 
 @pytest.fixture(scope="module")
 def rg_fault_tolerance_input(make_rg_name):
@@ -531,28 +549,51 @@ class TestReplicationGroup:
         description = rg_update_misc_input['DESCRIPTION']
         srl = int(rg_update_misc_input['SRL'])
         sw = rg_update_misc_input['SW']
+        tags = [
+            {"key": "tag_to_remove",  "value": "should_be_removed"},
+            {"key": "tag_to_update", "value": "old_value"}
+        ]
 
         # assert initial state
-        assert_misc_fields(reference, rg_update_misc_input['RG_ID'], pmw, description, srl, sw)
+        rg_id = rg_update_misc_input['RG_ID']
+        assert_misc_fields(reference, rg_id, pmw, description, srl, sw)
+        assert_spec_tags(rg_id, tags)
 
         # change field values, wait for resource to sync
         pmw = "wed:10:00-wed:14:00"
         description = "description2"
         srl = 0
         sw = "15:00-17:00"
+        new_tags = [
+            {"key": "tag_to_update", "value": "new value"},
+            {"key": "tag_to_add", "value": "add"}
+        ]
         patch = {"spec": {
-                "preferredMaintenanceWindow": pmw,
-                "description": description,
-                "snapshotRetentionLimit": srl,
-                "snapshotWindow": sw
-            }
+            "preferredMaintenanceWindow": pmw,
+            "description": description,
+            "snapshotRetentionLimit": srl,
+            "snapshotWindow": sw,
+        }
         }
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # assert new state
-        assert_misc_fields(reference, rg_update_misc_input['RG_ID'], pmw, description, srl, sw)
+        assert_misc_fields(reference, rg_id, pmw, description, srl, sw)
+
+        patch = {"spec": {
+               "tags": new_tags
+            }
+        }
+        _ = k8s.patch_custom_resource(reference, patch)
+        # patching tags can make cluster unavailable for a while(status: modifying)
+        LONG_WAIT_SECS = 180
+        sleep(LONG_WAIT_SECS)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+        # assert new tags
+        assert_spec_tags(rg_id, new_tags)
 
     # test modifying properties related to tolerance: replica promotion, multi AZ, automatic failover
     def test_rg_fault_tolerance(self, rg_fault_tolerance):
