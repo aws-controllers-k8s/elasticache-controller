@@ -18,7 +18,7 @@ import logging
 
 from acktest import resources
 from e2e import bootstrap_directory
-from e2e.bootstrap_resources import TestBootstrapResources
+from e2e.bootstrap_resources import TestBootstrapResources, read_bootstrap_config
 
 def delete_sns_topic(topic_ARN: str):
     sns = boto3.client("sns")
@@ -147,5 +147,5 @@ def service_cleanup(config: dict):
 
 
 if __name__ == "__main__":   
-    bootstrap_config = resources.read_bootstrap_config(bootstrap_directory)
+    bootstrap_config = read_bootstrap_config(bootstrap_directory)
     service_cleanup(bootstrap_config) 

@@ -14,6 +14,7 @@
 """
 
 import boto3
+import yaml
 import logging
 import re
 from dataclasses import dataclass
@@ -23,7 +24,7 @@ from acktest.resources import random_suffix_name
 from acktest import resources
 from e2e import bootstrap_directory
 from e2e.util import wait_usergroup_active, wait_snapshot_available
-from e2e.bootstrap_resources import TestBootstrapResources
+from e2e.bootstrap_resources import TestBootstrapResources, write_bootstrap_config
 
 def create_sns_topic() -> str:
     topic_name = random_suffix_name("ack-sns-topic", 32)
@@ -171,4 +172,4 @@ def service_bootstrap() -> dict:
 
 if __name__ == "__main__":
     config = service_bootstrap()
-    resources.write_bootstrap_config(config, bootstrap_directory)
+    write_bootstrap_config(config, bootstrap_directory)
