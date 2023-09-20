@@ -16,8 +16,10 @@ for them.
 """
 
 from dataclasses import dataclass
-from acktest.resources import read_bootstrap_config
 from e2e import bootstrap_directory
+import yaml
+import logging
+from pathlib import Path
 
 @dataclass
 class TestBootstrapResources:
@@ -60,3 +62,33 @@ def get_bootstrap_resources(bootstrap_file_name: str = "bootstrap.yaml"):
             **read_bootstrap_config(bootstrap_directory, bootstrap_file_name=bootstrap_file_name),
         )
     return _bootstrap_resources
+
+
+def write_bootstrap_config(bootstrap: dict, output_path: Path, bootstrap_file_name: str = "bootstrap.yaml"):
+    """ Dumps the bootstrap object into a YAML file at a given path.
+
+    Args:
+        bootstrap: The bootstrap object.
+        output_path: The directory in which to dump the bootstrap yaml.
+        bootstrap_file_name: The name of the created bootstrap yaml file.
+    """
+    path =  output_path / bootstrap_file_name
+    logging.info(f"Wrote bootstrap to {path}")
+    with open(path, "w") as stream:
+        yaml.safe_dump(bootstrap, stream)
+
+
+def read_bootstrap_config(config_dir: Path, bootstrap_file_name: str = "bootstrap.yaml") -> dict:
+    """ Reads a bootstrap dictionary from a given bootstrap file.
+
+    Args:
+        config_dir: The directory in which the bootstrap yaml exists.
+        bootstrap_file_name: The name of the created bootstrap yaml file.
+
+    Returns:
+        dict: The bootstrap dictionary read from the file.
+    """
+    path = config_dir / bootstrap_file_name
+    with open(path, "r") as stream:
+        bootstrap = yaml.safe_load(stream)
+    return bootstrap
