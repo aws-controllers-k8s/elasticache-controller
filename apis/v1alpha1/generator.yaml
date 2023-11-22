@@ -13,6 +13,11 @@ resources:
         - InvalidParameterValue
         - InvalidParameterCombination
     fields:
+      SubnetIDs:
+        references:
+          service_name: ec2
+          resource: Subnet
+          path: Status.SubnetID
       Events:
         is_read_only: true
         from:
@@ -50,6 +55,19 @@ resources:
       AutomaticFailoverEnabled:
         compare:
           is_ignored: true
+      CacheParameterGroupName:
+        references:
+          resource: CacheParameterGroup
+          path: Spec.CacheParameterGroupName
+      CacheSubnetGroupName:
+        references:
+          resource: CacheSubnetGroup
+          path: Spec.CacheSubnetGroupName
+      SecurityGroupIDs:
+        references:
+          resource: SecurityGroup
+          service_name: ec2
+          path: Status.ID
       Events:
         is_read_only: true
         from:

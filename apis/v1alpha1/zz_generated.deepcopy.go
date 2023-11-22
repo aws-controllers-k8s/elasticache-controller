@@ -800,6 +800,17 @@ func (in *CacheSubnetGroupSpec) DeepCopyInto(out *CacheSubnetGroupSpec) {
 			}
 		}
 	}
+	if in.SubnetRefs != nil {
+		in, out := &in.SubnetRefs, &out.SubnetRefs
+		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+				(*in).DeepCopyInto(*out)
+			}
+		}
+	}
 	if in.Tags != nil {
 		in, out := &in.Tags, &out.Tags
 		*out = make([]*Tag, len(*in))
@@ -2123,6 +2134,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.CacheParameterGroupRef != nil {
+		in, out := &in.CacheParameterGroupRef, &out.CacheParameterGroupRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.CacheSecurityGroupNames != nil {
 		in, out := &in.CacheSecurityGroupNames, &out.CacheSecurityGroupNames
 		*out = make([]*string, len(*in))
@@ -2138,6 +2154,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		in, out := &in.CacheSubnetGroupName, &out.CacheSubnetGroupName
 		*out = new(string)
 		**out = **in
+	}
+	if in.CacheSubnetGroupRef != nil {
+		in, out := &in.CacheSubnetGroupRef, &out.CacheSubnetGroupRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.DataTieringEnabled != nil {
 		in, out := &in.DataTieringEnabled, &out.DataTieringEnabled
@@ -2245,6 +2266,17 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 				in, out := &(*in)[i], &(*out)[i]
 				*out = new(string)
 				**out = **in
+			}
+		}
+	}
+	if in.SecurityGroupRefs != nil {
+		in, out := &in.SecurityGroupRefs, &out.SecurityGroupRefs
+		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
