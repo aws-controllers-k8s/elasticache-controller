@@ -71,6 +71,9 @@ func newResourceDelta(
 			delta.Add("Spec.CacheParameterGroupName", a.ko.Spec.CacheParameterGroupName, b.ko.Spec.CacheParameterGroupName)
 		}
 	}
+	if !reflect.DeepEqual(a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef) {
+		delta.Add("Spec.CacheParameterGroupRef", a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef)
+	}
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames) {
 		delta.Add("Spec.CacheSecurityGroupNames", a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames)
 	}
@@ -80,6 +83,9 @@ func newResourceDelta(
 		if *a.ko.Spec.CacheSubnetGroupName != *b.ko.Spec.CacheSubnetGroupName {
 			delta.Add("Spec.CacheSubnetGroupName", a.ko.Spec.CacheSubnetGroupName, b.ko.Spec.CacheSubnetGroupName)
 		}
+	}
+	if !reflect.DeepEqual(a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef) {
+		delta.Add("Spec.CacheSubnetGroupRef", a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled) {
 		delta.Add("Spec.DataTieringEnabled", a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled)
@@ -166,6 +172,9 @@ func newResourceDelta(
 	}
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs) {
 		delta.Add("Spec.SecurityGroupIDs", a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs)
+	}
+	if !reflect.DeepEqual(a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs) {
+		delta.Add("Spec.SecurityGroupRefs", a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs)
 	}
 	if !ackcompare.SliceStringPEqual(a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs) {
 		delta.Add("Spec.SnapshotARNs", a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs)

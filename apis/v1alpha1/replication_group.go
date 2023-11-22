@@ -133,7 +133,8 @@ type ReplicationGroupSpec struct {
 	//   - To create a Redis (cluster mode disabled) replication group, use CacheParameterGroupName=default.redis3.2.
 	//
 	//   - To create a Redis (cluster mode enabled) replication group, use CacheParameterGroupName=default.redis3.2.cluster.on.
-	CacheParameterGroupName *string `json:"cacheParameterGroupName,omitempty"`
+	CacheParameterGroupName *string                                  `json:"cacheParameterGroupName,omitempty"`
+	CacheParameterGroupRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheParameterGroupRef,omitempty"`
 	// A list of cache security group names to associate with this replication group.
 	CacheSecurityGroupNames []*string `json:"cacheSecurityGroupNames,omitempty"`
 	// The name of the cache subnet group to be used for the replication group.
@@ -141,7 +142,8 @@ type ReplicationGroupSpec struct {
 	// If you're going to launch your cluster in an Amazon VPC, you need to create
 	// a subnet group before you start creating a cluster. For more information,
 	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SubnetGroups.html).
-	CacheSubnetGroupName *string `json:"cacheSubnetGroupName,omitempty"`
+	CacheSubnetGroupName *string                                  `json:"cacheSubnetGroupName,omitempty"`
+	CacheSubnetGroupRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheSubnetGroupRef,omitempty"`
 	// Enables data tiering. Data tiering is only supported for replication groups
 	// using the r6gd node type. This parameter must be set to true when using r6gd
 	// nodes. For more information, see Data tiering (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/data-tiering.html).
@@ -263,7 +265,8 @@ type ReplicationGroupSpec struct {
 	//
 	// Use this parameter only when you are creating a replication group in an Amazon
 	// Virtual Private Cloud (Amazon VPC).
-	SecurityGroupIDs []*string `json:"securityGroupIDs,omitempty"`
+	SecurityGroupIDs  []*string                                  `json:"securityGroupIDs,omitempty"`
+	SecurityGroupRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"securityGroupRefs,omitempty"`
 	// A list of Amazon Resource Names (ARN) that uniquely identify the Redis RDB
 	// snapshot files stored in Amazon S3. The snapshot files are used to populate
 	// the new replication group. The Amazon S3 object name in the ARN cannot contain
