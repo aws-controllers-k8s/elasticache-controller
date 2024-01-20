@@ -60,8 +60,12 @@ func newResourceDelta(
 			delta.Add("Spec.UserGroupID", a.ko.Spec.UserGroupID, b.ko.Spec.UserGroupID)
 		}
 	}
-	if !ackcompare.SliceStringPEqual(a.ko.Spec.UserIDs, b.ko.Spec.UserIDs) {
+	if len(a.ko.Spec.UserIDs) != len(b.ko.Spec.UserIDs) {
 		delta.Add("Spec.UserIDs", a.ko.Spec.UserIDs, b.ko.Spec.UserIDs)
+	} else if len(a.ko.Spec.UserIDs) > 0 {
+		if !ackcompare.SliceStringPEqual(a.ko.Spec.UserIDs, b.ko.Spec.UserIDs) {
+			delta.Add("Spec.UserIDs", a.ko.Spec.UserIDs, b.ko.Spec.UserIDs)
+		}
 	}
 
 	return delta

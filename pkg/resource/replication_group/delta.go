@@ -74,8 +74,12 @@ func newResourceDelta(
 	if !reflect.DeepEqual(a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef) {
 		delta.Add("Spec.CacheParameterGroupRef", a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef)
 	}
-	if !ackcompare.SliceStringPEqual(a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames) {
+	if len(a.ko.Spec.CacheSecurityGroupNames) != len(b.ko.Spec.CacheSecurityGroupNames) {
 		delta.Add("Spec.CacheSecurityGroupNames", a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames)
+	} else if len(a.ko.Spec.CacheSecurityGroupNames) > 0 {
+		if !ackcompare.SliceStringPEqual(a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames) {
+			delta.Add("Spec.CacheSecurityGroupNames", a.ko.Spec.CacheSecurityGroupNames, b.ko.Spec.CacheSecurityGroupNames)
+		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.CacheSubnetGroupName, b.ko.Spec.CacheSubnetGroupName) {
 		delta.Add("Spec.CacheSubnetGroupName", a.ko.Spec.CacheSubnetGroupName, b.ko.Spec.CacheSubnetGroupName)
@@ -122,8 +126,12 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration) {
+	if len(a.ko.Spec.NodeGroupConfiguration) != len(b.ko.Spec.NodeGroupConfiguration) {
 		delta.Add("Spec.NodeGroupConfiguration", a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration)
+	} else if len(a.ko.Spec.NodeGroupConfiguration) > 0 {
+		if !reflect.DeepEqual(a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration) {
+			delta.Add("Spec.NodeGroupConfiguration", a.ko.Spec.NodeGroupConfiguration, b.ko.Spec.NodeGroupConfiguration)
+		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN) {
 		delta.Add("Spec.NotificationTopicARN", a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN)
@@ -146,8 +154,12 @@ func newResourceDelta(
 			delta.Add("Spec.Port", a.ko.Spec.Port, b.ko.Spec.Port)
 		}
 	}
-	if !ackcompare.SliceStringPEqual(a.ko.Spec.PreferredCacheClusterAZs, b.ko.Spec.PreferredCacheClusterAZs) {
+	if len(a.ko.Spec.PreferredCacheClusterAZs) != len(b.ko.Spec.PreferredCacheClusterAZs) {
 		delta.Add("Spec.PreferredCacheClusterAZs", a.ko.Spec.PreferredCacheClusterAZs, b.ko.Spec.PreferredCacheClusterAZs)
+	} else if len(a.ko.Spec.PreferredCacheClusterAZs) > 0 {
+		if !ackcompare.SliceStringPEqual(a.ko.Spec.PreferredCacheClusterAZs, b.ko.Spec.PreferredCacheClusterAZs) {
+			delta.Add("Spec.PreferredCacheClusterAZs", a.ko.Spec.PreferredCacheClusterAZs, b.ko.Spec.PreferredCacheClusterAZs)
+		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.PreferredMaintenanceWindow, b.ko.Spec.PreferredMaintenanceWindow) {
 		delta.Add("Spec.PreferredMaintenanceWindow", a.ko.Spec.PreferredMaintenanceWindow, b.ko.Spec.PreferredMaintenanceWindow)
@@ -170,14 +182,22 @@ func newResourceDelta(
 			delta.Add("Spec.ReplicationGroupID", a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID)
 		}
 	}
-	if !ackcompare.SliceStringPEqual(a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs) {
+	if len(a.ko.Spec.SecurityGroupIDs) != len(b.ko.Spec.SecurityGroupIDs) {
 		delta.Add("Spec.SecurityGroupIDs", a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs)
+	} else if len(a.ko.Spec.SecurityGroupIDs) > 0 {
+		if !ackcompare.SliceStringPEqual(a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs) {
+			delta.Add("Spec.SecurityGroupIDs", a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs)
+		}
 	}
 	if !reflect.DeepEqual(a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs) {
 		delta.Add("Spec.SecurityGroupRefs", a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs)
 	}
-	if !ackcompare.SliceStringPEqual(a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs) {
+	if len(a.ko.Spec.SnapshotARNs) != len(b.ko.Spec.SnapshotARNs) {
 		delta.Add("Spec.SnapshotARNs", a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs)
+	} else if len(a.ko.Spec.SnapshotARNs) > 0 {
+		if !ackcompare.SliceStringPEqual(a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs) {
+			delta.Add("Spec.SnapshotARNs", a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs)
+		}
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.SnapshotName, b.ko.Spec.SnapshotName) {
 		delta.Add("Spec.SnapshotName", a.ko.Spec.SnapshotName, b.ko.Spec.SnapshotName)
@@ -210,8 +230,12 @@ func newResourceDelta(
 			delta.Add("Spec.TransitEncryptionEnabled", a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled)
 		}
 	}
-	if !ackcompare.SliceStringPEqual(a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs) {
+	if len(a.ko.Spec.UserGroupIDs) != len(b.ko.Spec.UserGroupIDs) {
 		delta.Add("Spec.UserGroupIDs", a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs)
+	} else if len(a.ko.Spec.UserGroupIDs) > 0 {
+		if !ackcompare.SliceStringPEqual(a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs) {
+			delta.Add("Spec.UserGroupIDs", a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs)
+		}
 	}
 
 	modifyDelta(delta, a, b)
