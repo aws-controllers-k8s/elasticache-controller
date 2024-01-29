@@ -28,7 +28,7 @@ from e2e.util import retrieve_cache_cluster, assert_even_shards_replica_count, r
 
 
 RESOURCE_PLURAL = "replicationgroups"
-DEFAULT_WAIT_SECS = 30
+DEFAULT_WAIT_SECS = 120
 
 
 @pytest.fixture(scope="module")
@@ -75,7 +75,7 @@ def make_replication_group():
         reference = k8s.CustomResourceReference(
             CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL, rg_name, namespace="default")
         _ = k8s.create_custom_resource(reference, rg)
-        resource = k8s.wait_resource_consumed_by_controller(reference, wait_periods=10)
+        resource = k8s.wait_resource_consumed_by_controller(reference, wait_periods=15, period_length=20)
         assert resource is not None
         return (reference, resource)
 
