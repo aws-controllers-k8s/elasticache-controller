@@ -89,6 +89,10 @@ func setNodeGroupConfiguration(
 
 		ko.Spec.NodeGroupConfiguration = nodeGroupConfigurations
 	}
+
+	if respRG.NodeGroups != nil && ko.Spec.NumNodeGroups != nil {
+		*ko.Spec.NumNodeGroups = int64(len(respRG.NodeGroups))
+	}
 }
 
 //TODO: for all the fields here, reevaluate if the latest observed state should always be populated,
