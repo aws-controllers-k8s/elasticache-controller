@@ -25,6 +25,7 @@ import (
 	acktypes "github.com/aws-controllers-k8s/runtime/pkg/types"
 	ackrtutil "github.com/aws-controllers-k8s/runtime/pkg/util"
 	ackrtwebhook "github.com/aws-controllers-k8s/runtime/pkg/webhook"
+	snsapitypes "github.com/aws-controllers-k8s/sns-controller/apis/v1alpha1"
 	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,6 +41,7 @@ import (
 	svcresource "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 
+	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_cluster"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_parameter_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/cache_subnet_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/replication_group"
@@ -64,6 +66,7 @@ func init() {
 	_ = svctypes.AddToScheme(scheme)
 	_ = ackv1alpha1.AddToScheme(scheme)
 	_ = ec2apitypes.AddToScheme(scheme)
+	_ = snsapitypes.AddToScheme(scheme)
 }
 
 func main() {

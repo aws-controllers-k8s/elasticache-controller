@@ -7,6 +7,7 @@ toolchain go1.21.5
 require (
 	github.com/aws-controllers-k8s/ec2-controller v1.0.7
 	github.com/aws-controllers-k8s/runtime v0.34.0
+	github.com/aws-controllers-k8s/sns-controller v1.0.11
 	github.com/aws/aws-sdk-go v1.49.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v1.4.1

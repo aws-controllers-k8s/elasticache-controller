@@ -1,4 +1,89 @@
 resources:
+  CacheCluster:
+    fields:
+      CacheSubnetGroupName:
+        references:
+          resource: CacheSubnetGroup
+          path: Spec.CacheSubnetGroupName
+      CacheParameterGroupName:
+        references:
+          resource: CacheParameterGroup
+          path: Spec.CacheParameterGroupName
+        is_immutable: true
+      ReplicationGroupID:
+        references:
+          resource: ReplicationGroup
+          path: Spec.ReplicationGroupID
+        is_immutable: true
+      SnapshotName:
+        references:
+          resource: Snapshot
+          path: Spec.SnapshotName
+        is_immutable: true
+      NotificationTopicARN:
+        references:
+          service_name: sns
+          resource: Topic
+          path: Status.ACKResourceMetadata.ARN
+      AuthToken:
+        is_secret: true
+      PreferredAvailabilityZone:
+        late_initialize: {}
+      PreferredAvailabilityZones:
+        compare:
+          is_ignored: true
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: VERSION
+        json_path: .spec.engineVersion
+        type: string
+        index: 10
+      - name: STATUS
+        json_path: .status.cacheClusterStatus
+        type: string
+        index: 20
+      - name: ENDPOINT
+        json_path: .status.configurationEndpoint.address
+        type: string
+        index: 30
+        priority: 1
+    exceptions:
+      errors:
+        404:
+          code: CacheClusterNotFound
+      terminal_codes:
+        - ReplicationGroupNotFoundFault
+        - InvalidReplicationGroupStateFault
+        - CacheClusterAlreadyExistsFault
+        - InsufficientCacheClusterCapacityFault
+        - CacheSecurityGroupNotFoundFault
+        - CacheSubnetGroupNotFoundFault
+        - ClusterQuotaForCustomerExceededFault
+        - NodeQuotaForClusterExceededFault
+        - NodeQuotaForCustomerExceededFault
+        - CacheParameterGroupNotFoundFault
+        - InvalidVPCNetworkStateFault
+        - TagQuotaPerResource
+        - InvalidParameterValue
+        - InvalidParameterCombination
+    hooks:
+      sdk_create_post_set_output:
+        template_path: hooks/cache_cluster/sdk_create_post_set_output.go.tpl
+      sdk_delete_pre_build_request:
+        template_path: hooks/cache_cluster/sdk_delete_pre_build_request.go.tpl
+      sdk_read_many_post_set_output:
+        template_path: hooks/cache_cluster/sdk_read_many_post_set_output.go.tpl
+      sdk_update_pre_build_request:
+        template_path: hooks/cache_cluster/sdk_update_pre_build_request.go.tpl
+      sdk_update_post_build_request:
+        template_path: hooks/cache_cluster/sdk_update_post_build_request.go.tpl
+      sdk_update_post_set_output:
+        template_path: hooks/cache_cluster/sdk_update_post_set_output.go.tpl
+      delta_post_compare:
+        code: "modifyDelta(delta, a, b)"
   CacheSubnetGroup:
     exceptions:
       errors:
@@ -237,10 +322,17 @@ operations:
     set_output_custom_method_name: CustomCreateUserGroupSetOutput
   DescribeUserGroups:
     set_output_custom_method_name: CustomDescribeUserGroupsSetOutput
+  CreateCacheCluster:
+    set_output_custom_method_name: customCreateCacheClusterSetOutput
+  ModifyCacheCluster:
+    set_output_custom_method_name: customModifyCacheClusterSetOutput
+    override_values:
+      ApplyImmediately: true
 ignore:
   resource_names:
+    - ServerlessCache
+    - ServerlessCacheSnapshot
     - GlobalReplicationGroup
-    - CacheCluster
     - CacheSecurityGroup
   field_paths:
     - DescribeSnapshotsInput.CacheClusterId
@@ -255,3 +347,5 @@ ignore:
     - CreateReplicationGroupInput.GlobalReplicationGroupId
     - CreateReplicationGroupInput.AutoMinorVersionUpgrade
     - CreateReplicationGroupInput.NumCacheClusters
+    - CacheCluster.LogDeliveryConfigurations
+    - PendingModifiedValues.LogDeliveryConfigurations
