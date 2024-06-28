@@ -1,0 +1,16 @@
+# A simple CacheCluster manifest.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: CacheCluster
+metadata:
+  name: $CACHE_CLUSTER_ID
+spec:
+  cacheClusterID: $CACHE_CLUSTER_ID
+  cacheNodeType: cache.t3.micro
+  numCacheNodes: 2
+  engine: memcached
+  autoMinorVersionUpgrade: false
+  tags:
+    - key: t1
+      value: v1
+    - key: t2
+      value: v2

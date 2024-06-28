@@ -146,6 +146,6 @@ def service_cleanup(config: dict):
         logging.exception(f"Unable to delete Elasticache cache parameter group {resources.CPGName}")
 
 
-if __name__ == "__main__":   
+if __name__ == "__main__":
     bootstrap_config = read_bootstrap_config(bootstrap_directory)
-    service_cleanup(bootstrap_config) 
+    service_cleanup(bootstrap_config)
