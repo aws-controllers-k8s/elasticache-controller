@@ -16,13 +16,12 @@ package replication_group
 import (
 	"encoding/json"
 	"reflect"
-	"strconv"
-	"strings"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
+	"github.com/aws-controllers-k8s/elasticache-controller/pkg/util"
 )
 
 // modifyDelta removes non-meaningful differences from the delta and adds additional differences if necessary
@@ -34,7 +33,7 @@ func modifyDelta(
 
 	if delta.DifferentAt("Spec.EngineVersion") {
 		if desired.ko.Spec.EngineVersion != nil && latest.ko.Spec.EngineVersion != nil {
-			if engineVersionsMatch(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
+			if util.EngineVersionsMatch(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
 				common.RemoveFromDelta(delta, "Spec.EngineVersion")
 			}
 		}
@@ -67,32 +66,6 @@ func modifyDelta(
 	if updateRequired, current := primaryClusterIDRequiresUpdate(desired, latest); updateRequired {
 		delta.Add("Spec.PrimaryClusterID", desired.ko.Spec.PrimaryClusterID, *current)
 	}
-}
-
-// returns true if desired and latest engine versions match and false otherwise
-// precondition: both desiredEV and latestEV are non-nil
-// this handles the case where only the major EV is specified, e.g. "6.x" (or similar), but the latest
-//
-//	version shows the minor version, e.g. "6.0.5"
-func engineVersionsMatch(
-	desiredEV string,
-	latestEV string,
-) bool {
-	if desiredEV == latestEV {
-		return true
-	}
-
-	dMaj, dMin, _ := versionNumbersFromString(desiredEV)
-	lMaj, lMin, _ := versionNumbersFromString(latestEV)
-	last := len(desiredEV) - 1
-
-	// if the last character of desiredEV is "x" or the major version is higher than 5, ignore patch version when comparing.
-	// See https://github.com/aws-controllers-k8s/community/issues/1737
-	if dMaj > 5 || desiredEV[last:] == "x" {
-		return dMaj == lMaj && (dMin < 0 || dMin == lMin)
-	}
-
-	return false
 }
 
 // logDeliveryRequiresUpdate retrieves the last requested configurations saved in annotations and compares them
@@ -187,29 +160,4 @@ func primaryClusterIDRequiresUpdate(desired *resource, latest *resource) (bool, 
 	}
 
 	return false, nil
-}
-
-// versionNumbersFromString takes a version string like "6.2", "6.x" or "7.0.4" and
-// returns the major, minor and patch numbers. If no minor or patch numbers are present
-// or contain the "x" placeholder, -1 is returned for that version number.
-func versionNumbersFromString(version string) (int, int, int) {
-	parts := strings.Split(version, ".")
-	major := -1
-	minor := -1
-	patch := -1
-	if len(parts) == 0 {
-		return major, minor, patch
-	}
-	major, _ = strconv.Atoi(parts[0])
-	if len(parts) > 1 {
-		if !strings.EqualFold(parts[1], "x") {
-			minor, _ = strconv.Atoi(parts[1])
-		}
-	}
-	if len(parts) > 2 {
-		if !strings.EqualFold(parts[2], "x") {
-			patch, _ = strconv.Atoi(parts[2])
-		}
-	}
-	return major, minor, patch
 }
