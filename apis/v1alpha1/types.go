@@ -40,7 +40,7 @@ type AvailabilityZone struct {
 }
 
 // Contains all of the attributes of a specific cluster.
-type CacheCluster struct {
+type CacheCluster_SDK struct {
 	ARN                       *string      `json:"arn,omitempty"`
 	AtRestEncryptionEnabled   *bool        `json:"atRestEncryptionEnabled,omitempty"`
 	AuthTokenEnabled          *bool        `json:"authTokenEnabled,omitempty"`
@@ -50,23 +50,37 @@ type CacheCluster struct {
 	CacheClusterID            *string      `json:"cacheClusterID,omitempty"`
 	CacheClusterStatus        *string      `json:"cacheClusterStatus,omitempty"`
 	CacheNodeType             *string      `json:"cacheNodeType,omitempty"`
-	CacheSubnetGroupName      *string      `json:"cacheSubnetGroupName,omitempty"`
-	ClientDownloadLandingPage *string      `json:"clientDownloadLandingPage,omitempty"`
+	CacheNodes                []*CacheNode `json:"cacheNodes,omitempty"`
+	// Status of the cache parameter group.
+	CacheParameterGroup       *CacheParameterGroupStatus_SDK  `json:"cacheParameterGroup,omitempty"`
+	CacheSecurityGroups       []*CacheSecurityGroupMembership `json:"cacheSecurityGroups,omitempty"`
+	CacheSubnetGroupName      *string                         `json:"cacheSubnetGroupName,omitempty"`
+	ClientDownloadLandingPage *string                         `json:"clientDownloadLandingPage,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node.
-	ConfigurationEndpoint              *Endpoint                   `json:"configurationEndpoint,omitempty"`
-	Engine                             *string                     `json:"engine,omitempty"`
-	EngineVersion                      *string                     `json:"engineVersion,omitempty"`
-	LogDeliveryConfigurations          []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
-	NumCacheNodes                      *int64                      `json:"numCacheNodes,omitempty"`
-	PreferredAvailabilityZone          *string                     `json:"preferredAvailabilityZone,omitempty"`
-	PreferredMaintenanceWindow         *string                     `json:"preferredMaintenanceWindow,omitempty"`
-	PreferredOutpostARN                *string                     `json:"preferredOutpostARN,omitempty"`
-	ReplicationGroupID                 *string                     `json:"replicationGroupID,omitempty"`
-	ReplicationGroupLogDeliveryEnabled *bool                       `json:"replicationGroupLogDeliveryEnabled,omitempty"`
-	SnapshotRetentionLimit             *int64                      `json:"snapshotRetentionLimit,omitempty"`
-	SnapshotWindow                     *string                     `json:"snapshotWindow,omitempty"`
-	TransitEncryptionEnabled           *bool                       `json:"transitEncryptionEnabled,omitempty"`
+	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
+	Engine                *string   `json:"engine,omitempty"`
+	EngineVersion         *string   `json:"engineVersion,omitempty"`
+	IPDiscovery           *string   `json:"ipDiscovery,omitempty"`
+	NetworkType           *string   `json:"networkType,omitempty"`
+	// Describes a notification topic and its status. Notification topics are used
+	// for publishing ElastiCache events to subscribers using Amazon Simple Notification
+	// Service (SNS).
+	NotificationConfiguration *NotificationConfiguration `json:"notificationConfiguration,omitempty"`
+	NumCacheNodes             *int64                     `json:"numCacheNodes,omitempty"`
+	// A group of settings that are applied to the cluster in the future, or that
+	// are currently being applied.
+	PendingModifiedValues              *PendingModifiedValues     `json:"pendingModifiedValues,omitempty"`
+	PreferredAvailabilityZone          *string                    `json:"preferredAvailabilityZone,omitempty"`
+	PreferredMaintenanceWindow         *string                    `json:"preferredMaintenanceWindow,omitempty"`
+	PreferredOutpostARN                *string                    `json:"preferredOutpostARN,omitempty"`
+	ReplicationGroupID                 *string                    `json:"replicationGroupID,omitempty"`
+	ReplicationGroupLogDeliveryEnabled *bool                      `json:"replicationGroupLogDeliveryEnabled,omitempty"`
+	SecurityGroups                     []*SecurityGroupMembership `json:"securityGroups,omitempty"`
+	SnapshotRetentionLimit             *int64                     `json:"snapshotRetentionLimit,omitempty"`
+	SnapshotWindow                     *string                    `json:"snapshotWindow,omitempty"`
+	TransitEncryptionEnabled           *bool                      `json:"transitEncryptionEnabled,omitempty"`
+	TransitEncryptionMode              *string                    `json:"transitEncryptionMode,omitempty"`
 }
 
 // Provides all of the details about a particular cache engine version.
@@ -86,44 +100,45 @@ type CacheEngineVersion struct {
 // the current generation types provide more memory and computational power
 // at lower cost when compared to their equivalent previous generation counterparts.
 //
-//   - General purpose: Current generation: M6g node types: (available only
-//     for Redis engine version 5.0.6 onward and for Memcached engine version
-//     1.5.16 onward): cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
-//     cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-//     For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
-//     M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
-//     cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
-//     cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T4g node types (available
-//     only for Redis engine version 5.0.6 onward and for Memcached engine version
-//     1.5.16 onward): cache.t4g.micro, cache.t4g.small, cache.t4g.medium T3
-//     node types: cache.t3.micro, cache.t3.small, cache.t3.medium T2 node types:
-//     cache.t2.micro, cache.t2.small, cache.t2.medium Previous generation: (not
-//     recommended. Existing clusters are still supported but creation of new
-//     clusters is not supported for these types.) T1 node types: cache.t1.micro
-//     M1 node types: cache.m1.small, cache.m1.medium, cache.m1.large, cache.m1.xlarge
-//     M3 node types: cache.m3.medium, cache.m3.large, cache.m3.xlarge, cache.m3.2xlarge
+//   - General purpose: Current generation: M7g node types: cache.m7g.large,
+//     cache.m7g.xlarge, cache.m7g.2xlarge, cache.m7g.4xlarge, cache.m7g.8xlarge,
+//     cache.m7g.12xlarge, cache.m7g.16xlarge For region availability, see Supported
+//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+//     M6g node types (available only for Redis engine version 5.0.6 onward and
+//     for Memcached engine version 1.5.16 onward): cache.m6g.large, cache.m6g.xlarge,
+//     cache.m6g.2xlarge, cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge,
+//     cache.m6g.16xlarge M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge,
+//     cache.m5.4xlarge, cache.m5.12xlarge, cache.m5.24xlarge M4 node types:
+//     cache.m4.large, cache.m4.xlarge, cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge
+//     T4g node types (available only for Redis engine version 5.0.6 onward and
+//     Memcached engine version 1.5.16 onward): cache.t4g.micro, cache.t4g.small,
+//     cache.t4g.medium T3 node types: cache.t3.micro, cache.t3.small, cache.t3.medium
+//     T2 node types: cache.t2.micro, cache.t2.small, cache.t2.medium Previous
+//     generation: (not recommended. Existing clusters are still supported but
+//     creation of new clusters is not supported for these types.) T1 node types:
+//     cache.t1.micro M1 node types: cache.m1.small, cache.m1.medium, cache.m1.large,
+//     cache.m1.xlarge M3 node types: cache.m3.medium, cache.m3.large, cache.m3.xlarge,
+//     cache.m3.2xlarge
 //
 //   - Compute optimized: Previous generation: (not recommended. Existing clusters
 //     are still supported but creation of new clusters is not supported for
 //     these types.) C1 node types: cache.c1.xlarge
 //
-//   - Memory optimized with data tiering: Current generation: R6gd node types
-//     (available only for Redis engine version 6.2 onward). cache.r6gd.xlarge,
-//     cache.r6gd.2xlarge, cache.r6gd.4xlarge, cache.r6gd.8xlarge, cache.r6gd.12xlarge,
-//     cache.r6gd.16xlarge
-//
-//   - Memory optimized: Current generation: R6g node types (available only
-//     for Redis engine version 5.0.6 onward and for Memcached engine version
-//     1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
-//     cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-//     For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
-//     R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
-//     cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
-//     cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
-//     Previous generation: (not recommended. Existing clusters are still supported
-//     but creation of new clusters is not supported for these types.) M2 node
-//     types: cache.m2.xlarge, cache.m2.2xlarge, cache.m2.4xlarge R3 node types:
-//     cache.r3.large, cache.r3.xlarge, cache.r3.2xlarge, cache.r3.4xlarge, cache.r3.8xlarge
+//   - Memory optimized: Current generation: R7g node types: cache.r7g.large,
+//     cache.r7g.xlarge, cache.r7g.2xlarge, cache.r7g.4xlarge, cache.r7g.8xlarge,
+//     cache.r7g.12xlarge, cache.r7g.16xlarge For region availability, see Supported
+//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+//     R6g node types (available only for Redis engine version 5.0.6 onward and
+//     for Memcached engine version 1.5.16 onward): cache.r6g.large, cache.r6g.xlarge,
+//     cache.r6g.2xlarge, cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge,
+//     cache.r6g.16xlarge R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge,
+//     cache.r5.4xlarge, cache.r5.12xlarge, cache.r5.24xlarge R4 node types:
+//     cache.r4.large, cache.r4.xlarge, cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge,
+//     cache.r4.16xlarge Previous generation: (not recommended. Existing clusters
+//     are still supported but creation of new clusters is not supported for
+//     these types.) M2 node types: cache.m2.xlarge, cache.m2.2xlarge, cache.m2.4xlarge
+//     R3 node types: cache.r3.large, cache.r3.xlarge, cache.r3.2xlarge, cache.r3.4xlarge,
+//     cache.r3.8xlarge
 //
 // Additional node type info
 //
@@ -180,8 +195,9 @@ type CacheNodeUpdateStatus struct {
 
 // Status of the cache parameter group.
 type CacheParameterGroupStatus_SDK struct {
-	CacheParameterGroupName *string `json:"cacheParameterGroupName,omitempty"`
-	ParameterApplyStatus    *string `json:"parameterApplyStatus,omitempty"`
+	CacheNodeIDsToReboot    []*string `json:"cacheNodeIDsToReboot,omitempty"`
+	CacheParameterGroupName *string   `json:"cacheParameterGroupName,omitempty"`
+	ParameterApplyStatus    *string   `json:"parameterApplyStatus,omitempty"`
 }
 
 // Represents the output of a CreateCacheParameterGroup operation.
@@ -475,11 +491,13 @@ type PendingLogDeliveryConfiguration struct {
 // A group of settings that are applied to the cluster in the future, or that
 // are currently being applied.
 type PendingModifiedValues struct {
-	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
-	CacheNodeType             *string                            `json:"cacheNodeType,omitempty"`
-	EngineVersion             *string                            `json:"engineVersion,omitempty"`
-	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
-	NumCacheNodes             *int64                             `json:"numCacheNodes,omitempty"`
+	AuthTokenStatus          *string   `json:"authTokenStatus,omitempty"`
+	CacheNodeIDsToRemove     []*string `json:"cacheNodeIDsToRemove,omitempty"`
+	CacheNodeType            *string   `json:"cacheNodeType,omitempty"`
+	EngineVersion            *string   `json:"engineVersion,omitempty"`
+	NumCacheNodes            *int64    `json:"numCacheNodes,omitempty"`
+	TransitEncryptionEnabled *bool     `json:"transitEncryptionEnabled,omitempty"`
+	TransitEncryptionMode    *string   `json:"transitEncryptionMode,omitempty"`
 }
 
 // Update action that has been processed for the corresponding apply/stop request

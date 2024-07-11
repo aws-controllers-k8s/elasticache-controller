@@ -42,6 +42,7 @@ type AuthenticationType string
 const (
 	AuthenticationType_password    AuthenticationType = "password"
 	AuthenticationType_no_password AuthenticationType = "no-password"
+	AuthenticationType_iam         AuthenticationType = "iam"
 )
 
 type AutomaticFailoverStatus string
@@ -60,6 +61,20 @@ const (
 	ChangeType_requires_reboot ChangeType = "requires-reboot"
 )
 
+type ClusterMode string
+
+const (
+	ClusterMode_enabled    ClusterMode = "enabled"
+	ClusterMode_disabled   ClusterMode = "disabled"
+	ClusterMode_compatible ClusterMode = "compatible"
+)
+
+type DataStorageUnit string
+
+const (
+	DataStorageUnit_GB DataStorageUnit = "GB"
+)
+
 type DataTieringStatus string
 
 const (
@@ -72,6 +87,21 @@ type DestinationType string
 const (
 	DestinationType_cloudwatch_logs  DestinationType = "cloudwatch-logs"
 	DestinationType_kinesis_firehose DestinationType = "kinesis-firehose"
+)
+
+type IPDiscovery string
+
+const (
+	IPDiscovery_ipv4 IPDiscovery = "ipv4"
+	IPDiscovery_ipv6 IPDiscovery = "ipv6"
+)
+
+type InputAuthenticationType string
+
+const (
+	InputAuthenticationType_password             InputAuthenticationType = "password"
+	InputAuthenticationType_no_password_required InputAuthenticationType = "no-password-required"
+	InputAuthenticationType_iam                  InputAuthenticationType = "iam"
 )
 
 type LogDeliveryConfigurationStatus string
@@ -103,6 +133,14 @@ type MultiAZStatus string
 const (
 	MultiAZStatus_enabled  MultiAZStatus = "enabled"
 	MultiAZStatus_disabled MultiAZStatus = "disabled"
+)
+
+type NetworkType string
+
+const (
+	NetworkType_ipv4       NetworkType = "ipv4"
+	NetworkType_ipv6       NetworkType = "ipv6"
+	NetworkType_dual_stack NetworkType = "dual_stack"
 )
 
 type NodeUpdateInitiatedBy string
@@ -171,13 +209,22 @@ const (
 type SourceType string
 
 const (
-	SourceType_cache_cluster         SourceType = "cache-cluster"
-	SourceType_cache_parameter_group SourceType = "cache-parameter-group"
-	SourceType_cache_security_group  SourceType = "cache-security-group"
-	SourceType_cache_subnet_group    SourceType = "cache-subnet-group"
-	SourceType_replication_group     SourceType = "replication-group"
-	SourceType_user                  SourceType = "user"
-	SourceType_user_group            SourceType = "user-group"
+	SourceType_cache_cluster             SourceType = "cache-cluster"
+	SourceType_cache_parameter_group     SourceType = "cache-parameter-group"
+	SourceType_cache_security_group      SourceType = "cache-security-group"
+	SourceType_cache_subnet_group        SourceType = "cache-subnet-group"
+	SourceType_replication_group         SourceType = "replication-group"
+	SourceType_serverless_cache          SourceType = "serverless-cache"
+	SourceType_serverless_cache_snapshot SourceType = "serverless-cache-snapshot"
+	SourceType_user                      SourceType = "user"
+	SourceType_user_group                SourceType = "user-group"
+)
+
+type TransitEncryptionMode string
+
+const (
+	TransitEncryptionMode_preferred TransitEncryptionMode = "preferred"
+	TransitEncryptionMode_required  TransitEncryptionMode = "required"
 )
 
 type UpdateActionStatus string

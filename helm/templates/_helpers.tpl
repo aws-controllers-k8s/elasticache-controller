@@ -108,6 +108,26 @@ rules:
 - apiGroups:
   - elasticache.services.k8s.aws
   resources:
+  - cacheclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - elasticache.services.k8s.aws
+  resources:
+  - cacheclusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - elasticache.services.k8s.aws
+  resources:
   - cacheparametergroups
   verbs:
   - create
@@ -265,4 +285,18 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - sns.services.k8s.aws
+  resources:
+  - topics
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - sns.services.k8s.aws
+  resources:
+  - topics/status
+  verbs:
+  - get
+  - list
 {{- end }}
