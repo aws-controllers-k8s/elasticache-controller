@@ -140,6 +140,17 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.ReplicationGroups = nil
 		}
+		if elem.ServerlessCaches != nil {
+			f5 := []*string{}
+			for _, f5iter := range elem.ServerlessCaches {
+				var f5elem string
+				f5elem = *f5iter
+				f5 = append(f5, &f5elem)
+			}
+			ko.Status.ServerlessCaches = f5
+		} else {
+			ko.Status.ServerlessCaches = nil
+		}
 		if elem.Status != nil {
 			ko.Status.Status = elem.Status
 		} else {
@@ -151,13 +162,13 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.UserGroupID = nil
 		}
 		if elem.UserIds != nil {
-			f7 := []*string{}
-			for _, f7iter := range elem.UserIds {
-				var f7elem string
-				f7elem = *f7iter
-				f7 = append(f7, &f7elem)
+			f8 := []*string{}
+			for _, f8iter := range elem.UserIds {
+				var f8elem string
+				f8elem = *f8iter
+				f8 = append(f8, &f8elem)
 			}
-			ko.Spec.UserIDs = f7
+			ko.Spec.UserIDs = f8
 		} else {
 			ko.Spec.UserIDs = nil
 		}
@@ -281,6 +292,17 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.ReplicationGroups = nil
 	}
+	if resp.ServerlessCaches != nil {
+		f5 := []*string{}
+		for _, f5iter := range resp.ServerlessCaches {
+			var f5elem string
+			f5elem = *f5iter
+			f5 = append(f5, &f5elem)
+		}
+		ko.Status.ServerlessCaches = f5
+	} else {
+		ko.Status.ServerlessCaches = nil
+	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
 	} else {
@@ -292,13 +314,13 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.UserGroupID = nil
 	}
 	if resp.UserIds != nil {
-		f7 := []*string{}
-		for _, f7iter := range resp.UserIds {
-			var f7elem string
-			f7elem = *f7iter
-			f7 = append(f7, &f7elem)
+		f8 := []*string{}
+		for _, f8iter := range resp.UserIds {
+			var f8elem string
+			f8elem = *f8iter
+			f8 = append(f8, &f8elem)
 		}
-		ko.Spec.UserIDs = f7
+		ko.Spec.UserIDs = f8
 	} else {
 		ko.Spec.UserIDs = nil
 	}

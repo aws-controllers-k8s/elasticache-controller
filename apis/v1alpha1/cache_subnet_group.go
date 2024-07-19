@@ -67,6 +67,11 @@ type CacheSubnetGroupStatus struct {
 	// A list of subnets associated with the cache subnet group.
 	// +kubebuilder:validation:Optional
 	Subnets []*Subnet `json:"subnets,omitempty"`
+	// Either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads using Redis
+	// engine version 6.2 onward or Memcached engine version 1.6.6 on all instances
+	// built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
+	// +kubebuilder:validation:Optional
+	SupportedNetworkTypes []*string `json:"supportedNetworkTypes,omitempty"`
 	// The Amazon Virtual Private Cloud identifier (VPC ID) of the cache subnet
 	// group.
 	// +kubebuilder:validation:Optional
