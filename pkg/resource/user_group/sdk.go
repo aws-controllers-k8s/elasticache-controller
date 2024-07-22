@@ -151,13 +151,13 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.UserGroupID = nil
 		}
 		if elem.UserIds != nil {
-			f7 := []*string{}
-			for _, f7iter := range elem.UserIds {
-				var f7elem string
-				f7elem = *f7iter
-				f7 = append(f7, &f7elem)
+			f8 := []*string{}
+			for _, f8iter := range elem.UserIds {
+				var f8elem string
+				f8elem = *f8iter
+				f8 = append(f8, &f8elem)
 			}
-			ko.Spec.UserIDs = f7
+			ko.Spec.UserIDs = f8
 		} else {
 			ko.Spec.UserIDs = nil
 		}

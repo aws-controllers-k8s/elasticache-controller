@@ -44,7 +44,8 @@ spec:
               tags:
                 description: |-
                   A list of tags to be added to this resource. A tag is a key-value pair. A
-                  tag key must be accompanied by a tag value, although null is accepted.
+                  tag key must be accompanied by a tag value, although null is accepted. Available
+                  for Redis only.
                 items:
                   description: |-
                     A tag that can be added to an ElastiCache cluster or replication group. Tags

@@ -29,7 +29,8 @@ type UserGroupSpec struct {
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
+	// tag key must be accompanied by a tag value, although null is accepted. Available
+	// for Redis only.
 	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user group.
 	// +kubebuilder:validation:Required

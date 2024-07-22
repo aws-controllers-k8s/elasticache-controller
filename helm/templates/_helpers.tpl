@@ -300,3 +300,12 @@ rules:
   - get
   - list
 {{- end }}
+
+{{/* Convert k/v map to string like: "key1=value1,key2=value2,..." */}}
+{{- define "ack-elasticache-controller.feature-gates" -}}
+{{- $list := list -}}
+{{- range $k, $v := .Values.featureGates -}}
+{{- $list = append $list (printf "%s=%s" $k ( $v | toString)) -}}
+{{- end -}}
+{{ join "," $list }}
+{{- end -}}

@@ -34,6 +34,12 @@ type Authentication struct {
 	Type          *string `json:"type_,omitempty"`
 }
 
+// Specifies the authentication mode to use.
+type AuthenticationMode struct {
+	Passwords []*string `json:"passwords,omitempty"`
+	Type      *string   `json:"type_,omitempty"`
+}
+
 // Describes an Availability Zone in which the cluster is launched.
 type AvailabilityZone struct {
 	Name *string `json:"name,omitempty"`
@@ -58,11 +64,12 @@ type CacheCluster_SDK struct {
 	ClientDownloadLandingPage *string                         `json:"clientDownloadLandingPage,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node.
-	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
-	Engine                *string   `json:"engine,omitempty"`
-	EngineVersion         *string   `json:"engineVersion,omitempty"`
-	IPDiscovery           *string   `json:"ipDiscovery,omitempty"`
-	NetworkType           *string   `json:"networkType,omitempty"`
+	ConfigurationEndpoint     *Endpoint                   `json:"configurationEndpoint,omitempty"`
+	Engine                    *string                     `json:"engine,omitempty"`
+	EngineVersion             *string                     `json:"engineVersion,omitempty"`
+	IPDiscovery               *string                     `json:"ipDiscovery,omitempty"`
+	LogDeliveryConfigurations []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
+	NetworkType               *string                     `json:"networkType,omitempty"`
 	// Describes a notification topic and its status. Notification topics are used
 	// for publishing ElastiCache events to subscribers using Amazon Simple Notification
 	// Service (SNS).
@@ -251,14 +258,21 @@ type CloudWatchLogsDestinationDetails struct {
 // Each node group (shard) configuration has the following members: NodeGroupId,
 // NewReplicaCount, and PreferredAvailabilityZones.
 type ConfigureShard struct {
-	NewReplicaCount *int64  `json:"newReplicaCount,omitempty"`
-	NodeGroupID     *string `json:"nodeGroupID,omitempty"`
+	NewReplicaCount            *int64    `json:"newReplicaCount,omitempty"`
+	NodeGroupID                *string   `json:"nodeGroupID,omitempty"`
+	PreferredAvailabilityZones []*string `json:"preferredAvailabilityZones,omitempty"`
+	PreferredOutpostARNs       []*string `json:"preferredOutpostARNs,omitempty"`
 }
 
 // The endpoint from which data should be migrated.
 type CustomerNodeEndpoint struct {
 	Address *string `json:"address,omitempty"`
 	Port    *int64  `json:"port,omitempty"`
+}
+
+// The data storage limit.
+type DataStorage struct {
+	Maximum *int64 `json:"maximum,omitempty"`
 }
 
 // Configuration details of either a CloudWatch Logs destination or Kinesis
@@ -275,6 +289,12 @@ type EC2SecurityGroup struct {
 	EC2SecurityGroupName    *string `json:"ec2SecurityGroupName,omitempty"`
 	EC2SecurityGroupOwnerID *string `json:"ec2SecurityGroupOwnerID,omitempty"`
 	Status                  *string `json:"status,omitempty"`
+}
+
+// The configuration for the number of ElastiCache Processing Units (ECPU) the
+// cache can consume per second.
+type ECPUPerSecond struct {
+	Maximum *int64 `json:"maximum,omitempty"`
 }
 
 // Represents the information required for client programs to connect to a cache
@@ -616,6 +636,49 @@ type SecurityGroupMembership struct {
 	Status          *string `json:"status,omitempty"`
 }
 
+// The resource representing a serverless cache.
+type ServerlessCache struct {
+	ARN               *string      `json:"arn,omitempty"`
+	CreateTime        *metav1.Time `json:"createTime,omitempty"`
+	DailySnapshotTime *string      `json:"dailySnapshotTime,omitempty"`
+	Description       *string      `json:"description,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node.
+	Endpoint           *Endpoint `json:"endpoint,omitempty"`
+	Engine             *string   `json:"engine,omitempty"`
+	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
+	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
+	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node.
+	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`
+	SecurityGroupIDs       []*string `json:"securityGroupIDs,omitempty"`
+	ServerlessCacheName    *string   `json:"serverlessCacheName,omitempty"`
+	SnapshotRetentionLimit *int64    `json:"snapshotRetentionLimit,omitempty"`
+	Status                 *string   `json:"status,omitempty"`
+	UserGroupID            *string   `json:"userGroupID,omitempty"`
+}
+
+// The configuration settings for a specific serverless cache.
+type ServerlessCacheConfiguration struct {
+	Engine              *string `json:"engine,omitempty"`
+	MajorEngineVersion  *string `json:"majorEngineVersion,omitempty"`
+	ServerlessCacheName *string `json:"serverlessCacheName,omitempty"`
+}
+
+// The resource representing a serverless cache snapshot. Available for Redis
+// only.
+type ServerlessCacheSnapshot struct {
+	ARN                         *string      `json:"arn,omitempty"`
+	BytesUsedForCache           *string      `json:"bytesUsedForCache,omitempty"`
+	CreateTime                  *metav1.Time `json:"createTime,omitempty"`
+	ExpiryTime                  *metav1.Time `json:"expiryTime,omitempty"`
+	KMSKeyID                    *string      `json:"kmsKeyID,omitempty"`
+	ServerlessCacheSnapshotName *string      `json:"serverlessCacheSnapshotName,omitempty"`
+	SnapshotType                *string      `json:"snapshotType,omitempty"`
+	Status                      *string      `json:"status,omitempty"`
+}
+
 // An update that you can apply to your Redis clusters.
 type ServiceUpdate struct {
 	AutoUpdateAfterRecommendedApplyByDate *bool        `json:"autoUpdateAfterRecommendedApplyByDate,omitempty"`
@@ -738,6 +801,7 @@ type UserGroup_SDK struct {
 	// Returns the updates being applied to the user group.
 	PendingChanges    *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
 	ReplicationGroups []*string                `json:"replicationGroups,omitempty"`
+	ServerlessCaches  []*string                `json:"serverlessCaches,omitempty"`
 	Status            *string                  `json:"status,omitempty"`
 	UserGroupID       *string                  `json:"userGroupID,omitempty"`
 	UserIDs           []*string                `json:"userIDs,omitempty"`

@@ -250,20 +250,57 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.IPDiscovery = nil
 		}
+		if elem.LogDeliveryConfigurations != nil {
+			f18 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+			for _, f18iter := range elem.LogDeliveryConfigurations {
+				f18elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+				if f18iter.DestinationDetails != nil {
+					f18elemf0 := &svcapitypes.DestinationDetails{}
+					if f18iter.DestinationDetails.CloudWatchLogsDetails != nil {
+						f18elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+						if f18iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+							f18elemf0f0.LogGroup = f18iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+						}
+						f18elemf0.CloudWatchLogsDetails = f18elemf0f0
+					}
+					if f18iter.DestinationDetails.KinesisFirehoseDetails != nil {
+						f18elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+						if f18iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+							f18elemf0f1.DeliveryStream = f18iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+						}
+						f18elemf0.KinesisFirehoseDetails = f18elemf0f1
+					}
+					f18elem.DestinationDetails = f18elemf0
+				}
+				if f18iter.DestinationType != nil {
+					f18elem.DestinationType = f18iter.DestinationType
+				}
+				if f18iter.LogFormat != nil {
+					f18elem.LogFormat = f18iter.LogFormat
+				}
+				if f18iter.LogType != nil {
+					f18elem.LogType = f18iter.LogType
+				}
+				f18 = append(f18, f18elem)
+			}
+			ko.Spec.LogDeliveryConfigurations = f18
+		} else {
+			ko.Spec.LogDeliveryConfigurations = nil
+		}
 		if elem.NetworkType != nil {
 			ko.Spec.NetworkType = elem.NetworkType
 		} else {
 			ko.Spec.NetworkType = nil
 		}
 		if elem.NotificationConfiguration != nil {
-			f19 := &svcapitypes.NotificationConfiguration{}
+			f20 := &svcapitypes.NotificationConfiguration{}
 			if elem.NotificationConfiguration.TopicArn != nil {
-				f19.TopicARN = elem.NotificationConfiguration.TopicArn
+				f20.TopicARN = elem.NotificationConfiguration.TopicArn
 			}
 			if elem.NotificationConfiguration.TopicStatus != nil {
-				f19.TopicStatus = elem.NotificationConfiguration.TopicStatus
+				f20.TopicStatus = elem.NotificationConfiguration.TopicStatus
 			}
-			ko.Status.NotificationConfiguration = f19
+			ko.Status.NotificationConfiguration = f20
 		} else {
 			ko.Status.NotificationConfiguration = nil
 		}
@@ -273,35 +310,35 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.NumCacheNodes = nil
 		}
 		if elem.PendingModifiedValues != nil {
-			f21 := &svcapitypes.PendingModifiedValues{}
+			f22 := &svcapitypes.PendingModifiedValues{}
 			if elem.PendingModifiedValues.AuthTokenStatus != nil {
-				f21.AuthTokenStatus = elem.PendingModifiedValues.AuthTokenStatus
+				f22.AuthTokenStatus = elem.PendingModifiedValues.AuthTokenStatus
 			}
 			if elem.PendingModifiedValues.CacheNodeIdsToRemove != nil {
-				f21f1 := []*string{}
-				for _, f21f1iter := range elem.PendingModifiedValues.CacheNodeIdsToRemove {
-					var f21f1elem string
-					f21f1elem = *f21f1iter
-					f21f1 = append(f21f1, &f21f1elem)
+				f22f1 := []*string{}
+				for _, f22f1iter := range elem.PendingModifiedValues.CacheNodeIdsToRemove {
+					var f22f1elem string
+					f22f1elem = *f22f1iter
+					f22f1 = append(f22f1, &f22f1elem)
 				}
-				f21.CacheNodeIDsToRemove = f21f1
+				f22.CacheNodeIDsToRemove = f22f1
 			}
 			if elem.PendingModifiedValues.CacheNodeType != nil {
-				f21.CacheNodeType = elem.PendingModifiedValues.CacheNodeType
+				f22.CacheNodeType = elem.PendingModifiedValues.CacheNodeType
 			}
 			if elem.PendingModifiedValues.EngineVersion != nil {
-				f21.EngineVersion = elem.PendingModifiedValues.EngineVersion
+				f22.EngineVersion = elem.PendingModifiedValues.EngineVersion
 			}
 			if elem.PendingModifiedValues.NumCacheNodes != nil {
-				f21.NumCacheNodes = elem.PendingModifiedValues.NumCacheNodes
+				f22.NumCacheNodes = elem.PendingModifiedValues.NumCacheNodes
 			}
 			if elem.PendingModifiedValues.TransitEncryptionEnabled != nil {
-				f21.TransitEncryptionEnabled = elem.PendingModifiedValues.TransitEncryptionEnabled
+				f22.TransitEncryptionEnabled = elem.PendingModifiedValues.TransitEncryptionEnabled
 			}
 			if elem.PendingModifiedValues.TransitEncryptionMode != nil {
-				f21.TransitEncryptionMode = elem.PendingModifiedValues.TransitEncryptionMode
+				f22.TransitEncryptionMode = elem.PendingModifiedValues.TransitEncryptionMode
 			}
-			ko.Status.PendingModifiedValues = f21
+			ko.Status.PendingModifiedValues = f22
 		} else {
 			ko.Status.PendingModifiedValues = nil
 		}
@@ -331,18 +368,18 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.ReplicationGroupLogDeliveryEnabled = nil
 		}
 		if elem.SecurityGroups != nil {
-			f27 := []*svcapitypes.SecurityGroupMembership{}
-			for _, f27iter := range elem.SecurityGroups {
-				f27elem := &svcapitypes.SecurityGroupMembership{}
-				if f27iter.SecurityGroupId != nil {
-					f27elem.SecurityGroupID = f27iter.SecurityGroupId
+			f28 := []*svcapitypes.SecurityGroupMembership{}
+			for _, f28iter := range elem.SecurityGroups {
+				f28elem := &svcapitypes.SecurityGroupMembership{}
+				if f28iter.SecurityGroupId != nil {
+					f28elem.SecurityGroupID = f28iter.SecurityGroupId
 				}
-				if f27iter.Status != nil {
-					f27elem.Status = f27iter.Status
+				if f28iter.Status != nil {
+					f28elem.Status = f28iter.Status
 				}
-				f27 = append(f27, f27elem)
+				f28 = append(f28, f28elem)
 			}
-			ko.Status.SecurityGroups = f27
+			ko.Status.SecurityGroups = f28
 		} else {
 			ko.Status.SecurityGroups = nil
 		}
@@ -441,6 +478,10 @@ func (rm *resourceManager) sdkCreate(
 	defer func() {
 		exit(err)
 	}()
+	if err := validateUnsupportedFields(desired); err != nil {
+		return nil, err
+	}
+
 	input, err := rm.newCreateRequestPayload(ctx, desired)
 	if err != nil {
 		return nil, err
@@ -619,20 +660,57 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.IPDiscovery = nil
 	}
+	if resp.CacheCluster.LogDeliveryConfigurations != nil {
+		f18 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f18iter := range resp.CacheCluster.LogDeliveryConfigurations {
+			f18elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f18iter.DestinationDetails != nil {
+				f18elemf0 := &svcapitypes.DestinationDetails{}
+				if f18iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f18elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f18iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f18elemf0f0.LogGroup = f18iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+					}
+					f18elemf0.CloudWatchLogsDetails = f18elemf0f0
+				}
+				if f18iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f18elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f18iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f18elemf0f1.DeliveryStream = f18iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					}
+					f18elemf0.KinesisFirehoseDetails = f18elemf0f1
+				}
+				f18elem.DestinationDetails = f18elemf0
+			}
+			if f18iter.DestinationType != nil {
+				f18elem.DestinationType = f18iter.DestinationType
+			}
+			if f18iter.LogFormat != nil {
+				f18elem.LogFormat = f18iter.LogFormat
+			}
+			if f18iter.LogType != nil {
+				f18elem.LogType = f18iter.LogType
+			}
+			f18 = append(f18, f18elem)
+		}
+		ko.Spec.LogDeliveryConfigurations = f18
+	} else {
+		ko.Spec.LogDeliveryConfigurations = nil
+	}
 	if resp.CacheCluster.NetworkType != nil {
 		ko.Spec.NetworkType = resp.CacheCluster.NetworkType
 	} else {
 		ko.Spec.NetworkType = nil
 	}
 	if resp.CacheCluster.NotificationConfiguration != nil {
-		f19 := &svcapitypes.NotificationConfiguration{}
+		f20 := &svcapitypes.NotificationConfiguration{}
 		if resp.CacheCluster.NotificationConfiguration.TopicArn != nil {
-			f19.TopicARN = resp.CacheCluster.NotificationConfiguration.TopicArn
+			f20.TopicARN = resp.CacheCluster.NotificationConfiguration.TopicArn
 		}
 		if resp.CacheCluster.NotificationConfiguration.TopicStatus != nil {
-			f19.TopicStatus = resp.CacheCluster.NotificationConfiguration.TopicStatus
+			f20.TopicStatus = resp.CacheCluster.NotificationConfiguration.TopicStatus
 		}
-		ko.Status.NotificationConfiguration = f19
+		ko.Status.NotificationConfiguration = f20
 	} else {
 		ko.Status.NotificationConfiguration = nil
 	}
@@ -642,35 +720,35 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.NumCacheNodes = nil
 	}
 	if resp.CacheCluster.PendingModifiedValues != nil {
-		f21 := &svcapitypes.PendingModifiedValues{}
+		f22 := &svcapitypes.PendingModifiedValues{}
 		if resp.CacheCluster.PendingModifiedValues.AuthTokenStatus != nil {
-			f21.AuthTokenStatus = resp.CacheCluster.PendingModifiedValues.AuthTokenStatus
+			f22.AuthTokenStatus = resp.CacheCluster.PendingModifiedValues.AuthTokenStatus
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove != nil {
-			f21f1 := []*string{}
-			for _, f21f1iter := range resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove {
-				var f21f1elem string
-				f21f1elem = *f21f1iter
-				f21f1 = append(f21f1, &f21f1elem)
+			f22f1 := []*string{}
+			for _, f22f1iter := range resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove {
+				var f22f1elem string
+				f22f1elem = *f22f1iter
+				f22f1 = append(f22f1, &f22f1elem)
 			}
-			f21.CacheNodeIDsToRemove = f21f1
+			f22.CacheNodeIDsToRemove = f22f1
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeType != nil {
-			f21.CacheNodeType = resp.CacheCluster.PendingModifiedValues.CacheNodeType
+			f22.CacheNodeType = resp.CacheCluster.PendingModifiedValues.CacheNodeType
 		}
 		if resp.CacheCluster.PendingModifiedValues.EngineVersion != nil {
-			f21.EngineVersion = resp.CacheCluster.PendingModifiedValues.EngineVersion
+			f22.EngineVersion = resp.CacheCluster.PendingModifiedValues.EngineVersion
 		}
 		if resp.CacheCluster.PendingModifiedValues.NumCacheNodes != nil {
-			f21.NumCacheNodes = resp.CacheCluster.PendingModifiedValues.NumCacheNodes
+			f22.NumCacheNodes = resp.CacheCluster.PendingModifiedValues.NumCacheNodes
 		}
 		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled != nil {
-			f21.TransitEncryptionEnabled = resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled
+			f22.TransitEncryptionEnabled = resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled
 		}
 		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode != nil {
-			f21.TransitEncryptionMode = resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode
+			f22.TransitEncryptionMode = resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode
 		}
-		ko.Status.PendingModifiedValues = f21
+		ko.Status.PendingModifiedValues = f22
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
@@ -700,18 +778,18 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.ReplicationGroupLogDeliveryEnabled = nil
 	}
 	if resp.CacheCluster.SecurityGroups != nil {
-		f27 := []*svcapitypes.SecurityGroupMembership{}
-		for _, f27iter := range resp.CacheCluster.SecurityGroups {
-			f27elem := &svcapitypes.SecurityGroupMembership{}
-			if f27iter.SecurityGroupId != nil {
-				f27elem.SecurityGroupID = f27iter.SecurityGroupId
+		f28 := []*svcapitypes.SecurityGroupMembership{}
+		for _, f28iter := range resp.CacheCluster.SecurityGroups {
+			f28elem := &svcapitypes.SecurityGroupMembership{}
+			if f28iter.SecurityGroupId != nil {
+				f28elem.SecurityGroupID = f28iter.SecurityGroupId
 			}
-			if f27iter.Status != nil {
-				f27elem.Status = f27iter.Status
+			if f28iter.Status != nil {
+				f28elem.Status = f28iter.Status
 			}
-			f27 = append(f27, f27elem)
+			f28 = append(f28, f28elem)
 		}
-		ko.Status.SecurityGroups = f27
+		ko.Status.SecurityGroups = f28
 	} else {
 		ko.Status.SecurityGroups = nil
 	}
@@ -1144,20 +1222,57 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Spec.IPDiscovery = nil
 	}
+	if resp.CacheCluster.LogDeliveryConfigurations != nil {
+		f18 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f18iter := range resp.CacheCluster.LogDeliveryConfigurations {
+			f18elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f18iter.DestinationDetails != nil {
+				f18elemf0 := &svcapitypes.DestinationDetails{}
+				if f18iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f18elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f18iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f18elemf0f0.LogGroup = f18iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+					}
+					f18elemf0.CloudWatchLogsDetails = f18elemf0f0
+				}
+				if f18iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f18elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f18iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f18elemf0f1.DeliveryStream = f18iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					}
+					f18elemf0.KinesisFirehoseDetails = f18elemf0f1
+				}
+				f18elem.DestinationDetails = f18elemf0
+			}
+			if f18iter.DestinationType != nil {
+				f18elem.DestinationType = f18iter.DestinationType
+			}
+			if f18iter.LogFormat != nil {
+				f18elem.LogFormat = f18iter.LogFormat
+			}
+			if f18iter.LogType != nil {
+				f18elem.LogType = f18iter.LogType
+			}
+			f18 = append(f18, f18elem)
+		}
+		ko.Spec.LogDeliveryConfigurations = f18
+	} else {
+		ko.Spec.LogDeliveryConfigurations = nil
+	}
 	if resp.CacheCluster.NetworkType != nil {
 		ko.Spec.NetworkType = resp.CacheCluster.NetworkType
 	} else {
 		ko.Spec.NetworkType = nil
 	}
 	if resp.CacheCluster.NotificationConfiguration != nil {
-		f19 := &svcapitypes.NotificationConfiguration{}
+		f20 := &svcapitypes.NotificationConfiguration{}
 		if resp.CacheCluster.NotificationConfiguration.TopicArn != nil {
-			f19.TopicARN = resp.CacheCluster.NotificationConfiguration.TopicArn
+			f20.TopicARN = resp.CacheCluster.NotificationConfiguration.TopicArn
 		}
 		if resp.CacheCluster.NotificationConfiguration.TopicStatus != nil {
-			f19.TopicStatus = resp.CacheCluster.NotificationConfiguration.TopicStatus
+			f20.TopicStatus = resp.CacheCluster.NotificationConfiguration.TopicStatus
 		}
-		ko.Status.NotificationConfiguration = f19
+		ko.Status.NotificationConfiguration = f20
 	} else {
 		ko.Status.NotificationConfiguration = nil
 	}
@@ -1167,35 +1282,35 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.NumCacheNodes = nil
 	}
 	if resp.CacheCluster.PendingModifiedValues != nil {
-		f21 := &svcapitypes.PendingModifiedValues{}
+		f22 := &svcapitypes.PendingModifiedValues{}
 		if resp.CacheCluster.PendingModifiedValues.AuthTokenStatus != nil {
-			f21.AuthTokenStatus = resp.CacheCluster.PendingModifiedValues.AuthTokenStatus
+			f22.AuthTokenStatus = resp.CacheCluster.PendingModifiedValues.AuthTokenStatus
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove != nil {
-			f21f1 := []*string{}
-			for _, f21f1iter := range resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove {
-				var f21f1elem string
-				f21f1elem = *f21f1iter
-				f21f1 = append(f21f1, &f21f1elem)
+			f22f1 := []*string{}
+			for _, f22f1iter := range resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove {
+				var f22f1elem string
+				f22f1elem = *f22f1iter
+				f22f1 = append(f22f1, &f22f1elem)
 			}
-			f21.CacheNodeIDsToRemove = f21f1
+			f22.CacheNodeIDsToRemove = f22f1
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeType != nil {
-			f21.CacheNodeType = resp.CacheCluster.PendingModifiedValues.CacheNodeType
+			f22.CacheNodeType = resp.CacheCluster.PendingModifiedValues.CacheNodeType
 		}
 		if resp.CacheCluster.PendingModifiedValues.EngineVersion != nil {
-			f21.EngineVersion = resp.CacheCluster.PendingModifiedValues.EngineVersion
+			f22.EngineVersion = resp.CacheCluster.PendingModifiedValues.EngineVersion
 		}
 		if resp.CacheCluster.PendingModifiedValues.NumCacheNodes != nil {
-			f21.NumCacheNodes = resp.CacheCluster.PendingModifiedValues.NumCacheNodes
+			f22.NumCacheNodes = resp.CacheCluster.PendingModifiedValues.NumCacheNodes
 		}
 		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled != nil {
-			f21.TransitEncryptionEnabled = resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled
+			f22.TransitEncryptionEnabled = resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled
 		}
 		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode != nil {
-			f21.TransitEncryptionMode = resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode
+			f22.TransitEncryptionMode = resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode
 		}
-		ko.Status.PendingModifiedValues = f21
+		ko.Status.PendingModifiedValues = f22
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
@@ -1225,18 +1340,18 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.ReplicationGroupLogDeliveryEnabled = nil
 	}
 	if resp.CacheCluster.SecurityGroups != nil {
-		f27 := []*svcapitypes.SecurityGroupMembership{}
-		for _, f27iter := range resp.CacheCluster.SecurityGroups {
-			f27elem := &svcapitypes.SecurityGroupMembership{}
-			if f27iter.SecurityGroupId != nil {
-				f27elem.SecurityGroupID = f27iter.SecurityGroupId
+		f28 := []*svcapitypes.SecurityGroupMembership{}
+		for _, f28iter := range resp.CacheCluster.SecurityGroups {
+			f28elem := &svcapitypes.SecurityGroupMembership{}
+			if f28iter.SecurityGroupId != nil {
+				f28elem.SecurityGroupID = f28iter.SecurityGroupId
 			}
-			if f27iter.Status != nil {
-				f27elem.Status = f27iter.Status
+			if f28iter.Status != nil {
+				f28elem.Status = f28iter.Status
 			}
-			f27 = append(f27, f27elem)
+			f28 = append(f28, f28elem)
 		}
-		ko.Status.SecurityGroups = f27
+		ko.Status.SecurityGroups = f28
 	} else {
 		ko.Status.SecurityGroups = nil
 	}
@@ -1599,6 +1714,9 @@ func (rm *resourceManager) getImmutableFieldChanges(
 	var fields []string
 	if delta.DifferentAt("Spec.CacheParameterGroupName") {
 		fields = append(fields, "CacheParameterGroupName")
+	}
+	if delta.DifferentAt("Spec.LogDeliveryConfigurations") {
+		fields = append(fields, "LogDeliveryConfigurations")
 	}
 	if delta.DifferentAt("Spec.ReplicationGroupID") {
 		fields = append(fields, "ReplicationGroupID")
