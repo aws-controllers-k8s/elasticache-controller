@@ -305,7 +305,7 @@ def assert_associated_resources(rg_id, sg_list, sns_topic, ug_list):
 def rg_update_cpg_input(make_rg_name):
     return {
         "RG_ID": make_rg_name("rg-update-cpg"),
-        "ENGINE_VERSION": "6.x",
+        "ENGINE_VERSION": "7.x",
         "NUM_NODE_GROUPS": "1",
         "REPLICAS_PER_NODE_GROUP": "1"
     }
