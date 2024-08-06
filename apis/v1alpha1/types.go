@@ -34,6 +34,12 @@ type Authentication struct {
 	Type          *string `json:"type_,omitempty"`
 }
 
+// Specifies the authentication mode to use.
+type AuthenticationMode struct {
+	Passwords []*string `json:"passwords,omitempty"`
+	Type      *string   `json:"type_,omitempty"`
+}
+
 // Describes an Availability Zone in which the cluster is launched.
 type AvailabilityZone struct {
 	Name *string `json:"name,omitempty"`
@@ -239,6 +245,7 @@ type CacheSubnetGroup_SDK struct {
 	CacheSubnetGroupDescription *string   `json:"cacheSubnetGroupDescription,omitempty"`
 	CacheSubnetGroupName        *string   `json:"cacheSubnetGroupName,omitempty"`
 	Subnets                     []*Subnet `json:"subnets,omitempty"`
+	SupportedNetworkTypes       []*string `json:"supportedNetworkTypes,omitempty"`
 	VPCID                       *string   `json:"vpcID,omitempty"`
 }
 
@@ -251,14 +258,21 @@ type CloudWatchLogsDestinationDetails struct {
 // Each node group (shard) configuration has the following members: NodeGroupId,
 // NewReplicaCount, and PreferredAvailabilityZones.
 type ConfigureShard struct {
-	NewReplicaCount *int64  `json:"newReplicaCount,omitempty"`
-	NodeGroupID     *string `json:"nodeGroupID,omitempty"`
+	NewReplicaCount            *int64    `json:"newReplicaCount,omitempty"`
+	NodeGroupID                *string   `json:"nodeGroupID,omitempty"`
+	PreferredAvailabilityZones []*string `json:"preferredAvailabilityZones,omitempty"`
+	PreferredOutpostARNs       []*string `json:"preferredOutpostARNs,omitempty"`
 }
 
 // The endpoint from which data should be migrated.
 type CustomerNodeEndpoint struct {
 	Address *string `json:"address,omitempty"`
 	Port    *int64  `json:"port,omitempty"`
+}
+
+// The data storage limit.
+type DataStorage struct {
+	Maximum *int64 `json:"maximum,omitempty"`
 }
 
 // Configuration details of either a CloudWatch Logs destination or Kinesis
@@ -275,6 +289,12 @@ type EC2SecurityGroup struct {
 	EC2SecurityGroupName    *string `json:"ec2SecurityGroupName,omitempty"`
 	EC2SecurityGroupOwnerID *string `json:"ec2SecurityGroupOwnerID,omitempty"`
 	Status                  *string `json:"status,omitempty"`
+}
+
+// The configuration for the number of ElastiCache Processing Units (ECPU) the
+// cache can consume per second.
+type ECPUPerSecond struct {
+	Maximum *int64 `json:"maximum,omitempty"`
 }
 
 // Represents the information required for client programs to connect to a cache
@@ -525,10 +545,13 @@ type RegionalConfiguration struct {
 type ReplicationGroupPendingModifiedValues struct {
 	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
 	AutomaticFailoverStatus   *string                            `json:"automaticFailoverStatus,omitempty"`
+	ClusterMode               *string                            `json:"clusterMode,omitempty"`
 	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	PrimaryClusterID          *string                            `json:"primaryClusterID,omitempty"`
 	// The status of an online resharding operation.
-	Resharding *ReshardingStatus `json:"resharding,omitempty"`
+	Resharding               *ReshardingStatus `json:"resharding,omitempty"`
+	TransitEncryptionEnabled *bool             `json:"transitEncryptionEnabled,omitempty"`
+	TransitEncryptionMode    *string           `json:"transitEncryptionMode,omitempty"`
 	// The status of the user group update.
 	UserGroups *UserGroupsUpdateStatus `json:"userGroups,omitempty"`
 }
@@ -543,6 +566,7 @@ type ReplicationGroup_SDK struct {
 	AutomaticFailover         *string      `json:"automaticFailover,omitempty"`
 	CacheNodeType             *string      `json:"cacheNodeType,omitempty"`
 	ClusterEnabled            *bool        `json:"clusterEnabled,omitempty"`
+	ClusterMode               *string      `json:"clusterMode,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
@@ -551,11 +575,13 @@ type ReplicationGroup_SDK struct {
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
+	IPDiscovery                *string                     `json:"ipDiscovery,omitempty"`
 	KMSKeyID                   *string                     `json:"kmsKeyID,omitempty"`
 	LogDeliveryConfigurations  []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	MemberClusters             []*string                   `json:"memberClusters,omitempty"`
 	MemberClustersOutpostARNs  []*string                   `json:"memberClustersOutpostARNs,omitempty"`
 	MultiAZ                    *string                     `json:"multiAZ,omitempty"`
+	NetworkType                *string                     `json:"networkType,omitempty"`
 	NodeGroups                 []*NodeGroup                `json:"nodeGroups,omitempty"`
 	// The settings to be applied to the Redis replication group, either immediately
 	// or during the next maintenance window.
@@ -567,6 +593,7 @@ type ReplicationGroup_SDK struct {
 	SnapshottingClusterID      *string                                `json:"snapshottingClusterID,omitempty"`
 	Status                     *string                                `json:"status,omitempty"`
 	TransitEncryptionEnabled   *bool                                  `json:"transitEncryptionEnabled,omitempty"`
+	TransitEncryptionMode      *string                                `json:"transitEncryptionMode,omitempty"`
 	UserGroupIDs               []*string                              `json:"userGroupIDs,omitempty"`
 }
 
@@ -614,6 +641,49 @@ type ReshardingStatus struct {
 type SecurityGroupMembership struct {
 	SecurityGroupID *string `json:"securityGroupID,omitempty"`
 	Status          *string `json:"status,omitempty"`
+}
+
+// The resource representing a serverless cache.
+type ServerlessCache struct {
+	ARN               *string      `json:"arn,omitempty"`
+	CreateTime        *metav1.Time `json:"createTime,omitempty"`
+	DailySnapshotTime *string      `json:"dailySnapshotTime,omitempty"`
+	Description       *string      `json:"description,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node.
+	Endpoint           *Endpoint `json:"endpoint,omitempty"`
+	Engine             *string   `json:"engine,omitempty"`
+	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
+	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
+	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node.
+	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`
+	SecurityGroupIDs       []*string `json:"securityGroupIDs,omitempty"`
+	ServerlessCacheName    *string   `json:"serverlessCacheName,omitempty"`
+	SnapshotRetentionLimit *int64    `json:"snapshotRetentionLimit,omitempty"`
+	Status                 *string   `json:"status,omitempty"`
+	UserGroupID            *string   `json:"userGroupID,omitempty"`
+}
+
+// The configuration settings for a specific serverless cache.
+type ServerlessCacheConfiguration struct {
+	Engine              *string `json:"engine,omitempty"`
+	MajorEngineVersion  *string `json:"majorEngineVersion,omitempty"`
+	ServerlessCacheName *string `json:"serverlessCacheName,omitempty"`
+}
+
+// The resource representing a serverless cache snapshot. Available for Redis
+// only.
+type ServerlessCacheSnapshot struct {
+	ARN                         *string      `json:"arn,omitempty"`
+	BytesUsedForCache           *string      `json:"bytesUsedForCache,omitempty"`
+	CreateTime                  *metav1.Time `json:"createTime,omitempty"`
+	ExpiryTime                  *metav1.Time `json:"expiryTime,omitempty"`
+	KMSKeyID                    *string      `json:"kmsKeyID,omitempty"`
+	ServerlessCacheSnapshotName *string      `json:"serverlessCacheSnapshotName,omitempty"`
+	SnapshotType                *string      `json:"snapshotType,omitempty"`
+	Status                      *string      `json:"status,omitempty"`
 }
 
 // An update that you can apply to your Redis clusters.
@@ -675,7 +745,8 @@ type Subnet struct {
 	SubnetAvailabilityZone *AvailabilityZone `json:"subnetAvailabilityZone,omitempty"`
 	SubnetIdentifier       *string           `json:"subnetIdentifier,omitempty"`
 	// The ID of the outpost subnet.
-	SubnetOutpost *SubnetOutpost `json:"subnetOutpost,omitempty"`
+	SubnetOutpost         *SubnetOutpost `json:"subnetOutpost,omitempty"`
+	SupportedNetworkTypes []*string      `json:"supportedNetworkTypes,omitempty"`
 }
 
 // The ID of the outpost subnet.
@@ -738,6 +809,7 @@ type UserGroup_SDK struct {
 	// Returns the updates being applied to the user group.
 	PendingChanges    *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
 	ReplicationGroups []*string                `json:"replicationGroups,omitempty"`
+	ServerlessCaches  []*string                `json:"serverlessCaches,omitempty"`
 	Status            *string                  `json:"status,omitempty"`
 	UserGroupID       *string                  `json:"userGroupID,omitempty"`
 	UserIDs           []*string                `json:"userIDs,omitempty"`

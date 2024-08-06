@@ -91,6 +91,13 @@ func newResourceDelta(
 	if !reflect.DeepEqual(a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef) {
 		delta.Add("Spec.CacheSubnetGroupRef", a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef)
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.ClusterMode, b.ko.Spec.ClusterMode) {
+		delta.Add("Spec.ClusterMode", a.ko.Spec.ClusterMode, b.ko.Spec.ClusterMode)
+	} else if a.ko.Spec.ClusterMode != nil && b.ko.Spec.ClusterMode != nil {
+		if *a.ko.Spec.ClusterMode != *b.ko.Spec.ClusterMode {
+			delta.Add("Spec.ClusterMode", a.ko.Spec.ClusterMode, b.ko.Spec.ClusterMode)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled) {
 		delta.Add("Spec.DataTieringEnabled", a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled)
 	} else if a.ko.Spec.DataTieringEnabled != nil && b.ko.Spec.DataTieringEnabled != nil {
@@ -119,11 +126,25 @@ func newResourceDelta(
 			delta.Add("Spec.EngineVersion", a.ko.Spec.EngineVersion, b.ko.Spec.EngineVersion)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery) {
+		delta.Add("Spec.IPDiscovery", a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery)
+	} else if a.ko.Spec.IPDiscovery != nil && b.ko.Spec.IPDiscovery != nil {
+		if *a.ko.Spec.IPDiscovery != *b.ko.Spec.IPDiscovery {
+			delta.Add("Spec.IPDiscovery", a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID) {
 		delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 	} else if a.ko.Spec.KMSKeyID != nil && b.ko.Spec.KMSKeyID != nil {
 		if *a.ko.Spec.KMSKeyID != *b.ko.Spec.KMSKeyID {
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
+		}
+	}
+	if ackcompare.HasNilDifference(a.ko.Spec.NetworkType, b.ko.Spec.NetworkType) {
+		delta.Add("Spec.NetworkType", a.ko.Spec.NetworkType, b.ko.Spec.NetworkType)
+	} else if a.ko.Spec.NetworkType != nil && b.ko.Spec.NetworkType != nil {
+		if *a.ko.Spec.NetworkType != *b.ko.Spec.NetworkType {
+			delta.Add("Spec.NetworkType", a.ko.Spec.NetworkType, b.ko.Spec.NetworkType)
 		}
 	}
 	if len(a.ko.Spec.NodeGroupConfiguration) != len(b.ko.Spec.NodeGroupConfiguration) {
@@ -192,6 +213,13 @@ func newResourceDelta(
 	if !reflect.DeepEqual(a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs) {
 		delta.Add("Spec.SecurityGroupRefs", a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs)
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.ServerlessCacheSnapshotName, b.ko.Spec.ServerlessCacheSnapshotName) {
+		delta.Add("Spec.ServerlessCacheSnapshotName", a.ko.Spec.ServerlessCacheSnapshotName, b.ko.Spec.ServerlessCacheSnapshotName)
+	} else if a.ko.Spec.ServerlessCacheSnapshotName != nil && b.ko.Spec.ServerlessCacheSnapshotName != nil {
+		if *a.ko.Spec.ServerlessCacheSnapshotName != *b.ko.Spec.ServerlessCacheSnapshotName {
+			delta.Add("Spec.ServerlessCacheSnapshotName", a.ko.Spec.ServerlessCacheSnapshotName, b.ko.Spec.ServerlessCacheSnapshotName)
+		}
+	}
 	if len(a.ko.Spec.SnapshotARNs) != len(b.ko.Spec.SnapshotARNs) {
 		delta.Add("Spec.SnapshotARNs", a.ko.Spec.SnapshotARNs, b.ko.Spec.SnapshotARNs)
 	} else if len(a.ko.Spec.SnapshotARNs) > 0 {
@@ -228,6 +256,13 @@ func newResourceDelta(
 	} else if a.ko.Spec.TransitEncryptionEnabled != nil && b.ko.Spec.TransitEncryptionEnabled != nil {
 		if *a.ko.Spec.TransitEncryptionEnabled != *b.ko.Spec.TransitEncryptionEnabled {
 			delta.Add("Spec.TransitEncryptionEnabled", a.ko.Spec.TransitEncryptionEnabled, b.ko.Spec.TransitEncryptionEnabled)
+		}
+	}
+	if ackcompare.HasNilDifference(a.ko.Spec.TransitEncryptionMode, b.ko.Spec.TransitEncryptionMode) {
+		delta.Add("Spec.TransitEncryptionMode", a.ko.Spec.TransitEncryptionMode, b.ko.Spec.TransitEncryptionMode)
+	} else if a.ko.Spec.TransitEncryptionMode != nil && b.ko.Spec.TransitEncryptionMode != nil {
+		if *a.ko.Spec.TransitEncryptionMode != *b.ko.Spec.TransitEncryptionMode {
+			delta.Add("Spec.TransitEncryptionMode", a.ko.Spec.TransitEncryptionMode, b.ko.Spec.TransitEncryptionMode)
 		}
 	}
 	if len(a.ko.Spec.UserGroupIDs) != len(b.ko.Spec.UserGroupIDs) {
