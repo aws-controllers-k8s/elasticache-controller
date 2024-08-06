@@ -294,6 +294,22 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.AccessString != nil {
 		res.SetAccessString(*r.ko.Spec.AccessString)
 	}
+	if r.ko.Spec.AuthenticationMode != nil {
+		f1 := &svcsdk.AuthenticationMode{}
+		if r.ko.Spec.AuthenticationMode.Passwords != nil {
+			f1f0 := []*string{}
+			for _, f1f0iter := range r.ko.Spec.AuthenticationMode.Passwords {
+				var f1f0elem string
+				f1f0elem = *f1f0iter
+				f1f0 = append(f1f0, &f1f0elem)
+			}
+			f1.SetPasswords(f1f0)
+		}
+		if r.ko.Spec.AuthenticationMode.Type != nil {
+			f1.SetType(*r.ko.Spec.AuthenticationMode.Type)
+		}
+		res.SetAuthenticationMode(f1)
+	}
 	if r.ko.Spec.Engine != nil {
 		res.SetEngine(*r.ko.Spec.Engine)
 	}
@@ -301,35 +317,35 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SetNoPasswordRequired(*r.ko.Spec.NoPasswordRequired)
 	}
 	if r.ko.Spec.Passwords != nil {
-		f3 := []*string{}
-		for _, f3iter := range r.ko.Spec.Passwords {
-			var f3elem string
-			if f3iter != nil {
-				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f3iter)
+		f4 := []*string{}
+		for _, f4iter := range r.ko.Spec.Passwords {
+			var f4elem string
+			if f4iter != nil {
+				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f4iter)
 				if err != nil {
 					return nil, ackrequeue.Needed(err)
 				}
 				if tmpSecret != "" {
-					f3elem = tmpSecret
+					f4elem = tmpSecret
 				}
 			}
-			f3 = append(f3, &f3elem)
+			f4 = append(f4, &f4elem)
 		}
-		res.SetPasswords(f3)
+		res.SetPasswords(f4)
 	}
 	if r.ko.Spec.Tags != nil {
-		f4 := []*svcsdk.Tag{}
-		for _, f4iter := range r.ko.Spec.Tags {
-			f4elem := &svcsdk.Tag{}
-			if f4iter.Key != nil {
-				f4elem.SetKey(*f4iter.Key)
+		f5 := []*svcsdk.Tag{}
+		for _, f5iter := range r.ko.Spec.Tags {
+			f5elem := &svcsdk.Tag{}
+			if f5iter.Key != nil {
+				f5elem.SetKey(*f5iter.Key)
 			}
-			if f4iter.Value != nil {
-				f4elem.SetValue(*f4iter.Value)
+			if f5iter.Value != nil {
+				f5elem.SetValue(*f5iter.Value)
 			}
-			f4 = append(f4, f4elem)
+			f5 = append(f5, f5elem)
 		}
-		res.SetTags(f4)
+		res.SetTags(f5)
 	}
 	if r.ko.Spec.UserID != nil {
 		res.SetUserId(*r.ko.Spec.UserID)
@@ -455,6 +471,22 @@ func (rm *resourceManager) newUpdateRequestPayload(
 ) (*svcsdk.ModifyUserInput, error) {
 	res := &svcsdk.ModifyUserInput{}
 
+	if r.ko.Spec.AuthenticationMode != nil {
+		f1 := &svcsdk.AuthenticationMode{}
+		if r.ko.Spec.AuthenticationMode.Passwords != nil {
+			f1f0 := []*string{}
+			for _, f1f0iter := range r.ko.Spec.AuthenticationMode.Passwords {
+				var f1f0elem string
+				f1f0elem = *f1f0iter
+				f1f0 = append(f1f0, &f1f0elem)
+			}
+			f1.SetPasswords(f1f0)
+		}
+		if r.ko.Spec.AuthenticationMode.Type != nil {
+			f1.SetType(*r.ko.Spec.AuthenticationMode.Type)
+		}
+		res.SetAuthenticationMode(f1)
+	}
 	if r.ko.Spec.UserID != nil {
 		res.SetUserId(*r.ko.Spec.UserID)
 	}

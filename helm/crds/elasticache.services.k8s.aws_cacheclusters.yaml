@@ -221,6 +221,8 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               cacheSecurityGroupNames:
@@ -258,6 +260,8 @@ spec:
                       k8s resource for finding the identifier(Id/ARN/Name)
                     properties:
                       name:
+                        type: string
+                      namespace:
                         type: string
                     type: object
                 type: object
@@ -349,6 +353,8 @@ spec:
                       k8s resource for finding the identifier(Id/ARN/Name)
                     properties:
                       name:
+                        type: string
+                      namespace:
                         type: string
                     type: object
                 type: object
@@ -455,6 +461,8 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               securityGroupIDs:
@@ -503,6 +511,8 @@ spec:
                       k8s resource for finding the identifier(Id/ARN/Name)
                     properties:
                       name:
+                        type: string
+                      namespace:
                         type: string
                     type: object
                 type: object
