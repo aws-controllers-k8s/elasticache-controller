@@ -6,7 +6,7 @@ metadata:
 spec:
   cacheNodeType: cache.t3.micro
   engine: redis
-  engineVersion: $ENGINE_VERSION
+  engineVersion: "$ENGINE_VERSION"
   numNodeGroups: $NUM_NODE_GROUPS
   replicasPerNodeGroup: $REPLICAS_PER_NODE_GROUP
   description: cluster-mode disabled RG
