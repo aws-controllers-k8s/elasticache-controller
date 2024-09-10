@@ -20,6 +20,7 @@ import (
 	"slices"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
 
@@ -128,6 +129,13 @@ func (rm *resourceManager) updateCacheClusterPayload(input *svcsdk.ModifyCacheCl
 			return errors.New("newly specified AZs in spec.preferredAvailabilityZones must match the number of cache nodes being added")
 		}
 		input.NewAvailabilityZones = desiredSpec.PreferredAvailabilityZones[oldAZsLen:]
+	}
+	return nil
+}
+
+func validateUnsupportedFields(desired *resource) error {
+	if len(desired.ko.Spec.LogDeliveryConfigurations) > 0 {
+		return ackerr.NewTerminalError(errors.New("spec.logDeliveryConfigurations is not currently supported"))
 	}
 	return nil
 }
