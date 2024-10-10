@@ -126,11 +126,31 @@ func (rm *resourceManager) sdkFind(
 					}
 					f3elem.SubnetOutpost = f3elemf2
 				}
+				if f3iter.SupportedNetworkTypes != nil {
+					f3elemf3 := []*string{}
+					for _, f3elemf3iter := range f3iter.SupportedNetworkTypes {
+						var f3elemf3elem string
+						f3elemf3elem = *f3elemf3iter
+						f3elemf3 = append(f3elemf3, &f3elemf3elem)
+					}
+					f3elem.SupportedNetworkTypes = f3elemf3
+				}
 				f3 = append(f3, f3elem)
 			}
 			ko.Status.Subnets = f3
 		} else {
 			ko.Status.Subnets = nil
+		}
+		if elem.SupportedNetworkTypes != nil {
+			f4 := []*string{}
+			for _, f4iter := range elem.SupportedNetworkTypes {
+				var f4elem string
+				f4elem = *f4iter
+				f4 = append(f4, &f4elem)
+			}
+			ko.Status.SupportedNetworkTypes = f4
+		} else {
+			ko.Status.SupportedNetworkTypes = nil
 		}
 		if elem.VpcId != nil {
 			ko.Status.VPCID = elem.VpcId
@@ -252,11 +272,31 @@ func (rm *resourceManager) sdkCreate(
 				}
 				f3elem.SubnetOutpost = f3elemf2
 			}
+			if f3iter.SupportedNetworkTypes != nil {
+				f3elemf3 := []*string{}
+				for _, f3elemf3iter := range f3iter.SupportedNetworkTypes {
+					var f3elemf3elem string
+					f3elemf3elem = *f3elemf3iter
+					f3elemf3 = append(f3elemf3, &f3elemf3elem)
+				}
+				f3elem.SupportedNetworkTypes = f3elemf3
+			}
 			f3 = append(f3, f3elem)
 		}
 		ko.Status.Subnets = f3
 	} else {
 		ko.Status.Subnets = nil
+	}
+	if resp.CacheSubnetGroup.SupportedNetworkTypes != nil {
+		f4 := []*string{}
+		for _, f4iter := range resp.CacheSubnetGroup.SupportedNetworkTypes {
+			var f4elem string
+			f4elem = *f4iter
+			f4 = append(f4, &f4elem)
+		}
+		ko.Status.SupportedNetworkTypes = f4
+	} else {
+		ko.Status.SupportedNetworkTypes = nil
 	}
 	if resp.CacheSubnetGroup.VpcId != nil {
 		ko.Status.VPCID = resp.CacheSubnetGroup.VpcId
@@ -376,11 +416,31 @@ func (rm *resourceManager) sdkUpdate(
 				}
 				f3elem.SubnetOutpost = f3elemf2
 			}
+			if f3iter.SupportedNetworkTypes != nil {
+				f3elemf3 := []*string{}
+				for _, f3elemf3iter := range f3iter.SupportedNetworkTypes {
+					var f3elemf3elem string
+					f3elemf3elem = *f3elemf3iter
+					f3elemf3 = append(f3elemf3, &f3elemf3elem)
+				}
+				f3elem.SupportedNetworkTypes = f3elemf3
+			}
 			f3 = append(f3, f3elem)
 		}
 		ko.Status.Subnets = f3
 	} else {
 		ko.Status.Subnets = nil
+	}
+	if resp.CacheSubnetGroup.SupportedNetworkTypes != nil {
+		f4 := []*string{}
+		for _, f4iter := range resp.CacheSubnetGroup.SupportedNetworkTypes {
+			var f4elem string
+			f4elem = *f4iter
+			f4 = append(f4, &f4elem)
+		}
+		ko.Status.SupportedNetworkTypes = f4
+	} else {
+		ko.Status.SupportedNetworkTypes = nil
 	}
 	if resp.CacheSubnetGroup.VpcId != nil {
 		ko.Status.VPCID = resp.CacheSubnetGroup.VpcId
