@@ -28,6 +28,8 @@ type UserSpec struct {
 	// Access permissions string used for this user.
 	// +kubebuilder:validation:Required
 	AccessString *string `json:"accessString"`
+	// Specifies how to authenticate the user.
+	AuthenticationMode *AuthenticationMode `json:"authenticationMode,omitempty"`
 	// The current supported value is Redis.
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`

@@ -126,6 +126,13 @@ func newResourceDelta(
 			delta.Add("Spec.IPDiscovery", a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery)
 		}
 	}
+	if len(a.ko.Spec.LogDeliveryConfigurations) != len(b.ko.Spec.LogDeliveryConfigurations) {
+		delta.Add("Spec.LogDeliveryConfigurations", a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations)
+	} else if len(a.ko.Spec.LogDeliveryConfigurations) > 0 {
+		if !reflect.DeepEqual(a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations) {
+			delta.Add("Spec.LogDeliveryConfigurations", a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.NetworkType, b.ko.Spec.NetworkType) {
 		delta.Add("Spec.NetworkType", a.ko.Spec.NetworkType, b.ko.Spec.NetworkType)
 	} else if a.ko.Spec.NetworkType != nil && b.ko.Spec.NetworkType != nil {

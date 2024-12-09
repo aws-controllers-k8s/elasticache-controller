@@ -8,7 +8,7 @@ roleRef:
   name: ack-namespaces-cache-elasticache-controller
 subjects:
 - kind: ServiceAccount
-  name: ack-elasticache-controller
+  name: {{ include "ack-elasticache-controller.service-account.name" . }}
   namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -22,5 +22,5 @@ roleRef:
   name: ack-configmaps-cache-elasticache-controller
 subjects:
 - kind: ServiceAccount
-  name: ack-elasticache-controller
+  name: {{ include "ack-elasticache-controller.service-account.name" . }}
   namespace: {{ .Release.Namespace }}
