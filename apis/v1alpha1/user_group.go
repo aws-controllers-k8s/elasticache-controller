@@ -29,7 +29,8 @@ type UserGroupSpec struct {
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
+	// tag key must be accompanied by a tag value, although null is accepted. Available
+	// for Redis only.
 	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user group.
 	// +kubebuilder:validation:Required
@@ -60,6 +61,10 @@ type UserGroupStatus struct {
 	// A list of replication groups that the user group can access.
 	// +kubebuilder:validation:Optional
 	ReplicationGroups []*string `json:"replicationGroups,omitempty"`
+	// Indicates which serverless caches the specified user group is associated
+	// with. Available for Redis only.
+	// +kubebuilder:validation:Optional
+	ServerlessCaches []*string `json:"serverlessCaches,omitempty"`
 	// Indicates user group status. Can be "creating", "active", "modifying", "deleting".
 	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`

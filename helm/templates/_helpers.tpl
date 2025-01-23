@@ -55,6 +55,7 @@ rules:
   - ""
   resources:
   - configmaps
+  - secrets
   verbs:
   - get
   - list
@@ -69,38 +70,11 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - patch
-  - watch
-- apiGroups:
   - ec2.services.k8s.aws
   resources:
   - securitygroups
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ec2.services.k8s.aws
-  resources:
   - securitygroups/status
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ec2.services.k8s.aws
-  resources:
   - subnets
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ec2.services.k8s.aws
-  resources:
   - subnets/status
   verbs:
   - get
@@ -109,125 +83,11 @@ rules:
   - elasticache.services.k8s.aws
   resources:
   - cacheclusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
-  - cacheclusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
   - cacheparametergroups
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
-  - cacheparametergroups/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
   - cachesubnetgroups
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
-  - cachesubnetgroups/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
   - replicationgroups
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
-  - replicationgroups/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
   - snapshots
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
-  - snapshots/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
   - usergroups
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
-  - usergroups/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - elasticache.services.k8s.aws
-  resources:
   - users
   verbs:
   - create
@@ -240,6 +100,12 @@ rules:
 - apiGroups:
   - elasticache.services.k8s.aws
   resources:
+  - cacheclusters/status
+  - cacheparametergroups/status
+  - cachesubnetgroups/status
+  - replicationgroups/status
+  - snapshots/status
+  - usergroups/status
   - users/status
   verbs:
   - get
@@ -249,25 +115,6 @@ rules:
   - services.k8s.aws
   resources:
   - adoptedresources
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - services.k8s.aws
-  resources:
-  - adoptedresources/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - services.k8s.aws
-  resources:
   - fieldexports
   verbs:
   - create
@@ -280,6 +127,7 @@ rules:
 - apiGroups:
   - services.k8s.aws
   resources:
+  - adoptedresources/status
   - fieldexports/status
   verbs:
   - get
@@ -289,14 +137,17 @@ rules:
   - sns.services.k8s.aws
   resources:
   - topics
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - sns.services.k8s.aws
-  resources:
   - topics/status
   verbs:
   - get
   - list
 {{- end }}
+
+{{/* Convert k/v map to string like: "key1=value1,key2=value2,..." */}}
+{{- define "ack-elasticache-controller.feature-gates" -}}
+{{- $list := list -}}
+{{- range $k, $v := .Values.featureGates -}}
+{{- $list = append $list (printf "%s=%s" $k ( $v | toString)) -}}
+{{- end -}}
+{{ join "," $list }}
+{{- end -}}

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.2
   name: cacheclusters.elasticache.services.k8s.aws
 spec:
   group: elasticache.services.k8s.aws
@@ -57,27 +57,21 @@ spec:
             description: |-
               CacheClusterSpec defines the desired state of CacheCluster.
 
-
               Contains all of the attributes of a specific cluster.
             properties:
               authToken:
                 description: |-
                   Reserved parameter. The password used to access a password protected server.
 
-
                   Password constraints:
-
 
                     - Must be only printable ASCII characters.
 
-
                     - Must be at least 16 characters and no more than 128 characters in length.
-
 
                     - The only permitted printable special characters are !, &, #, $, ^, <,
                       >, and -. Other printable special characters cannot be used in the AUTH
                       token.
-
 
                   For more information, see AUTH password (http://redis.io/commands/AUTH) at
                   http://redis.io/commands/AUTH.
@@ -109,9 +103,7 @@ spec:
                   Availability Zone or created across multiple Availability Zones in the cluster's
                   region.
 
-
                   This parameter is only supported for Memcached clusters.
-
 
                   If the AZMode and PreferredAvailabilityZones are not specified, ElastiCache
                   assumes single-az mode.
@@ -121,15 +113,11 @@ spec:
                   The node group (shard) identifier. This parameter is stored as a lowercase
                   string.
 
-
                   Constraints:
-
 
                     - A name must contain from 1 to 50 alphanumeric characters or hyphens.
 
-
                     - The first character must be a letter.
-
 
                     - A name cannot end with a hyphen or contain two consecutive hyphens.
                 type: string
@@ -137,11 +125,9 @@ spec:
                 description: |-
                   The compute and memory capacity of the nodes in the node group (shard).
 
-
                   The following node types are supported by ElastiCache. Generally speaking,
                   the current generation types provide more memory and computational power
                   at lower cost when compared to their equivalent previous generation counterparts.
-
 
                     - General purpose: Current generation: M7g node types: cache.m7g.large,
                       cache.m7g.xlarge, cache.m7g.2xlarge, cache.m7g.4xlarge, cache.m7g.8xlarge,
@@ -163,11 +149,9 @@ spec:
                       cache.m1.xlarge M3 node types: cache.m3.medium, cache.m3.large, cache.m3.xlarge,
                       cache.m3.2xlarge
 
-
                     - Compute optimized: Previous generation: (not recommended. Existing clusters
                       are still supported but creation of new clusters is not supported for
                       these types.) C1 node types: cache.c1.xlarge
-
 
                     - Memory optimized: Current generation: R7g node types: cache.r7g.large,
                       cache.r7g.xlarge, cache.r7g.2xlarge, cache.r7g.4xlarge, cache.r7g.8xlarge,
@@ -185,18 +169,13 @@ spec:
                       R3 node types: cache.r3.large, cache.r3.xlarge, cache.r3.2xlarge, cache.r3.4xlarge,
                       cache.r3.8xlarge
 
-
                   Additional node type info
-
 
                     - All current generation instance types are created in Amazon VPC by default.
 
-
                     - Redis append-only files (AOF) are not supported for T1 or T2 instances.
 
-
                     - Redis Multi-AZ with automatic failover is not supported on T1 instances.
-
 
                     - Redis configuration variables appendonly and appendfsync are not supported
                       on Redis version 2.8.22 and later.
@@ -211,7 +190,7 @@ spec:
               cacheParameterGroupRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
                   *AWSResourceReference\ntype to provide more user friendly syntax
-                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\n\tfrom:\n\t
+                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
                   \ name: my-api"
                 properties:
                   from:
@@ -221,12 +200,13 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               cacheSecurityGroupNames:
                 description: |-
                   A list of security group names to associate with this cluster.
-
 
                   Use this parameter only when you are creating a cluster outside of an Amazon
                   Virtual Private Cloud (Amazon VPC).
@@ -237,10 +217,8 @@ spec:
                 description: |-
                   The name of the subnet group to be used for the cluster.
 
-
                   Use this parameter only when you are creating a cluster in an Amazon Virtual
                   Private Cloud (Amazon VPC).
-
 
                   If you're going to launch your cluster in an Amazon VPC, you need to create
                   a subnet group before you start creating a cluster. For more information,
@@ -249,7 +227,7 @@ spec:
               cacheSubnetGroupRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
                   *AWSResourceReference\ntype to provide more user friendly syntax
-                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\n\tfrom:\n\t
+                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
                   \ name: my-api"
                 properties:
                   from:
@@ -259,12 +237,13 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               engine:
                 description: |-
                   The name of the cache engine to be used for this cluster.
-
 
                   Valid values for this parameter are: memcached | redis
                 type: string
@@ -273,7 +252,6 @@ spec:
                   The version number of the cache engine to be used for this cluster. To view
                   the supported cache engine versions, use the DescribeCacheEngineVersions
                   operation.
-
 
                   Important: You can upgrade to a newer engine version (see Selecting a Cache
                   Engine and Version (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SelectEngine.html#VersionManagement)),
@@ -334,13 +312,12 @@ spec:
                   The Amazon Resource Name (ARN) of the Amazon Simple Notification Service
                   (SNS) topic to which notifications are sent.
 
-
                   The Amazon SNS topic owner must be the same as the cluster owner.
                 type: string
               notificationTopicRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
                   *AWSResourceReference\ntype to provide more user friendly syntax
-                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\n\tfrom:\n\t
+                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
                   \ name: my-api"
                 properties:
                   from:
@@ -350,16 +327,16 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               numCacheNodes:
                 description: |-
                   The initial number of cache nodes that the cluster has.
 
-
                   For clusters running Redis, this value must be 1. For clusters running Memcached,
                   this value must be between 1 and 40.
-
 
                   If you need more than 40 nodes for your Memcached cluster, please fill out
                   the ElastiCache Limit Increase Request form at http://aws.amazon.com/contact-us/elasticache-node-limit-request/
@@ -380,11 +357,9 @@ spec:
                 description: |-
                   The EC2 Availability Zone in which the cluster is created.
 
-
                   All nodes belonging to this cluster are placed in the preferred Availability
                   Zone. If you want to create your nodes across multiple Availability Zones,
                   use PreferredAvailabilityZones.
-
 
                   Default: System chosen Availability Zone.
                 type: string
@@ -393,21 +368,16 @@ spec:
                   A list of the Availability Zones in which cache nodes are created. The order
                   of the zones in the list is not important.
 
-
                   This option is only supported on Memcached.
-
 
                   If you are creating your cluster in an Amazon VPC (recommended) you can only
                   locate nodes in Availability Zones that are associated with the subnets in
                   the selected subnet group.
 
-
                   The number of Availability Zones listed must equal the value of NumCacheNodes.
-
 
                   If you want all the nodes in the same Availability Zone, use PreferredAvailabilityZone
                   instead, or repeat the Availability Zone multiple times in the list.
-
 
                   Default: System chosen Availability Zones.
                 items:
@@ -434,18 +404,16 @@ spec:
                   group as a read replica; otherwise, the cluster is a standalone primary that
                   is not part of any replication group.
 
-
                   If the specified replication group is Multi-AZ enabled and the Availability
                   Zone is not specified, the cluster is created in Availability Zones that
                   provide the best spread of read replicas across Availability Zones.
-
 
                   This parameter is only valid if the Engine parameter is redis.
                 type: string
               replicationGroupRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
                   *AWSResourceReference\ntype to provide more user friendly syntax
-                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\n\tfrom:\n\t
+                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
                   \ name: my-api"
                 properties:
                   from:
@@ -455,12 +423,13 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               securityGroupIDs:
                 description: |-
                   One or more VPC security groups associated with the cluster.
-
 
                   Use this parameter only when you are creating a cluster in an Amazon Virtual
                   Private Cloud (Amazon VPC).
@@ -474,9 +443,7 @@ spec:
                   file is used to populate the node group (shard). The Amazon S3 object name
                   in the ARN cannot contain any commas.
 
-
                   This parameter is only valid if the Engine parameter is redis.
-
 
                   Example of an Amazon S3 ARN: arn:aws:s3:::my_bucket/snapshot1.rdb
                 items:
@@ -488,13 +455,12 @@ spec:
                   group (shard). The snapshot status changes to restoring while the new node
                   group (shard) is being created.
 
-
                   This parameter is only valid if the Engine parameter is redis.
                 type: string
               snapshotRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
                   *AWSResourceReference\ntype to provide more user friendly syntax
-                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\n\tfrom:\n\t
+                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
                   \ name: my-api"
                 properties:
                   from:
@@ -504,6 +470,8 @@ spec:
                     properties:
                       name:
                         type: string
+                      namespace:
+                        type: string
                     type: object
                 type: object
               snapshotRetentionLimit:
@@ -512,9 +480,7 @@ spec:
                   deleting them. For example, if you set SnapshotRetentionLimit to 5, a snapshot
                   taken today is retained for 5 days before being deleted.
 
-
                   This parameter is only valid if the Engine parameter is redis.
-
 
                   Default: 0 (i.e., automatic backups are disabled for this cache cluster).
                 format: int64
@@ -524,13 +490,10 @@ spec:
                   The daily time range (in UTC) during which ElastiCache begins taking a daily
                   snapshot of your node group (shard).
 
-
                   Example: 05:00-09:00
-
 
                   If you do not specify this parameter, ElastiCache automatically chooses an
                   appropriate time range.
-
 
                   This parameter is only valid if the Engine parameter is redis.
                 type: string
@@ -575,7 +538,6 @@ spec:
                       when it has verified that an "adopted" resource (a resource where the
                       ARN annotation was set by the Kubernetes user on the CR) exists and
                       matches the supplied CR's Spec field values.
-                      TODO(vijat@): Find a better strategy for resources that do not have ARN in CreateOutputResponse
                       https://github.com/aws/aws-controllers-k8s/issues/270
                     type: string
                   ownerAccountID:
@@ -595,22 +557,18 @@ spec:
                 description: |-
                   A flag that enables encryption at-rest when set to true.
 
-
                   You cannot modify the value of AtRestEncryptionEnabled after the cluster
                   is created. To enable at-rest encryption on a cluster you must set AtRestEncryptionEnabled
                   to true when you create a cluster.
 
-
                   Required: Only available when creating a replication group in an Amazon VPC
                   using redis version 3.2.6, 4.x or later.
-
 
                   Default: false
                 type: boolean
               authTokenEnabled:
                 description: |-
                   A flag that enables using an AuthToken (password) when issuing Redis commands.
-
 
                   Default: false
                 type: boolean
@@ -636,11 +594,9 @@ spec:
                     its own instance of the cluster's protocol-compliant caching software - either
                     Memcached or Redis.
 
-
                     The following node types are supported by ElastiCache. Generally speaking,
                     the current generation types provide more memory and computational power
                     at lower cost when compared to their equivalent previous generation counterparts.
-
 
                       - General purpose: Current generation: M7g node types: cache.m7g.large,
                         cache.m7g.xlarge, cache.m7g.2xlarge, cache.m7g.4xlarge, cache.m7g.8xlarge,
@@ -662,11 +618,9 @@ spec:
                         cache.m1.xlarge M3 node types: cache.m3.medium, cache.m3.large, cache.m3.xlarge,
                         cache.m3.2xlarge
 
-
                       - Compute optimized: Previous generation: (not recommended. Existing clusters
                         are still supported but creation of new clusters is not supported for
                         these types.) C1 node types: cache.c1.xlarge
-
 
                       - Memory optimized: Current generation: R7g node types: cache.r7g.large,
                         cache.r7g.xlarge, cache.r7g.2xlarge, cache.r7g.4xlarge, cache.r7g.8xlarge,
@@ -684,18 +638,13 @@ spec:
                         R3 node types: cache.r3.large, cache.r3.xlarge, cache.r3.2xlarge, cache.r3.4xlarge,
                         cache.r3.8xlarge
 
-
                     Additional node type info
-
 
                       - All current generation instance types are created in Amazon VPC by default.
 
-
                       - Redis append-only files (AOF) are not supported for T1 or T2 instances.
 
-
                       - Redis Multi-AZ with automatic failover is not supported on T1 instances.
-
 
                       - Redis configuration variables appendonly and appendfsync are not supported
                         on Redis version 2.8.22 and later.
@@ -798,7 +747,6 @@ spec:
                   Represents a Memcached cluster endpoint which can be used by an application
                   to connect to any node in the cluster. The configuration endpoint will always
                   have .cfg in it.
-
 
                   Example: mem-3.9dvc4r.cfg.usw2.cache.amazonaws.com:11211
                 properties:
