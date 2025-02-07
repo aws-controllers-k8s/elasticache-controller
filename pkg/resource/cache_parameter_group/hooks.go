@@ -18,8 +18,11 @@ import (
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -86,11 +89,11 @@ func (rm *resourceManager) provideEvents(
 	maxRecords int64,
 ) ([]*svcapitypes.Event, error) {
 	input := &svcsdk.DescribeEventsInput{}
-	input.SetSourceType("cache-parameter-group")
-	input.SetSourceIdentifier(*cacheParameterGroupName)
-	input.SetMaxRecords(maxRecords)
-	input.SetDuration(eventsDuration)
-	resp, err := rm.sdkapi.DescribeEventsWithContext(ctx, input)
+	input.SourceType = svcsdktypes.SourceTypeCacheParameterGroup
+	input.SourceIdentifier = cacheParameterGroupName
+	input.MaxRecords = aws.Int32(int32(maxRecords))
+	input.Duration = aws.Int32(eventsDuration)
+	resp, err := rm.sdkapi.DescribeEvents(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeEvents-CacheParameterGroup", err)
 	if err != nil {
 		rm.log.V(1).Info("Error during DescribeEvents-CacheParameterGroup", "error", err)
@@ -129,10 +132,10 @@ func (rm *resourceManager) describeCacheParameters(
 		if err != nil {
 			return nil, err
 		}
-		response, respErr := rm.sdkapi.DescribeCacheParametersWithContext(ctx, input)
+		response, respErr := rm.sdkapi.DescribeCacheParameters(ctx, input)
 		rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheParameters", respErr)
 		if respErr != nil {
-			if awsErr, ok := ackerr.AWSError(respErr); ok && awsErr.Code() == "CacheParameterGroupNotFound" {
+			if awsErr, ok := ackerr.AWSError(respErr); ok && awsErr.ErrorCode() == "CacheParameterGroupNotFound" {
 				return nil, ackerr.NotFound
 			}
 			rm.log.V(1).Info("Error during DescribeCacheParameters", "error", respErr)
@@ -176,13 +179,13 @@ func (rm *resourceManager) newDescribeCacheParametersRequestPayload(
 	res := &svcsdk.DescribeCacheParametersInput{}
 
 	if cacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*cacheParameterGroupName)
+		res.CacheParameterGroupName = cacheParameterGroupName
 	}
 	if source != nil {
-		res.SetSource(*source)
+		res.Source = source
 	}
 	if paginationMarker != nil {
-		res.SetMarker(*paginationMarker)
+		res.Marker = paginationMarker
 	}
 	return res, nil
 }
@@ -194,11 +197,11 @@ func (rm *resourceManager) resetAllParameters(
 ) (bool, error) {
 	input := &svcsdk.ResetCacheParameterGroupInput{}
 	if desired.ko.Spec.CacheParameterGroupName != nil {
-		input.SetCacheParameterGroupName(*desired.ko.Spec.CacheParameterGroupName)
+		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
 	}
-	input.SetResetAllParameters(true)
+	input.ResetAllParameters = aws.Bool(true)
 
-	_, err := rm.sdkapi.ResetCacheParameterGroupWithContext(ctx, input)
+	_, err := rm.sdkapi.ResetCacheParameterGroup(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ResetCacheParameterGroup-ResetAllParameters", err)
 	if err != nil {
 		rm.log.V(1).Info("Error during ResetCacheParameterGroup-ResetAllParameters", "error", err)
@@ -215,21 +218,30 @@ func (rm *resourceManager) resetParameters(
 ) (bool, error) {
 	input := &svcsdk.ResetCacheParameterGroupInput{}
 	if desired.ko.Spec.CacheParameterGroupName != nil {
-		input.SetCacheParameterGroupName(*desired.ko.Spec.CacheParameterGroupName)
+		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
 	}
 	if parameters != nil && len(parameters) > 0 {
-		parametersToReset := []*svcsdk.ParameterNameValue{}
+		parametersToReset := []*svcsdktypes.ParameterNameValue{}
 		for _, parameter := range parameters {
-			parameterToReset := &svcsdk.ParameterNameValue{}
+			parameterToReset := &svcsdktypes.ParameterNameValue{}
 			if parameter.ParameterName != nil {
-				parameterToReset.SetParameterName(*parameter.ParameterName)
+				parameterToReset.ParameterName = parameter.ParameterName
+			}
+			if parameter.ParameterValue != nil {
+				parameterToReset.ParameterValue = parameter.ParameterValue
 			}
 			parametersToReset = append(parametersToReset, parameterToReset)
 		}
-		input.SetParameterNameValues(parametersToReset)
+		parameterNameValues := make([]svcsdktypes.ParameterNameValue, len(parametersToReset))
+		for i, parameter := range parametersToReset {
+			if parameter != nil {
+				parameterNameValues[i] = *parameter
+			}
+		}
+		input.ParameterNameValues = parameterNameValues
 	}
 
-	_, err := rm.sdkapi.ResetCacheParameterGroupWithContext(ctx, input)
+	_, err := rm.sdkapi.ResetCacheParameterGroup(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ResetCacheParameterGroup", err)
 	if err != nil {
 		rm.log.V(1).Info("Error during ResetCacheParameterGroup", "error", err)
@@ -247,14 +259,14 @@ func (rm *resourceManager) saveParameters(
 ) (bool, error) {
 	modifyApiBatchSize := 20
 	// Paginated save: 20 parameters in single api call
-	parametersToSave := []*svcsdk.ParameterNameValue{}
+	parametersToSave := []svcsdktypes.ParameterNameValue{}
 	for _, parameter := range parameters {
-		parameterToSave := &svcsdk.ParameterNameValue{}
+		parameterToSave := svcsdktypes.ParameterNameValue{}
 		if parameter.ParameterName != nil {
-			parameterToSave.SetParameterName(*parameter.ParameterName)
+			parameterToSave.ParameterName = parameter.ParameterName
 		}
 		if parameter.ParameterValue != nil {
-			parameterToSave.SetParameterValue(*parameter.ParameterValue)
+			parameterToSave.ParameterValue = parameter.ParameterValue
 		}
 		parametersToSave = append(parametersToSave, parameterToSave)
 
@@ -264,7 +276,7 @@ func (rm *resourceManager) saveParameters(
 				return false, err
 			}
 			// re-init to save next set of parameters
-			parametersToSave = []*svcsdk.ParameterNameValue{}
+			parametersToSave = []svcsdktypes.ParameterNameValue{}
 		}
 	}
 	if len(parametersToSave) > 0 { // when len(parameters) % modifyApiBatchSize != 0
@@ -281,16 +293,14 @@ func (rm *resourceManager) saveParameters(
 func (rm *resourceManager) modifyCacheParameterGroup(
 	ctx context.Context,
 	desired *resource,
-	parameters []*svcsdk.ParameterNameValue,
+	parameters []svcsdktypes.ParameterNameValue,
 ) (bool, error) {
 	input := &svcsdk.ModifyCacheParameterGroupInput{}
 	if desired.ko.Spec.CacheParameterGroupName != nil {
-		input.SetCacheParameterGroupName(*desired.ko.Spec.CacheParameterGroupName)
+		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
 	}
-	if parameters != nil && len(parameters) > 0 {
-		input.SetParameterNameValues(parameters)
-	}
-	_, err := rm.sdkapi.ModifyCacheParameterGroupWithContext(ctx, input)
+	input.ParameterNameValues = parameters
+	_, err := rm.sdkapi.ModifyCacheParameterGroup(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyCacheParameterGroup", err)
 	if err != nil {
 		rm.log.V(1).Info("Error during ModifyCacheParameterGroup", "error", err)
@@ -324,4 +334,148 @@ func (rm *resourceManager) setCondition(
 	} else {
 		condition.Status = cStatus
 	}
+}
+
+func (rm *resourceManager) CustomDescribeCacheParameterGroupsSetOutput(
+	ctx context.Context,
+	r *resource,
+	resp *svcsdk.DescribeCacheParameterGroupsOutput,
+	ko *svcapitypes.CacheParameterGroup,
+) (*svcapitypes.CacheParameterGroup, error) {
+	// Retrieve parameters using DescribeCacheParameters API and populate ko.Status.ParameterNameValues
+	if len(resp.CacheParameterGroups) == 0 {
+		return ko, nil
+	}
+	cpg := resp.CacheParameterGroups[0]
+	// Populate latest.ko.Spec.ParameterNameValues with latest parameter values
+	// Populate latest.ko.Status.Parameters with latest detailed parameters
+	error := rm.customSetOutputDescribeCacheParameters(ctx, cpg.CacheParameterGroupName, ko)
+	if error != nil {
+		return nil, error
+	}
+	return ko, nil
+}
+
+func (rm *resourceManager) CustomCreateCacheParameterGroupSetOutput(
+	ctx context.Context,
+	r *resource,
+	resp *svcsdk.CreateCacheParameterGroupOutput,
+	ko *svcapitypes.CacheParameterGroup,
+) (*svcapitypes.CacheParameterGroup, error) {
+	if r.ko.Spec.ParameterNameValues != nil && len(r.ko.Spec.ParameterNameValues) != 0 {
+		// Spec has parameters name and values. Create API does not save these, but Modify API does.
+		// Thus, Create needs to be followed by Modify call to save parameters from Spec.
+		// Setting synched condition to false, so that reconciler gets invoked again
+		// and modify logic gets executed.
+		rm.setCondition(ko, ackv1alpha1.ConditionTypeResourceSynced, corev1.ConditionFalse)
+	}
+	return ko, nil
+}
+
+// Implements specialized logic for update CacheParameterGroup.
+func (rm *resourceManager) customUpdateCacheParameterGroup(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) (*resource, error) {
+	desiredParameters := desired.ko.Spec.ParameterNameValues
+	latestParameters := latest.ko.Spec.ParameterNameValues
+
+	updated := false
+	var err error
+	// Update
+	if (desiredParameters == nil || len(desiredParameters) == 0) &&
+		(latestParameters != nil && len(latestParameters) > 0) {
+		updated, err = rm.resetAllParameters(ctx, desired)
+		if !updated || err != nil {
+			return nil, err
+		}
+	} else {
+		removedParameters, modifiedParameters, addedParameters := rm.provideDelta(desiredParameters, latestParameters)
+		if removedParameters != nil && len(removedParameters) > 0 {
+			updated, err = rm.resetParameters(ctx, desired, removedParameters)
+			if !updated || err != nil {
+				return nil, err
+			}
+		}
+		if modifiedParameters != nil && len(modifiedParameters) > 0 {
+			updated, err = rm.saveParameters(ctx, desired, modifiedParameters)
+			if !updated || err != nil {
+				return nil, err
+			}
+		}
+		if addedParameters != nil && len(addedParameters) > 0 {
+			updated, err = rm.saveParameters(ctx, desired, addedParameters)
+			if !updated || err != nil {
+				return nil, err
+			}
+		}
+	}
+	if updated {
+		rm.setStatusDefaults(latest.ko)
+		// Populate latest.ko.Spec.ParameterNameValues with latest parameter values
+		// Populate latest.ko.Status.Parameters with latest detailed parameters
+		error := rm.customSetOutputDescribeCacheParameters(ctx, desired.ko.Spec.CacheParameterGroupName, latest.ko)
+		if error != nil {
+			return nil, error
+		}
+	}
+	return latest, nil
+}
+
+// provideDelta compares given desired and latest Parameters and returns
+// removedParameters, modifiedParameters, addedParameters
+func (rm *resourceManager) provideDelta(
+	desiredParameters []*svcapitypes.ParameterNameValue,
+	latestParameters []*svcapitypes.ParameterNameValue,
+) ([]*svcapitypes.ParameterNameValue, []*svcapitypes.ParameterNameValue, []*svcapitypes.ParameterNameValue) {
+
+	desiredPametersMap := map[string]*svcapitypes.ParameterNameValue{}
+	for _, parameter := range desiredParameters {
+		p := *parameter
+		desiredPametersMap[*p.ParameterName] = &p
+	}
+	latestPametersMap := map[string]*svcapitypes.ParameterNameValue{}
+	for _, parameter := range latestParameters {
+		p := *parameter
+		latestPametersMap[*p.ParameterName] = &p
+	}
+
+	removedParameters := []*svcapitypes.ParameterNameValue{}  // available in latest but not found in desired
+	modifiedParameters := []*svcapitypes.ParameterNameValue{} // available in both desired, latest but values differ
+	addedParameters := []*svcapitypes.ParameterNameValue{}    // available in desired but not found in latest
+	for latestParameterName, latestParameterNameValue := range latestPametersMap {
+		desiredParameterNameValue, found := desiredPametersMap[latestParameterName]
+		if found && desiredParameterNameValue != nil &&
+			desiredParameterNameValue.ParameterValue != nil && *desiredParameterNameValue.ParameterValue != "" {
+			if *desiredParameterNameValue.ParameterValue != *latestParameterNameValue.ParameterValue {
+				// available in both desired, latest but values differ
+				modified := *desiredParameterNameValue
+				modifiedParameters = append(modifiedParameters, &modified)
+			}
+		} else {
+			// available in latest but not found in desired
+			removed := *latestParameterNameValue
+			removedParameters = append(removedParameters, &removed)
+		}
+	}
+	for desiredParameterName, desiredParameterNameValue := range desiredPametersMap {
+		_, found := latestPametersMap[desiredParameterName]
+		if !found && desiredParameterNameValue != nil {
+			// available in desired but not found in latest
+			added := *desiredParameterNameValue
+			if added.ParameterValue != nil && *added.ParameterValue != "" {
+				addedParameters = append(addedParameters, &added)
+			}
+		}
+	}
+	return removedParameters, modifiedParameters, addedParameters
+}
+
+func Int32OrNil(i *int64) *int32 {
+	if i == nil {
+		return nil
+	}
+	return aws.Int32(int32(*i))
 }

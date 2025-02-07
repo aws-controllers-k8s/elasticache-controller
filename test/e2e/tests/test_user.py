@@ -128,8 +128,6 @@ class TestUser:
         resource = k8s.get_resource(reference)
         assert resource["status"]["lastRequestedAccessString"] == new_access_string
 
-        #TODO: add terminal condition checks
-
     # test creation with Passwords specified (as k8s secrets)
     def test_user_password(self, user_password, user_password_input):
         (reference, resource) = user_password

@@ -61,10 +61,6 @@ type UserGroupStatus struct {
 	// A list of replication groups that the user group can access.
 	// +kubebuilder:validation:Optional
 	ReplicationGroups []*string `json:"replicationGroups,omitempty"`
-	// Indicates which serverless caches the specified user group is associated
-	// with. Available for Valkey, Redis OSS and Serverless Memcached only.
-	// +kubebuilder:validation:Optional
-	ServerlessCaches []*string `json:"serverlessCaches,omitempty"`
 	// Indicates user group status. Can be "creating", "active", "modifying", "deleting".
 	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`

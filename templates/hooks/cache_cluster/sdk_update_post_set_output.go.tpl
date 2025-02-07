@@ -1,6 +1,6 @@
     if pendingModifications := resp.CacheCluster.PendingModifiedValues; pendingModifications != nil {
 		if pendingModifications.NumCacheNodes != nil {
-			ko.Spec.NumCacheNodes = pendingModifications.NumCacheNodes
+			ko.Spec.NumCacheNodes = Int64OrNil(pendingModifications.NumCacheNodes)
 		}
 		if pendingModifications.CacheNodeType != nil {
 			ko.Spec.CacheNodeType = pendingModifications.CacheNodeType

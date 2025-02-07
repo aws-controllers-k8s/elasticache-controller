@@ -91,16 +91,6 @@ def assert_user_deletion(user_id: str):
     except ec.exceptions.UserNotFoundFault:
         pass  # we only expect this particular exception (if deletion has already completed)
 
-
-# given "rg" (the k8s object representing a replication group), assert that:
-#   1) there are non-zero amount of node groups
-#   2) the number of replicas in every node group equals desired_replica_count
-def assert_even_shards_replica_count(rg, desired_replica_count):
-    assert len(rg['status']['nodeGroups']) != 0
-    for ng in rg['status']['nodeGroups']:
-        assert len(ng['nodeGroupMembers']) == (desired_replica_count + 1)
-
-
 # TODO: move to common repository
 # given the latest state of the resource, assert that the terminal condition is set
 def assert_terminal_condition_set(resource):

@@ -215,19 +215,7 @@ spec:
                         subnetOutpostARN:
                           type: string
                       type: object
-                    supportedNetworkTypes:
-                      items:
-                        type: string
-                      type: array
                   type: object
-                type: array
-              supportedNetworkTypes:
-                description: |-
-                  Either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads using Valkey
-                  7.2 and above, Redis OSS engine version 6.2 and above or Memcached engine
-                  version 1.6.6 and above on all instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
-                items:
-                  type: string
                 type: array
               vpcID:
                 description: |-

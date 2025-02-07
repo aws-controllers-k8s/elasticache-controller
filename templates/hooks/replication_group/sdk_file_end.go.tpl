@@ -1,8 +1,9 @@
 // This method copies the data from given {{ .CRD.Names.Camel }} by populating it
 // into copy of supplied resource and returns that.
 func (rm *resourceManager) set{{ .CRD.Names.Camel }}Output (
+	ctx context.Context,
 	r *resource,
-	obj *svcsdk.{{ .CRD.Names.Camel }},
+	obj *svcsdktypes.{{ .CRD.Names.Camel }},
 ) (*resource, error) {
 	if obj == nil ||
 		r == nil ||

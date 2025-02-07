@@ -21,7 +21,8 @@ import (
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Implements custom logic for UpdateUserGroup
@@ -60,31 +61,31 @@ func (rm *resourceManager) customUpdateUserGroup(
 
 			// User Ids to add
 			{
-				var userIdsToAdd []*string
+				var userIdsToAdd []string
 
 				for userId, include := range requiredUserIdsMap {
 					if include {
-						userIdsToAdd = append(userIdsToAdd, &userId)
+						userIdsToAdd = append(userIdsToAdd, userId)
 					}
 				}
 
-				input.SetUserIdsToAdd(userIdsToAdd)
+				input.UserIdsToAdd = userIdsToAdd
 			}
 
 			// User Ids to remove
 			{
-				var userIdsToRemove []*string
+				var userIdsToRemove []string
 
 				for userId, include := range existingUserIdsMap {
 					if include {
-						userIdsToRemove = append(userIdsToRemove, &userId)
+						userIdsToRemove = append(userIdsToRemove, userId)
 					}
 				}
 
-				input.SetUserIdsToRemove(userIdsToRemove)
+				input.UserIdsToRemove = userIdsToRemove
 			}
 
-			resp, respErr := rm.sdkapi.ModifyUserGroupWithContext(ctx, input)
+			resp, respErr := rm.sdkapi.ModifyUserGroup(ctx, input)
 			rm.metrics.RecordAPICall("UPDATE", "ModifyUserGroup", respErr)
 			if respErr != nil {
 				return nil, respErr
@@ -105,18 +106,14 @@ func (rm *resourceManager) customUpdateUserGroup(
 				if resp.PendingChanges.UserIdsToAdd != nil {
 					f2f0 := []*string{}
 					for _, f2f0iter := range resp.PendingChanges.UserIdsToAdd {
-						var f2f0elem string
-						f2f0elem = *f2f0iter
-						f2f0 = append(f2f0, &f2f0elem)
+						f2f0 = append(f2f0, &f2f0iter)
 					}
 					f2.UserIDsToAdd = f2f0
 				}
 				if resp.PendingChanges.UserIdsToRemove != nil {
 					f2f1 := []*string{}
 					for _, f2f1iter := range resp.PendingChanges.UserIdsToRemove {
-						var f2f1elem string
-						f2f1elem = *f2f1iter
-						f2f1 = append(f2f1, &f2f1elem)
+						f2f1 = append(f2f1, &f2f1iter)
 					}
 					f2.UserIDsToRemove = f2f1
 				}
@@ -127,9 +124,7 @@ func (rm *resourceManager) customUpdateUserGroup(
 			if resp.ReplicationGroups != nil {
 				f3 := []*string{}
 				for _, f3iter := range resp.ReplicationGroups {
-					var f3elem string
-					f3elem = *f3iter
-					f3 = append(f3, &f3elem)
+					f3 = append(f3, &f3iter)
 				}
 				ko.Status.ReplicationGroups = f3
 			} else {
@@ -142,7 +137,11 @@ func (rm *resourceManager) customUpdateUserGroup(
 			}
 
 			rm.setStatusDefaults(ko)
-			rm.customSetOutput(resp.UserIds, resp.Engine, resp.Status, ko)
+			rm.customSetOutput(
+				stringSliceToPointers(resp.UserIds),
+				resp.Engine,
+				resp.Status,
+				ko)
 			return &resource{ko}, nil
 		}
 	}
@@ -173,8 +172,86 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	res := &svcsdk.ModifyUserGroupInput{}
 
 	if r.ko.Spec.UserGroupID != nil {
-		res.SetUserGroupId(*r.ko.Spec.UserGroupID)
+		res.UserGroupId = r.ko.Spec.UserGroupID
 	}
 
 	return res, nil
+}
+
+func (rm *resourceManager) CustomDescribeUserGroupsSetOutput(
+	ctx context.Context,
+	r *resource,
+	resp *svcsdk.DescribeUserGroupsOutput,
+	ko *svcapitypes.UserGroup,
+) (*svcapitypes.UserGroup, error) {
+	elem := resp.UserGroups[0]
+	rm.customSetOutput(
+		stringSliceToPointers(elem.UserIds),
+		elem.Engine,
+		elem.Status,
+		ko)
+	return ko, nil
+}
+
+func (rm *resourceManager) CustomCreateUserGroupSetOutput(
+	ctx context.Context,
+	r *resource,
+	resp *svcsdk.CreateUserGroupOutput,
+	ko *svcapitypes.UserGroup,
+) (*svcapitypes.UserGroup, error) {
+	rm.customSetOutput(
+		stringSliceToPointers(resp.UserIds),
+		resp.Engine,
+		resp.Status,
+		ko)
+	return ko, nil
+}
+
+func (rm *resourceManager) customSetOutput(
+	userIds []*string,
+	engine *string,
+	status *string,
+	ko *svcapitypes.UserGroup,
+) {
+	if userIds != nil {
+		ko.Spec.UserIDs = userIds
+	}
+
+	if engine != nil {
+		ko.Spec.Engine = engine
+	}
+
+	syncConditionStatus := corev1.ConditionUnknown
+	if status != nil {
+		if *status == "active" {
+			syncConditionStatus = corev1.ConditionTrue
+		} else {
+			syncConditionStatus = corev1.ConditionFalse
+		}
+	}
+	var resourceSyncedCondition *ackv1alpha1.Condition = nil
+	for _, condition := range ko.Status.Conditions {
+		if condition.Type == ackv1alpha1.ConditionTypeResourceSynced {
+			resourceSyncedCondition = condition
+			break
+		}
+	}
+	if resourceSyncedCondition == nil {
+		resourceSyncedCondition = &ackv1alpha1.Condition{
+			Type:   ackv1alpha1.ConditionTypeResourceSynced,
+			Status: syncConditionStatus,
+		}
+		ko.Status.Conditions = append(ko.Status.Conditions, resourceSyncedCondition)
+	} else {
+		resourceSyncedCondition.Status = syncConditionStatus
+	}
+}
+
+func stringSliceToPointers(slice []string) []*string {
+	ptrs := make([]*string, len(slice))
+	for i, s := range slice {
+		s := s // Create new variable to avoid referencing loop variable
+		ptrs[i] = &s
+	}
+	return ptrs
 }

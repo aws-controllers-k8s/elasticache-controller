@@ -173,6 +173,7 @@ resources:
       PrimaryClusterId: # note: "PrimaryClusterID" will not function properly
         compare:
           is_ignored: true
+      
     hooks:
       sdk_read_many_post_set_output:
         template_path: hooks/replication_group/sdk_read_many_post_set_output.go.tpl
@@ -189,7 +190,7 @@ resources:
       sdk_file_end:
         template_path: hooks/replication_group/sdk_file_end.go.tpl
       sdk_file_end_set_output_post_populate:
-        code: "rm.customSetOutput(obj, ko) // custom set output from obj"
+        code: "rm.customSetOutput(ctx, *obj, ko) // custom set output from obj"
     renames:
       operations:
         CreateReplicationGroup:
@@ -303,7 +304,7 @@ operations:
     custom_implementation: CustomModifyReplicationGroup
     set_output_custom_method_name: CustomModifyReplicationGroupSetOutput
     override_values:
-      ApplyImmediately: true
+      ApplyImmediately: aws.Bool(true)
   CreateSnapshot:
     custom_implementation: CustomCreateSnapshot
     set_output_custom_method_name: CustomCreateSnapshotSetOutput
@@ -327,7 +328,7 @@ operations:
   ModifyCacheCluster:
     set_output_custom_method_name: customModifyCacheClusterSetOutput
     override_values:
-      ApplyImmediately: true
+      ApplyImmediately: aws.Bool(true)
 ignore:
   resource_names:
     - ServerlessCache
@@ -349,3 +350,31 @@ ignore:
     - CreateReplicationGroupInput.NumCacheClusters
     - CacheCluster.LogDeliveryConfigurations
     - PendingModifiedValues.LogDeliveryConfigurations
+    - CreateUserInput.AuthenticationMode
+    - ModifyUserInput.AuthenticationMode
+    - CreateCacheSubnetGroupOutput.CacheSubnetGroup.SupportedNetworkTypes
+    - CreateCacheSubnetGroupOutput.CacheSubnetGroup.Subnets.SupportedNetworkTypes
+    - ModifyCacheSubnetGroupOutput.CacheSubnetGroup.Subnets.SupportedNetworkTypes
+    - CreateUserGroupOutput.ServerlessCaches
+    - CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionEnabled
+    - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionEnabled
+    # - CreateReplicationGroupOutput.ReplicationGroup.TransitEncryptionEnabled
+    # - ModifyReplicationGroupInput.TransitEncryptionEnabled
+    # - CreateReplicationGroupInput.TransitEncryptionEnabled
+    - CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionMode
+    - CreateReplicationGroupOutput.ReplicationGroup.TransitEncryptionMode
+    - CreateReplicationGroupInput.TransitEncryptionMode
+    - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionMode
+    - CreateReplicationGroupOutput.ReplicationGroup.ClusterMode
+    - CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
+    - CreateReplicationGroupInput.ClusterMode
+    - ModifyReplicationGroupOutput.ReplicationGroup.ClusterMode
+    - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
+    - CreateReplicationGroupInput.IpDiscovery
+    - CreateReplicationGroupOutput.ReplicationGroup.IpDiscovery
+    - Subnet.SupportedNetworkTypes
+    - CreateReplicationGroupInput.ServerlessCacheSnapshotName
+    - CreateReplicationGroupOutput.ReplicationGroup.NetworkType
+    - CreateReplicationGroupInput.NetworkType
+    # - ModifyReplicationGroupOutput.ReplicationGroup.ipDiscovery
+    # - ModifyReplicationGroupInput.ipDiscovery

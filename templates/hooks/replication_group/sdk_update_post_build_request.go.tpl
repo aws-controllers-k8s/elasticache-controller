@@ -1,5 +1,5 @@
 	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
-		input.SetLogDeliveryConfigurations(nil)
+		input.LogDeliveryConfigurations = nil
 	}
 	if delta.DifferentAt("UserGroupIDs") {
 		for _, diff := range delta.Differences {
@@ -9,7 +9,7 @@
 
 				// User groups to add
 				{
-					var userGroupsToAdd []*string
+					var userGroupsToAdd []string
 
 					for _, requiredUserGroup := range requiredUserGroups {
 						found := false
@@ -21,16 +21,18 @@
 						}
 
 						if !found {
-							userGroupsToAdd = append(userGroupsToAdd, requiredUserGroup)
+							if requiredUserGroup != nil {
+								userGroupsToAdd = append(userGroupsToAdd, *requiredUserGroup)
+							}
 						}
 					}
 
-					input.SetUserGroupIdsToAdd(userGroupsToAdd)
+					input.UserGroupIdsToAdd = userGroupsToAdd
 				}
 
 				// User groups to remove
 				{
-					var userGroupsToRemove []*string
+					var userGroupsToRemove []string
 
 					for _, existingUserGroup := range existingUserGroups {
 						found := false
@@ -42,11 +44,13 @@
 						}
 
 						if !found {
-							userGroupsToRemove = append(userGroupsToRemove, existingUserGroup)
+							if existingUserGroup != nil {
+								userGroupsToRemove = append(userGroupsToRemove, *existingUserGroup)
+							}
 						}
 					}
 
-					input.SetUserGroupIdsToRemove(userGroupsToRemove)
+					input.UserGroupIdsToRemove = userGroupsToRemove
 				}
 			}
 		}

@@ -41,16 +41,6 @@ spec:
               accessString:
                 description: Access permissions string used for this user.
                 type: string
-              authenticationMode:
-                description: Specifies how to authenticate the user.
-                properties:
-                  passwords:
-                    items:
-                      type: string
-                    type: array
-                  type_:
-                    type: string
-                type: object
               engine:
                 description: The current supported value is Redis.
                 type: string

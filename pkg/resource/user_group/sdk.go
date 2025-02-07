@@ -125,11 +125,6 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.ReplicationGroups = nil
 		}
-		if elem.ServerlessCaches != nil {
-			ko.Status.ServerlessCaches = aws.StringSlice(elem.ServerlessCaches)
-		} else {
-			ko.Status.ServerlessCaches = nil
-		}
 		if elem.Status != nil {
 			ko.Status.Status = elem.Status
 		} else {
@@ -246,11 +241,6 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.ReplicationGroups = aws.StringSlice(resp.ReplicationGroups)
 	} else {
 		ko.Status.ReplicationGroups = nil
-	}
-	if resp.ServerlessCaches != nil {
-		ko.Status.ServerlessCaches = aws.StringSlice(resp.ServerlessCaches)
-	} else {
-		ko.Status.ServerlessCaches = nil
 	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status

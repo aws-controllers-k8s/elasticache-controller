@@ -143,13 +143,6 @@ type ReplicationGroupSpec struct {
 	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SubnetGroups.html).
 	CacheSubnetGroupName *string                                  `json:"cacheSubnetGroupName,omitempty"`
 	CacheSubnetGroupRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheSubnetGroupRef,omitempty"`
-	// Enabled or Disabled. To modify cluster mode from Disabled to Enabled, you
-	// must first set the cluster mode to Compatible. Compatible mode allows your
-	// Valkey or Redis OSS clients to connect using both cluster mode enabled and
-	// cluster mode disabled. After you migrate all Valkey or Redis OSS clients
-	// to use cluster mode enabled, you can then complete cluster mode configuration
-	// and set the cluster mode to Enabled.
-	ClusterMode *string `json:"clusterMode,omitempty"`
 	// Enables data tiering. Data tiering is only supported for replication groups
 	// using the r6gd node type. This parameter must be set to true when using r6gd
 	// nodes. For more information, see Data tiering (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/data-tiering.html).
@@ -171,11 +164,6 @@ type ReplicationGroupSpec struct {
 	// existing cluster or replication group and create it anew with the earlier
 	// engine version.
 	EngineVersion *string `json:"engineVersion,omitempty"`
-	// The network type you choose when creating a replication group, either ipv4
-	// | ipv6. IPv6 is supported for workloads using Valkey 7.2 and above, Redis
-	// OSS engine version 6.2 and above or Memcached engine version 1.6.6 and above
-	// on all instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
-	IPDiscovery *string `json:"ipDiscovery,omitempty"`
 	// The ID of the KMS key used to encrypt the disk in the cluster.
 	KMSKeyID *string `json:"kmsKeyID,omitempty"`
 	// Specifies the destination, format and type of the logs.
@@ -183,11 +171,6 @@ type ReplicationGroupSpec struct {
 	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
 	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html).
 	MultiAZEnabled *bool `json:"multiAZEnabled,omitempty"`
-	// Must be either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads
-	// using Valkey 7.2 and above, Redis OSS engine version 6.2 and above or Memcached
-	// engine version 1.6.6 and above on all instances built on the Nitro system
-	// (http://aws.amazon.com/ec2/nitro/).
-	NetworkType *string `json:"networkType,omitempty"`
 	// A list of node group (shard) configuration options. Each node group (shard)
 	// configuration has the following members: PrimaryAvailabilityZone, ReplicaAvailabilityZones,
 	// ReplicaCount, and Slots.
@@ -279,9 +262,6 @@ type ReplicationGroupSpec struct {
 	// Virtual Private Cloud (Amazon VPC).
 	SecurityGroupIDs  []*string                                  `json:"securityGroupIDs,omitempty"`
 	SecurityGroupRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"securityGroupRefs,omitempty"`
-	// The name of the snapshot used to create a replication group. Available for
-	// Valkey, Redis OSS only.
-	ServerlessCacheSnapshotName *string `json:"serverlessCacheSnapshotName,omitempty"`
 	// A list of Amazon Resource Names (ARN) that uniquely identify the Valkey or
 	// Redis OSS RDB snapshot files stored in Amazon S3. The snapshot files are
 	// used to populate the new replication group. The Amazon S3 object name in
@@ -331,21 +311,6 @@ type ReplicationGroupSpec struct {
 	// For HIPAA compliance, you must specify TransitEncryptionEnabled as true,
 	// an AuthToken, and a CacheSubnetGroup.
 	TransitEncryptionEnabled *bool `json:"transitEncryptionEnabled,omitempty"`
-	// A setting that allows you to migrate your clients to use in-transit encryption,
-	// with no downtime.
-	//
-	// When setting TransitEncryptionEnabled to true, you can set your TransitEncryptionMode
-	// to preferred in the same request, to allow both encrypted and unencrypted
-	// connections at the same time. Once you migrate all your Valkey or Redis OSS
-	// clients to use encrypted connections you can modify the value to required
-	// to allow encrypted connections only.
-	//
-	// Setting TransitEncryptionMode to required is a two-step process that requires
-	// you to first set the TransitEncryptionMode to preferred, after that you can
-	// set TransitEncryptionMode to required.
-	//
-	// This process will not trigger the replacement of the replication group.
-	TransitEncryptionMode *string `json:"transitEncryptionMode,omitempty"`
 	// The user group to associate with the replication group.
 	UserGroupIDs []*string `json:"userGroupIDs,omitempty"`
 }

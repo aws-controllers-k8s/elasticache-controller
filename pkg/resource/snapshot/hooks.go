@@ -18,8 +18,13 @@ import (
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,7 +43,7 @@ func (rm *resourceManager) CustomCreateSnapshot(
 			return nil, err
 		}
 
-		resp, respErr := rm.sdkapi.CopySnapshot(input)
+		resp, respErr := rm.sdkapi.CopySnapshot(ctx, input)
 
 		rm.metrics.RecordAPICall("CREATE", "CopySnapshot", respErr)
 		if respErr != nil {
@@ -58,11 +63,12 @@ func (rm *resourceManager) CustomCreateSnapshot(
 		if resp.Snapshot.AutoMinorVersionUpgrade != nil {
 			ko.Status.AutoMinorVersionUpgrade = resp.Snapshot.AutoMinorVersionUpgrade
 		}
-		if resp.Snapshot.AutomaticFailover != nil {
-			ko.Status.AutomaticFailover = resp.Snapshot.AutomaticFailover
+		if resp.Snapshot.AutomaticFailover != "" {
+			ko.Status.AutomaticFailover = aws.String(string(resp.Snapshot.AutomaticFailover))
 		}
 		if resp.Snapshot.CacheClusterCreateTime != nil {
-			ko.Status.CacheClusterCreateTime = &metav1.Time{*resp.Snapshot.CacheClusterCreateTime}
+			cacheClusterCreateTime := metav1.Time{Time: *resp.Snapshot.CacheClusterCreateTime}
+			ko.Status.CacheClusterCreateTime = &cacheClusterCreateTime
 		}
 		if resp.Snapshot.CacheNodeType != nil {
 			ko.Status.CacheNodeType = resp.Snapshot.CacheNodeType
@@ -87,7 +93,7 @@ func (rm *resourceManager) CustomCreateSnapshot(
 					f11elem.CacheClusterID = f11iter.CacheClusterId
 				}
 				if f11iter.CacheNodeCreateTime != nil {
-					f11elem.CacheNodeCreateTime = &metav1.Time{*f11iter.CacheNodeCreateTime}
+					f11elem.CacheNodeCreateTime = &metav1.Time{Time: *f11iter.CacheNodeCreateTime}
 				}
 				if f11iter.CacheNodeId != nil {
 					f11elem.CacheNodeID = f11iter.CacheNodeId
@@ -106,14 +112,14 @@ func (rm *resourceManager) CustomCreateSnapshot(
 					if f11iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
 						f11elemf4f2 := []*string{}
 						for _, f11elemf4f2iter := range f11iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
-							var f11elemf4f2elem string
-							f11elemf4f2elem = *f11elemf4f2iter
-							f11elemf4f2 = append(f11elemf4f2, &f11elemf4f2elem)
+							f11elemf4f2iter := f11elemf4f2iter // Create new variable to avoid referencing loop variable
+							f11elemf4f2 = append(f11elemf4f2, &f11elemf4f2iter)
 						}
 						f11elemf4.ReplicaAvailabilityZones = f11elemf4f2
 					}
 					if f11iter.NodeGroupConfiguration.ReplicaCount != nil {
-						f11elemf4.ReplicaCount = f11iter.NodeGroupConfiguration.ReplicaCount
+						replicaCount := int64(*f11iter.NodeGroupConfiguration.ReplicaCount)
+						f11elemf4.ReplicaCount = &replicaCount
 					}
 					if f11iter.NodeGroupConfiguration.Slots != nil {
 						f11elemf4.Slots = f11iter.NodeGroupConfiguration.Slots
@@ -124,20 +130,23 @@ func (rm *resourceManager) CustomCreateSnapshot(
 					f11elem.NodeGroupID = f11iter.NodeGroupId
 				}
 				if f11iter.SnapshotCreateTime != nil {
-					f11elem.SnapshotCreateTime = &metav1.Time{*f11iter.SnapshotCreateTime}
+					f11elem.SnapshotCreateTime = &metav1.Time{Time: *f11iter.SnapshotCreateTime}
 				}
 				f11 = append(f11, f11elem)
 			}
 			ko.Status.NodeSnapshots = f11
 		}
 		if resp.Snapshot.NumCacheNodes != nil {
-			ko.Status.NumCacheNodes = resp.Snapshot.NumCacheNodes
+			numNodes := int64(*resp.Snapshot.NumCacheNodes)
+			ko.Status.NumCacheNodes = &numNodes
 		}
 		if resp.Snapshot.NumNodeGroups != nil {
-			ko.Status.NumNodeGroups = resp.Snapshot.NumNodeGroups
+			numNodeGroups := int64(*resp.Snapshot.NumNodeGroups)
+			ko.Status.NumNodeGroups = &numNodeGroups
 		}
 		if resp.Snapshot.Port != nil {
-			ko.Status.Port = resp.Snapshot.Port
+			port := int64(*resp.Snapshot.Port)
+			ko.Status.Port = &port
 		}
 		if resp.Snapshot.PreferredAvailabilityZone != nil {
 			ko.Status.PreferredAvailabilityZone = resp.Snapshot.PreferredAvailabilityZone
@@ -150,7 +159,8 @@ func (rm *resourceManager) CustomCreateSnapshot(
 		}
 
 		if resp.Snapshot.SnapshotRetentionLimit != nil {
-			ko.Status.SnapshotRetentionLimit = resp.Snapshot.SnapshotRetentionLimit
+			retentionLimit := int64(*resp.Snapshot.SnapshotRetentionLimit)
+			ko.Status.SnapshotRetentionLimit = &retentionLimit
 		}
 		if resp.Snapshot.SnapshotSource != nil {
 			ko.Status.SnapshotSource = resp.Snapshot.SnapshotSource
@@ -185,15 +195,146 @@ func (rm *resourceManager) newCopySnapshotPayload(
 	res := &svcsdk.CopySnapshotInput{}
 
 	if r.ko.Spec.SourceSnapshotName != nil {
-		res.SetSourceSnapshotName(*r.ko.Spec.SourceSnapshotName)
+		res.SourceSnapshotName = r.ko.Spec.SourceSnapshotName
 	}
 	if r.ko.Spec.KMSKeyID != nil {
-		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
+		res.KmsKeyId = r.ko.Spec.KMSKeyID
 	}
-
 	if r.ko.Spec.SnapshotName != nil {
-		res.SetTargetSnapshotName(*r.ko.Spec.SnapshotName)
+		res.TargetSnapshotName = r.ko.Spec.SnapshotName
 	}
 
 	return res, nil
+}
+
+// CustomUpdateConditions sets conditions (terminal) on supplied snapshot
+// it examines supplied resource to determine conditions.
+// It returns true if conditions are updated
+func (rm *resourceManager) CustomUpdateConditions(
+	ko *svcapitypes.Snapshot,
+	r *resource,
+	err error,
+) bool {
+	snapshotStatus := r.ko.Status.SnapshotStatus
+	if snapshotStatus == nil || *snapshotStatus != "failed" {
+		return false
+	}
+	// Terminal condition
+	var terminalCondition *ackv1alpha1.Condition = nil
+	if ko.Status.Conditions == nil {
+		ko.Status.Conditions = []*ackv1alpha1.Condition{}
+	} else {
+		for _, condition := range ko.Status.Conditions {
+			if condition.Type == ackv1alpha1.ConditionTypeTerminal {
+				terminalCondition = condition
+				break
+			}
+		}
+		if terminalCondition != nil && terminalCondition.Status == corev1.ConditionTrue {
+			// some other exception already put the resource in terminal condition
+			return false
+		}
+	}
+	if terminalCondition == nil {
+		terminalCondition = &ackv1alpha1.Condition{
+			Type: ackv1alpha1.ConditionTypeTerminal,
+		}
+		ko.Status.Conditions = append(ko.Status.Conditions, terminalCondition)
+	}
+	terminalCondition.Status = corev1.ConditionTrue
+	errorMessage := "Snapshot status: failed"
+	terminalCondition.Message = &errorMessage
+	return true
+}
+
+func (rm *resourceManager) CustomDescribeSnapshotSetOutput(
+	ctx context.Context,
+	r *resource,
+	resp *elasticache.DescribeSnapshotsOutput,
+	ko *svcapitypes.Snapshot,
+) (*svcapitypes.Snapshot, error) {
+	if len(resp.Snapshots) == 0 {
+		return ko, nil
+	}
+	elem := resp.Snapshots[0]
+	rm.customSetOutput(r, &elem, ko)
+	return ko, nil
+}
+
+func (rm *resourceManager) CustomCreateSnapshotSetOutput(
+	ctx context.Context,
+	r *resource,
+	resp *elasticache.CreateSnapshotOutput,
+	ko *svcapitypes.Snapshot,
+) (*svcapitypes.Snapshot, error) {
+	rm.customSetOutput(r, resp.Snapshot, ko)
+	return ko, nil
+}
+
+func (rm *resourceManager) CustomCopySnapshotSetOutput(
+	r *resource,
+	resp *elasticache.CopySnapshotOutput,
+	ko *svcapitypes.Snapshot,
+) *svcapitypes.Snapshot {
+	rm.customSetOutput(r, resp.Snapshot, ko)
+	return ko
+}
+
+func (rm *resourceManager) customSetOutput(
+	r *resource,
+	respSnapshot *svcsdktypes.Snapshot,
+	ko *svcapitypes.Snapshot,
+) {
+	if respSnapshot.ReplicationGroupId != nil {
+		ko.Spec.ReplicationGroupID = respSnapshot.ReplicationGroupId
+	}
+
+	if respSnapshot.KmsKeyId != nil {
+		ko.Spec.KMSKeyID = respSnapshot.KmsKeyId
+	}
+
+	if respSnapshot.CacheClusterId != nil {
+		ko.Spec.CacheClusterID = respSnapshot.CacheClusterId
+	}
+
+	if ko.Status.Conditions == nil {
+		ko.Status.Conditions = []*ackv1alpha1.Condition{}
+	}
+	snapshotStatus := respSnapshot.SnapshotStatus
+	syncConditionStatus := corev1.ConditionUnknown
+	if snapshotStatus != nil {
+		if *snapshotStatus == "available" ||
+			*snapshotStatus == "failed" {
+			syncConditionStatus = corev1.ConditionTrue
+		} else {
+			// resource in "creating", "restoring","exporting"
+			syncConditionStatus = corev1.ConditionFalse
+		}
+	}
+	var resourceSyncedCondition *ackv1alpha1.Condition = nil
+	for _, condition := range ko.Status.Conditions {
+		if condition.Type == ackv1alpha1.ConditionTypeResourceSynced {
+			resourceSyncedCondition = condition
+			break
+		}
+	}
+	if resourceSyncedCondition == nil {
+		resourceSyncedCondition = &ackv1alpha1.Condition{
+			Type:   ackv1alpha1.ConditionTypeResourceSynced,
+			Status: syncConditionStatus,
+		}
+		ko.Status.Conditions = append(ko.Status.Conditions, resourceSyncedCondition)
+	} else {
+		resourceSyncedCondition.Status = syncConditionStatus
+	}
+}
+
+// Snapshot API has no update
+func (rm *resourceManager) customUpdateSnapshot(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) (*resource, error) {
+	return latest, nil
 }

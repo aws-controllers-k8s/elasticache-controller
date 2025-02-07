@@ -1237,7 +1237,7 @@ func (rm *resourceManager) sdkUpdate(
 	}
 	if pendingModifications := resp.CacheCluster.PendingModifiedValues; pendingModifications != nil {
 		if pendingModifications.NumCacheNodes != nil {
-			ko.Spec.NumCacheNodes = pendingModifications.NumCacheNodes
+			ko.Spec.NumCacheNodes = Int64OrNil(pendingModifications.NumCacheNodes)
 		}
 		if pendingModifications.CacheNodeType != nil {
 			ko.Spec.CacheNodeType = pendingModifications.CacheNodeType
@@ -1262,7 +1262,7 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	if r.ko.Spec.AZMode != nil {
 		res.AZMode = svcsdktypes.AZMode(*r.ko.Spec.AZMode)
 	}
-	res.ApplyImmediately = true
+	res.ApplyImmediately = aws.Bool(true)
 	if r.ko.Spec.AuthToken != nil {
 		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
 		if err != nil {

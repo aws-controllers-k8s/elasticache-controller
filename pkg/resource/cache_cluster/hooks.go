@@ -22,6 +22,7 @@ import (
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
@@ -195,4 +196,18 @@ func marshalAsAnnotation(val interface{}) string {
 		return "null"
 	}
 	return string(data)
+}
+
+func Int32OrNil(i *int64) *int32 {
+	if i != nil {
+		return aws.Int32(int32(*i))
+	}
+	return aws.Int32(0)
+}
+
+func Int64OrNil(i *int32) *int64 {
+	if i != nil {
+		return aws.Int64(int64(*i))
+	}
+	return aws.Int64(0)
 }

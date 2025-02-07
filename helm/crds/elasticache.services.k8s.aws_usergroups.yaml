@@ -162,13 +162,6 @@ spec:
                 items:
                   type: string
                 type: array
-              serverlessCaches:
-                description: |-
-                  Indicates which serverless caches the specified user group is associated
-                  with. Available for Valkey, Redis OSS and Serverless Memcached only.
-                items:
-                  type: string
-                type: array
               status:
                 description: Indicates user group status. Can be "creating", "active",
                   "modifying", "deleting".

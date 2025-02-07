@@ -1,5 +1,3 @@
-# CME replication group with some optional fields specified. The modification of these fields is typically quicker
-# than other actions (such as scaling) which require provisioning/deletion of nodes.
 apiVersion: elasticache.services.k8s.aws/v1alpha1
 kind: ReplicationGroup
 metadata:

@@ -37,7 +37,6 @@ type Authentication struct {
 // Specifies the authentication mode to use.
 type AuthenticationMode struct {
 	Passwords []*string `json:"passwords,omitempty"`
-	Type      *string   `json:"type_,omitempty"`
 }
 
 // Describes an Availability Zone in which the cluster is launched.
@@ -247,7 +246,6 @@ type CacheSubnetGroup_SDK struct {
 	CacheSubnetGroupDescription *string   `json:"cacheSubnetGroupDescription,omitempty"`
 	CacheSubnetGroupName        *string   `json:"cacheSubnetGroupName,omitempty"`
 	Subnets                     []*Subnet `json:"subnets,omitempty"`
-	SupportedNetworkTypes       []*string `json:"supportedNetworkTypes,omitempty"`
 	VPCID                       *string   `json:"vpcID,omitempty"`
 }
 
@@ -549,13 +547,10 @@ type RegionalConfiguration struct {
 type ReplicationGroupPendingModifiedValues struct {
 	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
 	AutomaticFailoverStatus   *string                            `json:"automaticFailoverStatus,omitempty"`
-	ClusterMode               *string                            `json:"clusterMode,omitempty"`
 	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	PrimaryClusterID          *string                            `json:"primaryClusterID,omitempty"`
 	// The status of an online resharding operation.
-	Resharding               *ReshardingStatus `json:"resharding,omitempty"`
-	TransitEncryptionEnabled *bool             `json:"transitEncryptionEnabled,omitempty"`
-	TransitEncryptionMode    *string           `json:"transitEncryptionMode,omitempty"`
+	Resharding *ReshardingStatus `json:"resharding,omitempty"`
 	// The status of the user group update.
 	UserGroups *UserGroupsUpdateStatus `json:"userGroups,omitempty"`
 }
@@ -571,7 +566,6 @@ type ReplicationGroup_SDK struct {
 	AutomaticFailover         *string      `json:"automaticFailover,omitempty"`
 	CacheNodeType             *string      `json:"cacheNodeType,omitempty"`
 	ClusterEnabled            *bool        `json:"clusterEnabled,omitempty"`
-	ClusterMode               *string      `json:"clusterMode,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node. This value is read-only.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
@@ -581,13 +575,11 @@ type ReplicationGroup_SDK struct {
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
-	IPDiscovery                *string                     `json:"ipDiscovery,omitempty"`
 	KMSKeyID                   *string                     `json:"kmsKeyID,omitempty"`
 	LogDeliveryConfigurations  []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	MemberClusters             []*string                   `json:"memberClusters,omitempty"`
 	MemberClustersOutpostARNs  []*string                   `json:"memberClustersOutpostARNs,omitempty"`
 	MultiAZ                    *string                     `json:"multiAZ,omitempty"`
-	NetworkType                *string                     `json:"networkType,omitempty"`
 	NodeGroups                 []*NodeGroup                `json:"nodeGroups,omitempty"`
 	// The settings to be applied to the Valkey or Redis OSS replication group,
 	// either immediately or during the next maintenance window.
@@ -599,7 +591,6 @@ type ReplicationGroup_SDK struct {
 	SnapshottingClusterID      *string                                `json:"snapshottingClusterID,omitempty"`
 	Status                     *string                                `json:"status,omitempty"`
 	TransitEncryptionEnabled   *bool                                  `json:"transitEncryptionEnabled,omitempty"`
-	TransitEncryptionMode      *string                                `json:"transitEncryptionMode,omitempty"`
 	UserGroupIDs               []*string                              `json:"userGroupIDs,omitempty"`
 }
 
@@ -751,8 +742,7 @@ type Subnet struct {
 	SubnetAvailabilityZone *AvailabilityZone `json:"subnetAvailabilityZone,omitempty"`
 	SubnetIdentifier       *string           `json:"subnetIdentifier,omitempty"`
 	// The ID of the outpost subnet.
-	SubnetOutpost         *SubnetOutpost `json:"subnetOutpost,omitempty"`
-	SupportedNetworkTypes []*string      `json:"supportedNetworkTypes,omitempty"`
+	SubnetOutpost *SubnetOutpost `json:"subnetOutpost,omitempty"`
 }
 
 // The ID of the outpost subnet.

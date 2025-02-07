@@ -23,8 +23,8 @@ import (
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
-	"github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 )
@@ -37,11 +37,11 @@ var requeueWaitWhileTagUpdated = ackrequeue.NeededAfter(
 // GetTags retrieves the resource's associated tags.
 func GetTags(
 	ctx context.Context,
-	sdkapi elasticacheiface.ElastiCacheAPI,
+	sdkapi *svcsdk.Client,
 	metrics *metrics.Metrics,
 	resourceARN string,
 ) ([]*svcapitypes.Tag, error) {
-	resp, err := sdkapi.ListTagsForResourceWithContext(
+	resp, err := sdkapi.ListTagsForResource(
 		ctx,
 		&svcsdk.ListTagsForResourceInput{
 			ResourceName: &resourceARN,
@@ -85,7 +85,7 @@ func SyncTags(
 	latestTags []*svcapitypes.Tag,
 	latestACKResourceMetadata *ackv1alpha1.ResourceMetadata,
 	toACKTags func(tags []*svcapitypes.Tag) acktags.Tags,
-	sdkapi elasticacheiface.ElastiCacheAPI,
+	sdkapi *svcsdk.Client,
 	metrics *metrics.Metrics,
 ) (err error) {
 	rlog := ackrtlog.FromContext(ctx)
@@ -113,17 +113,17 @@ func SyncTags(
 	// so after adding or removing tags, we have to wait for the cache cluster to be available again
 	// process: add tags -> requeue -> remove tags -> requeue -> other update
 	if len(added) > 0 {
-		toAdd := make([]*svcsdk.Tag, 0, len(added))
+		toAdd := make([]svcsdktypes.Tag, 0, len(added))
 		for key, val := range added {
 			key, val := key, val
-			toAdd = append(toAdd, &svcsdk.Tag{
+			toAdd = append(toAdd, svcsdktypes.Tag{
 				Key:   &key,
 				Value: &val,
 			})
 		}
 
 		rlog.Debug("adding tags to cache cluster", "tags", added)
-		_, err = sdkapi.AddTagsToResourceWithContext(
+		_, err = sdkapi.AddTagsToResource(
 			ctx,
 			&svcsdk.AddTagsToResourceInput{
 				ResourceName: arn,
@@ -135,13 +135,13 @@ func SyncTags(
 			return err
 		}
 	} else if len(removed) > 0 {
-		toRemove := make([]*string, 0, len(removed))
+		toRemove := make([]string, 0, len(removed))
 		for key := range removed {
 			key := key
-			toRemove = append(toRemove, &key)
+			toRemove = append(toRemove, key)
 		}
 		rlog.Debug("removing tags from cache cluster", "tags", removed)
-		_, err = sdkapi.RemoveTagsFromResourceWithContext(
+		_, err = sdkapi.RemoveTagsFromResource(
 			ctx,
 			&svcsdk.RemoveTagsFromResourceInput{
 				ResourceName: arn,
