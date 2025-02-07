@@ -25,11 +25,12 @@ import (
 
 type UserGroupSpec struct {
 
-	// The current supported value is Redis.
+	// The current supported value is Redis user.
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
+	// tag key must be accompanied by a tag value, although null is accepted. Available
+	// for Valkey and Redis OSS only.
 	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user group.
 	// +kubebuilder:validation:Required
@@ -51,7 +52,7 @@ type UserGroupStatus struct {
 	// resource
 	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
-	// The minimum engine version required, which is Redis 6.0
+	// The minimum engine version required, which is Redis OSS 6.0
 	// +kubebuilder:validation:Optional
 	MinimumEngineVersion *string `json:"minimumEngineVersion,omitempty"`
 	// A list of updates being applied to the user group.
@@ -60,6 +61,10 @@ type UserGroupStatus struct {
 	// A list of replication groups that the user group can access.
 	// +kubebuilder:validation:Optional
 	ReplicationGroups []*string `json:"replicationGroups,omitempty"`
+	// Indicates which serverless caches the specified user group is associated
+	// with. Available for Valkey, Redis OSS and Serverless Memcached only.
+	// +kubebuilder:validation:Optional
+	ServerlessCaches []*string `json:"serverlessCaches,omitempty"`
 	// Indicates user group status. Can be "creating", "active", "modifying", "deleting".
 	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`

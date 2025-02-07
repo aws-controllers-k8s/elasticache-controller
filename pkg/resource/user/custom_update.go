@@ -15,6 +15,7 @@ package user
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 
@@ -28,8 +29,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +43,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.CacheCluster{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +51,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +76,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeCacheClustersOutput
-	resp, err = rm.sdkapi.DescribeCacheClustersWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeCacheClusters(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheClusters", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "CacheClusterNotFound" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "CacheClusterNotFound" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -160,7 +164,8 @@ func (rm *resourceManager) sdkFind(
 						f9elemf5.Address = f9iter.Endpoint.Address
 					}
 					if f9iter.Endpoint.Port != nil {
-						f9elemf5.Port = f9iter.Endpoint.Port
+						portCopy := int64(*f9iter.Endpoint.Port)
+						f9elemf5.Port = &portCopy
 					}
 					f9elem.Endpoint = f9elemf5
 				}
@@ -179,13 +184,7 @@ func (rm *resourceManager) sdkFind(
 		if elem.CacheParameterGroup != nil {
 			f10 := &svcapitypes.CacheParameterGroupStatus_SDK{}
 			if elem.CacheParameterGroup.CacheNodeIdsToReboot != nil {
-				f10f0 := []*string{}
-				for _, f10f0iter := range elem.CacheParameterGroup.CacheNodeIdsToReboot {
-					var f10f0elem string
-					f10f0elem = *f10f0iter
-					f10f0 = append(f10f0, &f10f0elem)
-				}
-				f10.CacheNodeIDsToReboot = f10f0
+				f10.CacheNodeIDsToReboot = aws.StringSlice(elem.CacheParameterGroup.CacheNodeIdsToReboot)
 			}
 			if elem.CacheParameterGroup.CacheParameterGroupName != nil {
 				f10.CacheParameterGroupName = elem.CacheParameterGroup.CacheParameterGroupName
@@ -229,7 +228,8 @@ func (rm *resourceManager) sdkFind(
 				f14.Address = elem.ConfigurationEndpoint.Address
 			}
 			if elem.ConfigurationEndpoint.Port != nil {
-				f14.Port = elem.ConfigurationEndpoint.Port
+				portCopy := int64(*elem.ConfigurationEndpoint.Port)
+				f14.Port = &portCopy
 			}
 			ko.Status.ConfigurationEndpoint = f14
 		} else {
@@ -245,13 +245,13 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.EngineVersion = nil
 		}
-		if elem.IpDiscovery != nil {
-			ko.Spec.IPDiscovery = elem.IpDiscovery
+		if elem.IpDiscovery != "" {
+			ko.Spec.IPDiscovery = aws.String(string(elem.IpDiscovery))
 		} else {
 			ko.Spec.IPDiscovery = nil
 		}
-		if elem.NetworkType != nil {
-			ko.Spec.NetworkType = elem.NetworkType
+		if elem.NetworkType != "" {
+			ko.Spec.NetworkType = aws.String(string(elem.NetworkType))
 		} else {
 			ko.Spec.NetworkType = nil
 		}
@@ -268,23 +268,18 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.NotificationConfiguration = nil
 		}
 		if elem.NumCacheNodes != nil {
-			ko.Spec.NumCacheNodes = elem.NumCacheNodes
+			numCacheNodesCopy := int64(*elem.NumCacheNodes)
+			ko.Spec.NumCacheNodes = &numCacheNodesCopy
 		} else {
 			ko.Spec.NumCacheNodes = nil
 		}
 		if elem.PendingModifiedValues != nil {
 			f21 := &svcapitypes.PendingModifiedValues{}
-			if elem.PendingModifiedValues.AuthTokenStatus != nil {
-				f21.AuthTokenStatus = elem.PendingModifiedValues.AuthTokenStatus
+			if elem.PendingModifiedValues.AuthTokenStatus != "" {
+				f21.AuthTokenStatus = aws.String(string(elem.PendingModifiedValues.AuthTokenStatus))
 			}
 			if elem.PendingModifiedValues.CacheNodeIdsToRemove != nil {
-				f21f1 := []*string{}
-				for _, f21f1iter := range elem.PendingModifiedValues.CacheNodeIdsToRemove {
-					var f21f1elem string
-					f21f1elem = *f21f1iter
-					f21f1 = append(f21f1, &f21f1elem)
-				}
-				f21.CacheNodeIDsToRemove = f21f1
+				f21.CacheNodeIDsToRemove = aws.StringSlice(elem.PendingModifiedValues.CacheNodeIdsToRemove)
 			}
 			if elem.PendingModifiedValues.CacheNodeType != nil {
 				f21.CacheNodeType = elem.PendingModifiedValues.CacheNodeType
@@ -293,13 +288,14 @@ func (rm *resourceManager) sdkFind(
 				f21.EngineVersion = elem.PendingModifiedValues.EngineVersion
 			}
 			if elem.PendingModifiedValues.NumCacheNodes != nil {
-				f21.NumCacheNodes = elem.PendingModifiedValues.NumCacheNodes
+				numCacheNodesCopy := int64(*elem.PendingModifiedValues.NumCacheNodes)
+				f21.NumCacheNodes = &numCacheNodesCopy
 			}
 			if elem.PendingModifiedValues.TransitEncryptionEnabled != nil {
 				f21.TransitEncryptionEnabled = elem.PendingModifiedValues.TransitEncryptionEnabled
 			}
-			if elem.PendingModifiedValues.TransitEncryptionMode != nil {
-				f21.TransitEncryptionMode = elem.PendingModifiedValues.TransitEncryptionMode
+			if elem.PendingModifiedValues.TransitEncryptionMode != "" {
+				f21.TransitEncryptionMode = aws.String(string(elem.PendingModifiedValues.TransitEncryptionMode))
 			}
 			ko.Status.PendingModifiedValues = f21
 		} else {
@@ -347,7 +343,8 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.SecurityGroups = nil
 		}
 		if elem.SnapshotRetentionLimit != nil {
-			ko.Spec.SnapshotRetentionLimit = elem.SnapshotRetentionLimit
+			snapshotRetentionLimitCopy := int64(*elem.SnapshotRetentionLimit)
+			ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 		} else {
 			ko.Spec.SnapshotRetentionLimit = nil
 		}
@@ -361,8 +358,8 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.TransitEncryptionEnabled = nil
 		}
-		if elem.TransitEncryptionMode != nil {
-			ko.Status.TransitEncryptionMode = elem.TransitEncryptionMode
+		if elem.TransitEncryptionMode != "" {
+			ko.Status.TransitEncryptionMode = aws.String(string(elem.TransitEncryptionMode))
 		} else {
 			ko.Status.TransitEncryptionMode = nil
 		}
@@ -423,7 +420,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeCacheClustersInput{}
 
 	if r.ko.Spec.CacheClusterID != nil {
-		res.SetCacheClusterId(*r.ko.Spec.CacheClusterID)
+		res.CacheClusterId = r.ko.Spec.CacheClusterID
 	}
 
 	return res, nil
@@ -448,7 +445,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateCacheClusterOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateCacheClusterWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateCacheCluster(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateCacheCluster", err)
 	if err != nil {
 		return nil, err
@@ -529,7 +526,8 @@ func (rm *resourceManager) sdkCreate(
 					f9elemf5.Address = f9iter.Endpoint.Address
 				}
 				if f9iter.Endpoint.Port != nil {
-					f9elemf5.Port = f9iter.Endpoint.Port
+					portCopy := int64(*f9iter.Endpoint.Port)
+					f9elemf5.Port = &portCopy
 				}
 				f9elem.Endpoint = f9elemf5
 			}
@@ -548,13 +546,7 @@ func (rm *resourceManager) sdkCreate(
 	if resp.CacheCluster.CacheParameterGroup != nil {
 		f10 := &svcapitypes.CacheParameterGroupStatus_SDK{}
 		if resp.CacheCluster.CacheParameterGroup.CacheNodeIdsToReboot != nil {
-			f10f0 := []*string{}
-			for _, f10f0iter := range resp.CacheCluster.CacheParameterGroup.CacheNodeIdsToReboot {
-				var f10f0elem string
-				f10f0elem = *f10f0iter
-				f10f0 = append(f10f0, &f10f0elem)
-			}
-			f10.CacheNodeIDsToReboot = f10f0
+			f10.CacheNodeIDsToReboot = aws.StringSlice(resp.CacheCluster.CacheParameterGroup.CacheNodeIdsToReboot)
 		}
 		if resp.CacheCluster.CacheParameterGroup.CacheParameterGroupName != nil {
 			f10.CacheParameterGroupName = resp.CacheCluster.CacheParameterGroup.CacheParameterGroupName
@@ -598,7 +590,8 @@ func (rm *resourceManager) sdkCreate(
 			f14.Address = resp.CacheCluster.ConfigurationEndpoint.Address
 		}
 		if resp.CacheCluster.ConfigurationEndpoint.Port != nil {
-			f14.Port = resp.CacheCluster.ConfigurationEndpoint.Port
+			portCopy := int64(*resp.CacheCluster.ConfigurationEndpoint.Port)
+			f14.Port = &portCopy
 		}
 		ko.Status.ConfigurationEndpoint = f14
 	} else {
@@ -614,13 +607,13 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.EngineVersion = nil
 	}
-	if resp.CacheCluster.IpDiscovery != nil {
-		ko.Spec.IPDiscovery = resp.CacheCluster.IpDiscovery
+	if resp.CacheCluster.IpDiscovery != "" {
+		ko.Spec.IPDiscovery = aws.String(string(resp.CacheCluster.IpDiscovery))
 	} else {
 		ko.Spec.IPDiscovery = nil
 	}
-	if resp.CacheCluster.NetworkType != nil {
-		ko.Spec.NetworkType = resp.CacheCluster.NetworkType
+	if resp.CacheCluster.NetworkType != "" {
+		ko.Spec.NetworkType = aws.String(string(resp.CacheCluster.NetworkType))
 	} else {
 		ko.Spec.NetworkType = nil
 	}
@@ -637,23 +630,18 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.NotificationConfiguration = nil
 	}
 	if resp.CacheCluster.NumCacheNodes != nil {
-		ko.Spec.NumCacheNodes = resp.CacheCluster.NumCacheNodes
+		numCacheNodesCopy := int64(*resp.CacheCluster.NumCacheNodes)
+		ko.Spec.NumCacheNodes = &numCacheNodesCopy
 	} else {
 		ko.Spec.NumCacheNodes = nil
 	}
 	if resp.CacheCluster.PendingModifiedValues != nil {
 		f21 := &svcapitypes.PendingModifiedValues{}
-		if resp.CacheCluster.PendingModifiedValues.AuthTokenStatus != nil {
-			f21.AuthTokenStatus = resp.CacheCluster.PendingModifiedValues.AuthTokenStatus
+		if resp.CacheCluster.PendingModifiedValues.AuthTokenStatus != "" {
+			f21.AuthTokenStatus = aws.String(string(resp.CacheCluster.PendingModifiedValues.AuthTokenStatus))
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove != nil {
-			f21f1 := []*string{}
-			for _, f21f1iter := range resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove {
-				var f21f1elem string
-				f21f1elem = *f21f1iter
-				f21f1 = append(f21f1, &f21f1elem)
-			}
-			f21.CacheNodeIDsToRemove = f21f1
+			f21.CacheNodeIDsToRemove = aws.StringSlice(resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove)
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeType != nil {
 			f21.CacheNodeType = resp.CacheCluster.PendingModifiedValues.CacheNodeType
@@ -662,13 +650,14 @@ func (rm *resourceManager) sdkCreate(
 			f21.EngineVersion = resp.CacheCluster.PendingModifiedValues.EngineVersion
 		}
 		if resp.CacheCluster.PendingModifiedValues.NumCacheNodes != nil {
-			f21.NumCacheNodes = resp.CacheCluster.PendingModifiedValues.NumCacheNodes
+			numCacheNodesCopy := int64(*resp.CacheCluster.PendingModifiedValues.NumCacheNodes)
+			f21.NumCacheNodes = &numCacheNodesCopy
 		}
 		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled != nil {
 			f21.TransitEncryptionEnabled = resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled
 		}
-		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode != nil {
-			f21.TransitEncryptionMode = resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode
+		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode != "" {
+			f21.TransitEncryptionMode = aws.String(string(resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode))
 		}
 		ko.Status.PendingModifiedValues = f21
 	} else {
@@ -716,7 +705,8 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.SecurityGroups = nil
 	}
 	if resp.CacheCluster.SnapshotRetentionLimit != nil {
-		ko.Spec.SnapshotRetentionLimit = resp.CacheCluster.SnapshotRetentionLimit
+		snapshotRetentionLimitCopy := int64(*resp.CacheCluster.SnapshotRetentionLimit)
+		ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	} else {
 		ko.Spec.SnapshotRetentionLimit = nil
 	}
@@ -730,8 +720,8 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
-	if resp.CacheCluster.TransitEncryptionMode != nil {
-		ko.Status.TransitEncryptionMode = resp.CacheCluster.TransitEncryptionMode
+	if resp.CacheCluster.TransitEncryptionMode != "" {
+		ko.Status.TransitEncryptionMode = aws.String(string(resp.CacheCluster.TransitEncryptionMode))
 	} else {
 		ko.Status.TransitEncryptionMode = nil
 	}
@@ -761,7 +751,7 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateCacheClusterInput{}
 
 	if r.ko.Spec.AZMode != nil {
-		res.SetAZMode(*r.ko.Spec.AZMode)
+		res.AZMode = svcsdktypes.AZMode(*r.ko.Spec.AZMode)
 	}
 	if r.ko.Spec.AuthToken != nil {
 		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
@@ -769,168 +759,153 @@ func (rm *resourceManager) newCreateRequestPayload(
 			return nil, ackrequeue.Needed(err)
 		}
 		if tmpSecret != "" {
-			res.SetAuthToken(tmpSecret)
+			res.AuthToken = aws.String(tmpSecret)
 		}
 	}
 	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
-		res.SetAutoMinorVersionUpgrade(*r.ko.Spec.AutoMinorVersionUpgrade)
+		res.AutoMinorVersionUpgrade = r.ko.Spec.AutoMinorVersionUpgrade
 	}
 	if r.ko.Spec.CacheClusterID != nil {
-		res.SetCacheClusterId(*r.ko.Spec.CacheClusterID)
+		res.CacheClusterId = r.ko.Spec.CacheClusterID
 	}
 	if r.ko.Spec.CacheNodeType != nil {
-		res.SetCacheNodeType(*r.ko.Spec.CacheNodeType)
+		res.CacheNodeType = r.ko.Spec.CacheNodeType
 	}
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 	if r.ko.Spec.CacheSecurityGroupNames != nil {
-		f6 := []*string{}
-		for _, f6iter := range r.ko.Spec.CacheSecurityGroupNames {
-			var f6elem string
-			f6elem = *f6iter
-			f6 = append(f6, &f6elem)
-		}
-		res.SetCacheSecurityGroupNames(f6)
+		res.CacheSecurityGroupNames = aws.ToStringSlice(r.ko.Spec.CacheSecurityGroupNames)
 	}
 	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+		res.CacheSubnetGroupName = r.ko.Spec.CacheSubnetGroupName
 	}
 	if r.ko.Spec.Engine != nil {
-		res.SetEngine(*r.ko.Spec.Engine)
+		res.Engine = r.ko.Spec.Engine
 	}
 	if r.ko.Spec.EngineVersion != nil {
-		res.SetEngineVersion(*r.ko.Spec.EngineVersion)
+		res.EngineVersion = r.ko.Spec.EngineVersion
 	}
 	if r.ko.Spec.IPDiscovery != nil {
-		res.SetIpDiscovery(*r.ko.Spec.IPDiscovery)
+		res.IpDiscovery = svcsdktypes.IpDiscovery(*r.ko.Spec.IPDiscovery)
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f11 := []*svcsdk.LogDeliveryConfigurationRequest{}
+		f11 := []svcsdktypes.LogDeliveryConfigurationRequest{}
 		for _, f11iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f11elem := &svcsdk.LogDeliveryConfigurationRequest{}
+			f11elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
 			if f11iter.DestinationDetails != nil {
-				f11elemf0 := &svcsdk.DestinationDetails{}
+				f11elemf0 := &svcsdktypes.DestinationDetails{}
 				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f11elemf0f0 := &svcsdk.CloudWatchLogsDestinationDetails{}
+					f11elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
 					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f11elemf0f0.SetLogGroup(*f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup)
+						f11elemf0f0.LogGroup = f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f11elemf0.SetCloudWatchLogsDetails(f11elemf0f0)
+					f11elemf0.CloudWatchLogsDetails = f11elemf0f0
 				}
 				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f11elemf0f1 := &svcsdk.KinesisFirehoseDestinationDetails{}
+					f11elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
 					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f11elemf0f1.SetDeliveryStream(*f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream)
+						f11elemf0f1.DeliveryStream = f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f11elemf0.SetKinesisFirehoseDetails(f11elemf0f1)
+					f11elemf0.KinesisFirehoseDetails = f11elemf0f1
 				}
-				f11elem.SetDestinationDetails(f11elemf0)
+				f11elem.DestinationDetails = f11elemf0
 			}
 			if f11iter.DestinationType != nil {
-				f11elem.SetDestinationType(*f11iter.DestinationType)
+				f11elem.DestinationType = svcsdktypes.DestinationType(*f11iter.DestinationType)
 			}
 			if f11iter.Enabled != nil {
-				f11elem.SetEnabled(*f11iter.Enabled)
+				f11elem.Enabled = f11iter.Enabled
 			}
 			if f11iter.LogFormat != nil {
-				f11elem.SetLogFormat(*f11iter.LogFormat)
+				f11elem.LogFormat = svcsdktypes.LogFormat(*f11iter.LogFormat)
 			}
 			if f11iter.LogType != nil {
-				f11elem.SetLogType(*f11iter.LogType)
+				f11elem.LogType = svcsdktypes.LogType(*f11iter.LogType)
 			}
-			f11 = append(f11, f11elem)
+			f11 = append(f11, *f11elem)
 		}
-		res.SetLogDeliveryConfigurations(f11)
+		res.LogDeliveryConfigurations = f11
 	}
 	if r.ko.Spec.NetworkType != nil {
-		res.SetNetworkType(*r.ko.Spec.NetworkType)
+		res.NetworkType = svcsdktypes.NetworkType(*r.ko.Spec.NetworkType)
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
-		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
+		res.NotificationTopicArn = r.ko.Spec.NotificationTopicARN
 	}
 	if r.ko.Spec.NumCacheNodes != nil {
-		res.SetNumCacheNodes(*r.ko.Spec.NumCacheNodes)
+		numCacheNodesCopy0 := *r.ko.Spec.NumCacheNodes
+		if numCacheNodesCopy0 > math.MaxInt32 || numCacheNodesCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field NumCacheNodes is of type int32")
+		}
+		numCacheNodesCopy := int32(numCacheNodesCopy0)
+		res.NumCacheNodes = &numCacheNodesCopy
 	}
 	if r.ko.Spec.OutpostMode != nil {
-		res.SetOutpostMode(*r.ko.Spec.OutpostMode)
+		res.OutpostMode = svcsdktypes.OutpostMode(*r.ko.Spec.OutpostMode)
 	}
 	if r.ko.Spec.Port != nil {
-		res.SetPort(*r.ko.Spec.Port)
+		portCopy0 := *r.ko.Spec.Port
+		if portCopy0 > math.MaxInt32 || portCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field Port is of type int32")
+		}
+		portCopy := int32(portCopy0)
+		res.Port = &portCopy
 	}
 	if r.ko.Spec.PreferredAvailabilityZone != nil {
-		res.SetPreferredAvailabilityZone(*r.ko.Spec.PreferredAvailabilityZone)
+		res.PreferredAvailabilityZone = r.ko.Spec.PreferredAvailabilityZone
 	}
 	if r.ko.Spec.PreferredAvailabilityZones != nil {
-		f18 := []*string{}
-		for _, f18iter := range r.ko.Spec.PreferredAvailabilityZones {
-			var f18elem string
-			f18elem = *f18iter
-			f18 = append(f18, &f18elem)
-		}
-		res.SetPreferredAvailabilityZones(f18)
+		res.PreferredAvailabilityZones = aws.ToStringSlice(r.ko.Spec.PreferredAvailabilityZones)
 	}
 	if r.ko.Spec.PreferredMaintenanceWindow != nil {
-		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
+		res.PreferredMaintenanceWindow = r.ko.Spec.PreferredMaintenanceWindow
 	}
 	if r.ko.Spec.PreferredOutpostARN != nil {
-		res.SetPreferredOutpostArn(*r.ko.Spec.PreferredOutpostARN)
+		res.PreferredOutpostArn = r.ko.Spec.PreferredOutpostARN
 	}
 	if r.ko.Spec.PreferredOutpostARNs != nil {
-		f21 := []*string{}
-		for _, f21iter := range r.ko.Spec.PreferredOutpostARNs {
-			var f21elem string
-			f21elem = *f21iter
-			f21 = append(f21, &f21elem)
-		}
-		res.SetPreferredOutpostArns(f21)
+		res.PreferredOutpostArns = aws.ToStringSlice(r.ko.Spec.PreferredOutpostARNs)
 	}
 	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+		res.ReplicationGroupId = r.ko.Spec.ReplicationGroupID
 	}
 	if r.ko.Spec.SecurityGroupIDs != nil {
-		f23 := []*string{}
-		for _, f23iter := range r.ko.Spec.SecurityGroupIDs {
-			var f23elem string
-			f23elem = *f23iter
-			f23 = append(f23, &f23elem)
-		}
-		res.SetSecurityGroupIds(f23)
+		res.SecurityGroupIds = aws.ToStringSlice(r.ko.Spec.SecurityGroupIDs)
 	}
 	if r.ko.Spec.SnapshotARNs != nil {
-		f24 := []*string{}
-		for _, f24iter := range r.ko.Spec.SnapshotARNs {
-			var f24elem string
-			f24elem = *f24iter
-			f24 = append(f24, &f24elem)
-		}
-		res.SetSnapshotArns(f24)
+		res.SnapshotArns = aws.ToStringSlice(r.ko.Spec.SnapshotARNs)
 	}
 	if r.ko.Spec.SnapshotName != nil {
-		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+		res.SnapshotName = r.ko.Spec.SnapshotName
 	}
 	if r.ko.Spec.SnapshotRetentionLimit != nil {
-		res.SetSnapshotRetentionLimit(*r.ko.Spec.SnapshotRetentionLimit)
+		snapshotRetentionLimitCopy0 := *r.ko.Spec.SnapshotRetentionLimit
+		if snapshotRetentionLimitCopy0 > math.MaxInt32 || snapshotRetentionLimitCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field SnapshotRetentionLimit is of type int32")
+		}
+		snapshotRetentionLimitCopy := int32(snapshotRetentionLimitCopy0)
+		res.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	}
 	if r.ko.Spec.SnapshotWindow != nil {
-		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
+		res.SnapshotWindow = r.ko.Spec.SnapshotWindow
 	}
 	if r.ko.Spec.Tags != nil {
-		f28 := []*svcsdk.Tag{}
+		f28 := []svcsdktypes.Tag{}
 		for _, f28iter := range r.ko.Spec.Tags {
-			f28elem := &svcsdk.Tag{}
+			f28elem := &svcsdktypes.Tag{}
 			if f28iter.Key != nil {
-				f28elem.SetKey(*f28iter.Key)
+				f28elem.Key = f28iter.Key
 			}
 			if f28iter.Value != nil {
-				f28elem.SetValue(*f28iter.Value)
+				f28elem.Value = f28iter.Value
 			}
-			f28 = append(f28, f28elem)
+			f28 = append(f28, *f28elem)
 		}
-		res.SetTags(f28)
+		res.Tags = f28
 	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
-		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
+		res.TransitEncryptionEnabled = r.ko.Spec.TransitEncryptionEnabled
 	}
 
 	return res, nil
@@ -973,7 +948,7 @@ func (rm *resourceManager) sdkUpdate(
 
 	var resp *svcsdk.ModifyCacheClusterOutput
 	_ = resp
-	resp, err = rm.sdkapi.ModifyCacheClusterWithContext(ctx, input)
+	resp, err = rm.sdkapi.ModifyCacheCluster(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyCacheCluster", err)
 	if err != nil {
 		return nil, err
@@ -1054,7 +1029,8 @@ func (rm *resourceManager) sdkUpdate(
 					f9elemf5.Address = f9iter.Endpoint.Address
 				}
 				if f9iter.Endpoint.Port != nil {
-					f9elemf5.Port = f9iter.Endpoint.Port
+					portCopy := int64(*f9iter.Endpoint.Port)
+					f9elemf5.Port = &portCopy
 				}
 				f9elem.Endpoint = f9elemf5
 			}
@@ -1073,13 +1049,7 @@ func (rm *resourceManager) sdkUpdate(
 	if resp.CacheCluster.CacheParameterGroup != nil {
 		f10 := &svcapitypes.CacheParameterGroupStatus_SDK{}
 		if resp.CacheCluster.CacheParameterGroup.CacheNodeIdsToReboot != nil {
-			f10f0 := []*string{}
-			for _, f10f0iter := range resp.CacheCluster.CacheParameterGroup.CacheNodeIdsToReboot {
-				var f10f0elem string
-				f10f0elem = *f10f0iter
-				f10f0 = append(f10f0, &f10f0elem)
-			}
-			f10.CacheNodeIDsToReboot = f10f0
+			f10.CacheNodeIDsToReboot = aws.StringSlice(resp.CacheCluster.CacheParameterGroup.CacheNodeIdsToReboot)
 		}
 		if resp.CacheCluster.CacheParameterGroup.CacheParameterGroupName != nil {
 			f10.CacheParameterGroupName = resp.CacheCluster.CacheParameterGroup.CacheParameterGroupName
@@ -1123,7 +1093,8 @@ func (rm *resourceManager) sdkUpdate(
 			f14.Address = resp.CacheCluster.ConfigurationEndpoint.Address
 		}
 		if resp.CacheCluster.ConfigurationEndpoint.Port != nil {
-			f14.Port = resp.CacheCluster.ConfigurationEndpoint.Port
+			portCopy := int64(*resp.CacheCluster.ConfigurationEndpoint.Port)
+			f14.Port = &portCopy
 		}
 		ko.Status.ConfigurationEndpoint = f14
 	} else {
@@ -1139,13 +1110,13 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Spec.EngineVersion = nil
 	}
-	if resp.CacheCluster.IpDiscovery != nil {
-		ko.Spec.IPDiscovery = resp.CacheCluster.IpDiscovery
+	if resp.CacheCluster.IpDiscovery != "" {
+		ko.Spec.IPDiscovery = aws.String(string(resp.CacheCluster.IpDiscovery))
 	} else {
 		ko.Spec.IPDiscovery = nil
 	}
-	if resp.CacheCluster.NetworkType != nil {
-		ko.Spec.NetworkType = resp.CacheCluster.NetworkType
+	if resp.CacheCluster.NetworkType != "" {
+		ko.Spec.NetworkType = aws.String(string(resp.CacheCluster.NetworkType))
 	} else {
 		ko.Spec.NetworkType = nil
 	}
@@ -1162,23 +1133,18 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.NotificationConfiguration = nil
 	}
 	if resp.CacheCluster.NumCacheNodes != nil {
-		ko.Spec.NumCacheNodes = resp.CacheCluster.NumCacheNodes
+		numCacheNodesCopy := int64(*resp.CacheCluster.NumCacheNodes)
+		ko.Spec.NumCacheNodes = &numCacheNodesCopy
 	} else {
 		ko.Spec.NumCacheNodes = nil
 	}
 	if resp.CacheCluster.PendingModifiedValues != nil {
 		f21 := &svcapitypes.PendingModifiedValues{}
-		if resp.CacheCluster.PendingModifiedValues.AuthTokenStatus != nil {
-			f21.AuthTokenStatus = resp.CacheCluster.PendingModifiedValues.AuthTokenStatus
+		if resp.CacheCluster.PendingModifiedValues.AuthTokenStatus != "" {
+			f21.AuthTokenStatus = aws.String(string(resp.CacheCluster.PendingModifiedValues.AuthTokenStatus))
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove != nil {
-			f21f1 := []*string{}
-			for _, f21f1iter := range resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove {
-				var f21f1elem string
-				f21f1elem = *f21f1iter
-				f21f1 = append(f21f1, &f21f1elem)
-			}
-			f21.CacheNodeIDsToRemove = f21f1
+			f21.CacheNodeIDsToRemove = aws.StringSlice(resp.CacheCluster.PendingModifiedValues.CacheNodeIdsToRemove)
 		}
 		if resp.CacheCluster.PendingModifiedValues.CacheNodeType != nil {
 			f21.CacheNodeType = resp.CacheCluster.PendingModifiedValues.CacheNodeType
@@ -1187,13 +1153,14 @@ func (rm *resourceManager) sdkUpdate(
 			f21.EngineVersion = resp.CacheCluster.PendingModifiedValues.EngineVersion
 		}
 		if resp.CacheCluster.PendingModifiedValues.NumCacheNodes != nil {
-			f21.NumCacheNodes = resp.CacheCluster.PendingModifiedValues.NumCacheNodes
+			numCacheNodesCopy := int64(*resp.CacheCluster.PendingModifiedValues.NumCacheNodes)
+			f21.NumCacheNodes = &numCacheNodesCopy
 		}
 		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled != nil {
 			f21.TransitEncryptionEnabled = resp.CacheCluster.PendingModifiedValues.TransitEncryptionEnabled
 		}
-		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode != nil {
-			f21.TransitEncryptionMode = resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode
+		if resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode != "" {
+			f21.TransitEncryptionMode = aws.String(string(resp.CacheCluster.PendingModifiedValues.TransitEncryptionMode))
 		}
 		ko.Status.PendingModifiedValues = f21
 	} else {
@@ -1241,7 +1208,8 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.SecurityGroups = nil
 	}
 	if resp.CacheCluster.SnapshotRetentionLimit != nil {
-		ko.Spec.SnapshotRetentionLimit = resp.CacheCluster.SnapshotRetentionLimit
+		snapshotRetentionLimitCopy := int64(*resp.CacheCluster.SnapshotRetentionLimit)
+		ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	} else {
 		ko.Spec.SnapshotRetentionLimit = nil
 	}
@@ -1255,8 +1223,8 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
-	if resp.CacheCluster.TransitEncryptionMode != nil {
-		ko.Status.TransitEncryptionMode = resp.CacheCluster.TransitEncryptionMode
+	if resp.CacheCluster.TransitEncryptionMode != "" {
+		ko.Status.TransitEncryptionMode = aws.String(string(resp.CacheCluster.TransitEncryptionMode))
 	} else {
 		ko.Status.TransitEncryptionMode = nil
 	}
@@ -1292,106 +1260,107 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	res := &svcsdk.ModifyCacheClusterInput{}
 
 	if r.ko.Spec.AZMode != nil {
-		res.SetAZMode(*r.ko.Spec.AZMode)
+		res.AZMode = svcsdktypes.AZMode(*r.ko.Spec.AZMode)
 	}
-	res.SetApplyImmediately(true)
+	res.ApplyImmediately = true
 	if r.ko.Spec.AuthToken != nil {
 		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
 		if err != nil {
 			return nil, ackrequeue.Needed(err)
 		}
 		if tmpSecret != "" {
-			res.SetAuthToken(tmpSecret)
+			res.AuthToken = aws.String(tmpSecret)
 		}
 	}
 	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
-		res.SetAutoMinorVersionUpgrade(*r.ko.Spec.AutoMinorVersionUpgrade)
+		res.AutoMinorVersionUpgrade = r.ko.Spec.AutoMinorVersionUpgrade
 	}
 	if r.ko.Spec.CacheClusterID != nil {
-		res.SetCacheClusterId(*r.ko.Spec.CacheClusterID)
+		res.CacheClusterId = r.ko.Spec.CacheClusterID
 	}
 	if r.ko.Spec.CacheNodeType != nil {
-		res.SetCacheNodeType(*r.ko.Spec.CacheNodeType)
+		res.CacheNodeType = r.ko.Spec.CacheNodeType
 	}
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 	if r.ko.Spec.CacheSecurityGroupNames != nil {
-		f9 := []*string{}
-		for _, f9iter := range r.ko.Spec.CacheSecurityGroupNames {
-			var f9elem string
-			f9elem = *f9iter
-			f9 = append(f9, &f9elem)
-		}
-		res.SetCacheSecurityGroupNames(f9)
+		res.CacheSecurityGroupNames = aws.ToStringSlice(r.ko.Spec.CacheSecurityGroupNames)
+	}
+	if r.ko.Spec.Engine != nil {
+		res.Engine = r.ko.Spec.Engine
 	}
 	if r.ko.Spec.EngineVersion != nil {
-		res.SetEngineVersion(*r.ko.Spec.EngineVersion)
+		res.EngineVersion = r.ko.Spec.EngineVersion
 	}
 	if r.ko.Spec.IPDiscovery != nil {
-		res.SetIpDiscovery(*r.ko.Spec.IPDiscovery)
+		res.IpDiscovery = svcsdktypes.IpDiscovery(*r.ko.Spec.IPDiscovery)
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f12 := []*svcsdk.LogDeliveryConfigurationRequest{}
-		for _, f12iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f12elem := &svcsdk.LogDeliveryConfigurationRequest{}
-			if f12iter.DestinationDetails != nil {
-				f12elemf0 := &svcsdk.DestinationDetails{}
-				if f12iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f12elemf0f0 := &svcsdk.CloudWatchLogsDestinationDetails{}
-					if f12iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f12elemf0f0.SetLogGroup(*f12iter.DestinationDetails.CloudWatchLogsDetails.LogGroup)
+		f13 := []svcsdktypes.LogDeliveryConfigurationRequest{}
+		for _, f13iter := range r.ko.Spec.LogDeliveryConfigurations {
+			f13elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
+			if f13iter.DestinationDetails != nil {
+				f13elemf0 := &svcsdktypes.DestinationDetails{}
+				if f13iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f13elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
+					if f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f13elemf0f0.LogGroup = f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f12elemf0.SetCloudWatchLogsDetails(f12elemf0f0)
+					f13elemf0.CloudWatchLogsDetails = f13elemf0f0
 				}
-				if f12iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f12elemf0f1 := &svcsdk.KinesisFirehoseDestinationDetails{}
-					if f12iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f12elemf0f1.SetDeliveryStream(*f12iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream)
+				if f13iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f13elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
+					if f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f13elemf0f1.DeliveryStream = f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f12elemf0.SetKinesisFirehoseDetails(f12elemf0f1)
+					f13elemf0.KinesisFirehoseDetails = f13elemf0f1
 				}
-				f12elem.SetDestinationDetails(f12elemf0)
+				f13elem.DestinationDetails = f13elemf0
 			}
-			if f12iter.DestinationType != nil {
-				f12elem.SetDestinationType(*f12iter.DestinationType)
+			if f13iter.DestinationType != nil {
+				f13elem.DestinationType = svcsdktypes.DestinationType(*f13iter.DestinationType)
 			}
-			if f12iter.Enabled != nil {
-				f12elem.SetEnabled(*f12iter.Enabled)
+			if f13iter.Enabled != nil {
+				f13elem.Enabled = f13iter.Enabled
 			}
-			if f12iter.LogFormat != nil {
-				f12elem.SetLogFormat(*f12iter.LogFormat)
+			if f13iter.LogFormat != nil {
+				f13elem.LogFormat = svcsdktypes.LogFormat(*f13iter.LogFormat)
 			}
-			if f12iter.LogType != nil {
-				f12elem.SetLogType(*f12iter.LogType)
+			if f13iter.LogType != nil {
+				f13elem.LogType = svcsdktypes.LogType(*f13iter.LogType)
 			}
-			f12 = append(f12, f12elem)
+			f13 = append(f13, *f13elem)
 		}
-		res.SetLogDeliveryConfigurations(f12)
+		res.LogDeliveryConfigurations = f13
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
-		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
+		res.NotificationTopicArn = r.ko.Spec.NotificationTopicARN
 	}
 	if r.ko.Spec.NumCacheNodes != nil {
-		res.SetNumCacheNodes(*r.ko.Spec.NumCacheNodes)
+		numCacheNodesCopy0 := *r.ko.Spec.NumCacheNodes
+		if numCacheNodesCopy0 > math.MaxInt32 || numCacheNodesCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field NumCacheNodes is of type int32")
+		}
+		numCacheNodesCopy := int32(numCacheNodesCopy0)
+		res.NumCacheNodes = &numCacheNodesCopy
 	}
 	if r.ko.Spec.PreferredMaintenanceWindow != nil {
-		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
+		res.PreferredMaintenanceWindow = r.ko.Spec.PreferredMaintenanceWindow
 	}
 	if r.ko.Spec.SecurityGroupIDs != nil {
-		f18 := []*string{}
-		for _, f18iter := range r.ko.Spec.SecurityGroupIDs {
-			var f18elem string
-			f18elem = *f18iter
-			f18 = append(f18, &f18elem)
-		}
-		res.SetSecurityGroupIds(f18)
+		res.SecurityGroupIds = aws.ToStringSlice(r.ko.Spec.SecurityGroupIDs)
 	}
 	if r.ko.Spec.SnapshotRetentionLimit != nil {
-		res.SetSnapshotRetentionLimit(*r.ko.Spec.SnapshotRetentionLimit)
+		snapshotRetentionLimitCopy0 := *r.ko.Spec.SnapshotRetentionLimit
+		if snapshotRetentionLimitCopy0 > math.MaxInt32 || snapshotRetentionLimitCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field SnapshotRetentionLimit is of type int32")
+		}
+		snapshotRetentionLimitCopy := int32(snapshotRetentionLimitCopy0)
+		res.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	}
 	if r.ko.Spec.SnapshotWindow != nil {
-		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
+		res.SnapshotWindow = r.ko.Spec.SnapshotWindow
 	}
 
 	return res, nil
@@ -1446,7 +1415,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteCacheClusterOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteCacheClusterWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteCacheCluster(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteCacheCluster", err)
 	return nil, err
 }
@@ -1459,7 +1428,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteCacheClusterInput{}
 
 	if r.ko.Spec.CacheClusterID != nil {
-		res.SetCacheClusterId(*r.ko.Spec.CacheClusterID)
+		res.CacheClusterId = r.ko.Spec.CacheClusterID
 	}
 
 	return res, nil
@@ -1567,11 +1536,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "ReplicationGroupNotFoundFault",
 		"InvalidReplicationGroupStateFault",
 		"CacheClusterAlreadyExistsFault",

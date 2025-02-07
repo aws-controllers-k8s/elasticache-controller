@@ -13,8 +13,10 @@
 
 package user
 
-import ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
-import "github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
+import (
+	"github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+)
 
 // remove differences which are not meaningful (i.e. ones that don't warrant a call to rm.Update)
 func filterDelta(

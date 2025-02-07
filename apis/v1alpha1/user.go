@@ -28,6 +28,8 @@ type UserSpec struct {
 	// Access permissions string used for this user.
 	// +kubebuilder:validation:Required
 	AccessString *string `json:"accessString"`
+	// Specifies how to authenticate the user.
+	AuthenticationMode *AuthenticationMode `json:"authenticationMode,omitempty"`
 	// The current supported value is Redis.
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
@@ -69,7 +71,7 @@ type UserStatus struct {
 	// Access permissions string used for this user.
 	// +kubebuilder:validation:Optional
 	LastRequestedAccessString *string `json:"lastRequestedAccessString,omitempty"`
-	// The minimum engine version required, which is Redis 6.0
+	// The minimum engine version required, which is Redis OSS 6.0
 	// +kubebuilder:validation:Optional
 	MinimumEngineVersion *string `json:"minimumEngineVersion,omitempty"`
 	// Indicates the user status. Can be "active", "modifying" or "deleting".

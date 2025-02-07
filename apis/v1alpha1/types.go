@@ -34,6 +34,12 @@ type Authentication struct {
 	Type          *string `json:"type_,omitempty"`
 }
 
+// Specifies the authentication mode to use.
+type AuthenticationMode struct {
+	Passwords []*string `json:"passwords,omitempty"`
+	Type      *string   `json:"type_,omitempty"`
+}
+
 // Describes an Availability Zone in which the cluster is launched.
 type AvailabilityZone struct {
 	Name *string `json:"name,omitempty"`
@@ -57,7 +63,7 @@ type CacheCluster_SDK struct {
 	CacheSubnetGroupName      *string                         `json:"cacheSubnetGroupName,omitempty"`
 	ClientDownloadLandingPage *string                         `json:"clientDownloadLandingPage,omitempty"`
 	// Represents the information required for client programs to connect to a cache
-	// node.
+	// node. This value is read-only.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
 	Engine                *string   `json:"engine,omitempty"`
 	EngineVersion         *string   `json:"engineVersion,omitempty"`
@@ -94,7 +100,7 @@ type CacheEngineVersion struct {
 
 // Represents an individual cache node within a cluster. Each cache node runs
 // its own instance of the cluster's protocol-compliant caching software - either
-// Memcached or Redis.
+// Memcached, Valkey or Redis OSS.
 //
 // The following node types are supported by ElastiCache. Generally speaking,
 // the current generation types provide more memory and computational power
@@ -103,15 +109,15 @@ type CacheEngineVersion struct {
 //   - General purpose: Current generation: M7g node types: cache.m7g.large,
 //     cache.m7g.xlarge, cache.m7g.2xlarge, cache.m7g.4xlarge, cache.m7g.8xlarge,
 //     cache.m7g.12xlarge, cache.m7g.16xlarge For region availability, see Supported
-//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
-//     M6g node types (available only for Redis engine version 5.0.6 onward and
-//     for Memcached engine version 1.5.16 onward): cache.m6g.large, cache.m6g.xlarge,
+//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+//     M6g node types (available only for Redis OSS engine version 5.0.6 onward
+//     and for Memcached engine version 1.5.16 onward): cache.m6g.large, cache.m6g.xlarge,
 //     cache.m6g.2xlarge, cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge,
 //     cache.m6g.16xlarge M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge,
 //     cache.m5.4xlarge, cache.m5.12xlarge, cache.m5.24xlarge M4 node types:
 //     cache.m4.large, cache.m4.xlarge, cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge
-//     T4g node types (available only for Redis engine version 5.0.6 onward and
-//     Memcached engine version 1.5.16 onward): cache.t4g.micro, cache.t4g.small,
+//     T4g node types (available only for Redis OSS engine version 5.0.6 onward
+//     and Memcached engine version 1.5.16 onward): cache.t4g.micro, cache.t4g.small,
 //     cache.t4g.medium T3 node types: cache.t3.micro, cache.t3.small, cache.t3.medium
 //     T2 node types: cache.t2.micro, cache.t2.small, cache.t2.medium Previous
 //     generation: (not recommended. Existing clusters are still supported but
@@ -127,9 +133,9 @@ type CacheEngineVersion struct {
 //   - Memory optimized: Current generation: R7g node types: cache.r7g.large,
 //     cache.r7g.xlarge, cache.r7g.2xlarge, cache.r7g.4xlarge, cache.r7g.8xlarge,
 //     cache.r7g.12xlarge, cache.r7g.16xlarge For region availability, see Supported
-//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
-//     R6g node types (available only for Redis engine version 5.0.6 onward and
-//     for Memcached engine version 1.5.16 onward): cache.r6g.large, cache.r6g.xlarge,
+//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+//     R6g node types (available only for Redis OSS engine version 5.0.6 onward
+//     and for Memcached engine version 1.5.16 onward): cache.r6g.large, cache.r6g.xlarge,
 //     cache.r6g.2xlarge, cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge,
 //     cache.r6g.16xlarge R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge,
 //     cache.r5.4xlarge, cache.r5.12xlarge, cache.r5.24xlarge R4 node types:
@@ -144,12 +150,14 @@ type CacheEngineVersion struct {
 //
 //   - All current generation instance types are created in Amazon VPC by default.
 //
-//   - Redis append-only files (AOF) are not supported for T1 or T2 instances.
+//   - Valkey or Redis OSS append-only files (AOF) are not supported for T1
+//     or T2 instances.
 //
-//   - Redis Multi-AZ with automatic failover is not supported on T1 instances.
+//   - Valkey or Redis OSS Multi-AZ with automatic failover is not supported
+//     on T1 instances.
 //
-//   - Redis configuration variables appendonly and appendfsync are not supported
-//     on Redis version 2.8.22 and later.
+//   - The configuration variables appendonly and appendfsync are not supported
+//     on Valkey, or on Redis OSS version 2.8.22 and later.
 type CacheNode struct {
 	CacheNodeCreateTime      *metav1.Time `json:"cacheNodeCreateTime,omitempty"`
 	CacheNodeID              *string      `json:"cacheNodeID,omitempty"`
@@ -157,15 +165,15 @@ type CacheNode struct {
 	CustomerAvailabilityZone *string      `json:"customerAvailabilityZone,omitempty"`
 	CustomerOutpostARN       *string      `json:"customerOutpostARN,omitempty"`
 	// Represents the information required for client programs to connect to a cache
-	// node.
+	// node. This value is read-only.
 	Endpoint             *Endpoint `json:"endpoint,omitempty"`
 	ParameterGroupStatus *string   `json:"parameterGroupStatus,omitempty"`
 	SourceCacheNodeID    *string   `json:"sourceCacheNodeID,omitempty"`
 }
 
 // A parameter that has a different value for each cache node type it is applied
-// to. For example, in a Redis cluster, a cache.m1.large cache node type would
-// have a larger maxmemory value than a cache.m1.small type.
+// to. For example, in a Valkey or Redis OSS cluster, a cache.m1.large cache
+// node type would have a larger maxmemory value than a cache.m1.small type.
 type CacheNodeTypeSpecificParameter struct {
 	AllowedValues        *string `json:"allowedValues,omitempty"`
 	ChangeType           *string `json:"changeType,omitempty"`
@@ -239,6 +247,7 @@ type CacheSubnetGroup_SDK struct {
 	CacheSubnetGroupDescription *string   `json:"cacheSubnetGroupDescription,omitempty"`
 	CacheSubnetGroupName        *string   `json:"cacheSubnetGroupName,omitempty"`
 	Subnets                     []*Subnet `json:"subnets,omitempty"`
+	SupportedNetworkTypes       []*string `json:"supportedNetworkTypes,omitempty"`
 	VPCID                       *string   `json:"vpcID,omitempty"`
 }
 
@@ -251,14 +260,22 @@ type CloudWatchLogsDestinationDetails struct {
 // Each node group (shard) configuration has the following members: NodeGroupId,
 // NewReplicaCount, and PreferredAvailabilityZones.
 type ConfigureShard struct {
-	NewReplicaCount *int64  `json:"newReplicaCount,omitempty"`
-	NodeGroupID     *string `json:"nodeGroupID,omitempty"`
+	NewReplicaCount            *int64    `json:"newReplicaCount,omitempty"`
+	NodeGroupID                *string   `json:"nodeGroupID,omitempty"`
+	PreferredAvailabilityZones []*string `json:"preferredAvailabilityZones,omitempty"`
+	PreferredOutpostARNs       []*string `json:"preferredOutpostARNs,omitempty"`
 }
 
 // The endpoint from which data should be migrated.
 type CustomerNodeEndpoint struct {
 	Address *string `json:"address,omitempty"`
 	Port    *int64  `json:"port,omitempty"`
+}
+
+// The data storage limit.
+type DataStorage struct {
+	Maximum *int64 `json:"maximum,omitempty"`
+	Minimum *int64 `json:"minimum,omitempty"`
 }
 
 // Configuration details of either a CloudWatch Logs destination or Kinesis
@@ -277,8 +294,15 @@ type EC2SecurityGroup struct {
 	Status                  *string `json:"status,omitempty"`
 }
 
+// The configuration for the number of ElastiCache Processing Units (ECPU) the
+// cache can consume per second.
+type ECPUPerSecond struct {
+	Maximum *int64 `json:"maximum,omitempty"`
+	Minimum *int64 `json:"minimum,omitempty"`
+}
+
 // Represents the information required for client programs to connect to a cache
-// node.
+// node. This value is read-only.
 type Endpoint struct {
 	Address *string `json:"address,omitempty"`
 	Port    *int64  `json:"port,omitempty"`
@@ -386,10 +410,10 @@ type NodeGroup struct {
 	NodeGroupID      *string            `json:"nodeGroupID,omitempty"`
 	NodeGroupMembers []*NodeGroupMember `json:"nodeGroupMembers,omitempty"`
 	// Represents the information required for client programs to connect to a cache
-	// node.
+	// node. This value is read-only.
 	PrimaryEndpoint *Endpoint `json:"primaryEndpoint,omitempty"`
 	// Represents the information required for client programs to connect to a cache
-	// node.
+	// node. This value is read-only.
 	ReaderEndpoint *Endpoint `json:"readerEndpoint,omitempty"`
 	Slots          *string   `json:"slots,omitempty"`
 	Status         *string   `json:"status,omitempty"`
@@ -416,7 +440,7 @@ type NodeGroupMember struct {
 	PreferredAvailabilityZone *string `json:"preferredAvailabilityZone,omitempty"`
 	PreferredOutpostARN       *string `json:"preferredOutpostARN,omitempty"`
 	// Represents the information required for client programs to connect to a cache
-	// node.
+	// node. This value is read-only.
 	ReadEndpoint *Endpoint `json:"readEndpoint,omitempty"`
 }
 
@@ -520,20 +544,24 @@ type RegionalConfiguration struct {
 	ReplicationGroupRegion *string `json:"replicationGroupRegion,omitempty"`
 }
 
-// The settings to be applied to the Redis replication group, either immediately
-// or during the next maintenance window.
+// The settings to be applied to the Valkey or Redis OSS replication group,
+// either immediately or during the next maintenance window.
 type ReplicationGroupPendingModifiedValues struct {
 	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
 	AutomaticFailoverStatus   *string                            `json:"automaticFailoverStatus,omitempty"`
+	ClusterMode               *string                            `json:"clusterMode,omitempty"`
 	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	PrimaryClusterID          *string                            `json:"primaryClusterID,omitempty"`
 	// The status of an online resharding operation.
-	Resharding *ReshardingStatus `json:"resharding,omitempty"`
+	Resharding               *ReshardingStatus `json:"resharding,omitempty"`
+	TransitEncryptionEnabled *bool             `json:"transitEncryptionEnabled,omitempty"`
+	TransitEncryptionMode    *string           `json:"transitEncryptionMode,omitempty"`
 	// The status of the user group update.
 	UserGroups *UserGroupsUpdateStatus `json:"userGroups,omitempty"`
 }
 
-// Contains all of the attributes of a specific Redis replication group.
+// Contains all of the attributes of a specific Valkey or Redis OSS replication
+// group.
 type ReplicationGroup_SDK struct {
 	ARN                       *string      `json:"arn,omitempty"`
 	AtRestEncryptionEnabled   *bool        `json:"atRestEncryptionEnabled,omitempty"`
@@ -543,22 +571,26 @@ type ReplicationGroup_SDK struct {
 	AutomaticFailover         *string      `json:"automaticFailover,omitempty"`
 	CacheNodeType             *string      `json:"cacheNodeType,omitempty"`
 	ClusterEnabled            *bool        `json:"clusterEnabled,omitempty"`
+	ClusterMode               *string      `json:"clusterMode,omitempty"`
 	// Represents the information required for client programs to connect to a cache
-	// node.
+	// node. This value is read-only.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
 	DataTiering           *string   `json:"dataTiering,omitempty"`
 	Description           *string   `json:"description,omitempty"`
+	Engine                *string   `json:"engine,omitempty"`
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
+	IPDiscovery                *string                     `json:"ipDiscovery,omitempty"`
 	KMSKeyID                   *string                     `json:"kmsKeyID,omitempty"`
 	LogDeliveryConfigurations  []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	MemberClusters             []*string                   `json:"memberClusters,omitempty"`
 	MemberClustersOutpostARNs  []*string                   `json:"memberClustersOutpostARNs,omitempty"`
 	MultiAZ                    *string                     `json:"multiAZ,omitempty"`
+	NetworkType                *string                     `json:"networkType,omitempty"`
 	NodeGroups                 []*NodeGroup                `json:"nodeGroups,omitempty"`
-	// The settings to be applied to the Redis replication group, either immediately
-	// or during the next maintenance window.
+	// The settings to be applied to the Valkey or Redis OSS replication group,
+	// either immediately or during the next maintenance window.
 	PendingModifiedValues      *ReplicationGroupPendingModifiedValues `json:"pendingModifiedValues,omitempty"`
 	ReplicationGroupCreateTime *metav1.Time                           `json:"replicationGroupCreateTime,omitempty"`
 	ReplicationGroupID         *string                                `json:"replicationGroupID,omitempty"`
@@ -567,6 +599,7 @@ type ReplicationGroup_SDK struct {
 	SnapshottingClusterID      *string                                `json:"snapshottingClusterID,omitempty"`
 	Status                     *string                                `json:"status,omitempty"`
 	TransitEncryptionEnabled   *bool                                  `json:"transitEncryptionEnabled,omitempty"`
+	TransitEncryptionMode      *string                                `json:"transitEncryptionMode,omitempty"`
 	UserGroupIDs               []*string                              `json:"userGroupIDs,omitempty"`
 }
 
@@ -616,7 +649,50 @@ type SecurityGroupMembership struct {
 	Status          *string `json:"status,omitempty"`
 }
 
-// An update that you can apply to your Redis clusters.
+// The resource representing a serverless cache.
+type ServerlessCache struct {
+	ARN               *string      `json:"arn,omitempty"`
+	CreateTime        *metav1.Time `json:"createTime,omitempty"`
+	DailySnapshotTime *string      `json:"dailySnapshotTime,omitempty"`
+	Description       *string      `json:"description,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node. This value is read-only.
+	Endpoint           *Endpoint `json:"endpoint,omitempty"`
+	Engine             *string   `json:"engine,omitempty"`
+	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
+	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
+	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node. This value is read-only.
+	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`
+	SecurityGroupIDs       []*string `json:"securityGroupIDs,omitempty"`
+	ServerlessCacheName    *string   `json:"serverlessCacheName,omitempty"`
+	SnapshotRetentionLimit *int64    `json:"snapshotRetentionLimit,omitempty"`
+	Status                 *string   `json:"status,omitempty"`
+	UserGroupID            *string   `json:"userGroupID,omitempty"`
+}
+
+// The configuration settings for a specific serverless cache.
+type ServerlessCacheConfiguration struct {
+	Engine              *string `json:"engine,omitempty"`
+	MajorEngineVersion  *string `json:"majorEngineVersion,omitempty"`
+	ServerlessCacheName *string `json:"serverlessCacheName,omitempty"`
+}
+
+// The resource representing a serverless cache snapshot. Available for Valkey,
+// Redis OSS and Serverless Memcached only.
+type ServerlessCacheSnapshot struct {
+	ARN                         *string      `json:"arn,omitempty"`
+	BytesUsedForCache           *string      `json:"bytesUsedForCache,omitempty"`
+	CreateTime                  *metav1.Time `json:"createTime,omitempty"`
+	ExpiryTime                  *metav1.Time `json:"expiryTime,omitempty"`
+	KMSKeyID                    *string      `json:"kmsKeyID,omitempty"`
+	ServerlessCacheSnapshotName *string      `json:"serverlessCacheSnapshotName,omitempty"`
+	SnapshotType                *string      `json:"snapshotType,omitempty"`
+	Status                      *string      `json:"status,omitempty"`
+}
+
+// An update that you can apply to your Valkey or Redis OSS clusters.
 type ServiceUpdate struct {
 	AutoUpdateAfterRecommendedApplyByDate *bool        `json:"autoUpdateAfterRecommendedApplyByDate,omitempty"`
 	Engine                                *string      `json:"engine,omitempty"`
@@ -634,8 +710,8 @@ type SlotMigration struct {
 	ProgressPercentage *float64 `json:"progressPercentage,omitempty"`
 }
 
-// Represents a copy of an entire Redis cluster as of the time when the snapshot
-// was taken.
+// Represents a copy of an entire Valkey or Redis OSS cluster as of the time
+// when the snapshot was taken.
 type Snapshot_SDK struct {
 	ARN                         *string         `json:"arn,omitempty"`
 	AutoMinorVersionUpgrade     *bool           `json:"autoMinorVersionUpgrade,omitempty"`
@@ -675,7 +751,8 @@ type Subnet struct {
 	SubnetAvailabilityZone *AvailabilityZone `json:"subnetAvailabilityZone,omitempty"`
 	SubnetIdentifier       *string           `json:"subnetIdentifier,omitempty"`
 	// The ID of the outpost subnet.
-	SubnetOutpost *SubnetOutpost `json:"subnetOutpost,omitempty"`
+	SubnetOutpost         *SubnetOutpost `json:"subnetOutpost,omitempty"`
+	SupportedNetworkTypes []*string      `json:"supportedNetworkTypes,omitempty"`
 }
 
 // The ID of the outpost subnet.
@@ -738,6 +815,7 @@ type UserGroup_SDK struct {
 	// Returns the updates being applied to the user group.
 	PendingChanges    *UserGroupPendingChanges `json:"pendingChanges,omitempty"`
 	ReplicationGroups []*string                `json:"replicationGroups,omitempty"`
+	ServerlessCaches  []*string                `json:"serverlessCaches,omitempty"`
 	Status            *string                  `json:"status,omitempty"`
 	UserGroupID       *string                  `json:"userGroupID,omitempty"`
 	UserIDs           []*string                `json:"userIDs,omitempty"`

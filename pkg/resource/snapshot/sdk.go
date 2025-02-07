@@ -28,8 +28,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.Snapshot{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +50,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +75,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeSnapshotsOutput
-	resp, err = rm.sdkapi.DescribeSnapshotsWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeSnapshots(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeSnapshots", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "CacheClusterNotFound" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "CacheClusterNotFound" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -100,8 +103,8 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.AutoMinorVersionUpgrade = nil
 		}
-		if elem.AutomaticFailover != nil {
-			ko.Status.AutomaticFailover = elem.AutomaticFailover
+		if elem.AutomaticFailover != "" {
+			ko.Status.AutomaticFailover = aws.String(string(elem.AutomaticFailover))
 		} else {
 			ko.Status.AutomaticFailover = nil
 		}
@@ -130,8 +133,8 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.CacheSubnetGroupName = nil
 		}
-		if elem.DataTiering != nil {
-			ko.Status.DataTiering = elem.DataTiering
+		if elem.DataTiering != "" {
+			ko.Status.DataTiering = aws.String(string(elem.DataTiering))
 		} else {
 			ko.Status.DataTiering = nil
 		}
@@ -178,25 +181,14 @@ func (rm *resourceManager) sdkFind(
 						f12elemf4.PrimaryOutpostARN = f12iter.NodeGroupConfiguration.PrimaryOutpostArn
 					}
 					if f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
-						f12elemf4f3 := []*string{}
-						for _, f12elemf4f3iter := range f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
-							var f12elemf4f3elem string
-							f12elemf4f3elem = *f12elemf4f3iter
-							f12elemf4f3 = append(f12elemf4f3, &f12elemf4f3elem)
-						}
-						f12elemf4.ReplicaAvailabilityZones = f12elemf4f3
+						f12elemf4.ReplicaAvailabilityZones = aws.StringSlice(f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones)
 					}
 					if f12iter.NodeGroupConfiguration.ReplicaCount != nil {
-						f12elemf4.ReplicaCount = f12iter.NodeGroupConfiguration.ReplicaCount
+						replicaCountCopy := int64(*f12iter.NodeGroupConfiguration.ReplicaCount)
+						f12elemf4.ReplicaCount = &replicaCountCopy
 					}
 					if f12iter.NodeGroupConfiguration.ReplicaOutpostArns != nil {
-						f12elemf4f5 := []*string{}
-						for _, f12elemf4f5iter := range f12iter.NodeGroupConfiguration.ReplicaOutpostArns {
-							var f12elemf4f5elem string
-							f12elemf4f5elem = *f12elemf4f5iter
-							f12elemf4f5 = append(f12elemf4f5, &f12elemf4f5elem)
-						}
-						f12elemf4.ReplicaOutpostARNs = f12elemf4f5
+						f12elemf4.ReplicaOutpostARNs = aws.StringSlice(f12iter.NodeGroupConfiguration.ReplicaOutpostArns)
 					}
 					if f12iter.NodeGroupConfiguration.Slots != nil {
 						f12elemf4.Slots = f12iter.NodeGroupConfiguration.Slots
@@ -216,17 +208,20 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.NodeSnapshots = nil
 		}
 		if elem.NumCacheNodes != nil {
-			ko.Status.NumCacheNodes = elem.NumCacheNodes
+			numCacheNodesCopy := int64(*elem.NumCacheNodes)
+			ko.Status.NumCacheNodes = &numCacheNodesCopy
 		} else {
 			ko.Status.NumCacheNodes = nil
 		}
 		if elem.NumNodeGroups != nil {
-			ko.Status.NumNodeGroups = elem.NumNodeGroups
+			numNodeGroupsCopy := int64(*elem.NumNodeGroups)
+			ko.Status.NumNodeGroups = &numNodeGroupsCopy
 		} else {
 			ko.Status.NumNodeGroups = nil
 		}
 		if elem.Port != nil {
-			ko.Status.Port = elem.Port
+			portCopy := int64(*elem.Port)
+			ko.Status.Port = &portCopy
 		} else {
 			ko.Status.Port = nil
 		}
@@ -261,7 +256,8 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.SnapshotName = nil
 		}
 		if elem.SnapshotRetentionLimit != nil {
-			ko.Status.SnapshotRetentionLimit = elem.SnapshotRetentionLimit
+			snapshotRetentionLimitCopy := int64(*elem.SnapshotRetentionLimit)
+			ko.Status.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 		} else {
 			ko.Status.SnapshotRetentionLimit = nil
 		}
@@ -324,7 +320,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeSnapshotsInput{}
 
 	if r.ko.Spec.SnapshotName != nil {
-		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+		res.SnapshotName = r.ko.Spec.SnapshotName
 	}
 
 	return res, nil
@@ -353,7 +349,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateSnapshotOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateSnapshotWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateSnapshot(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateSnapshot", err)
 	if err != nil {
 		return nil, err
@@ -374,8 +370,8 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.AutoMinorVersionUpgrade = nil
 	}
-	if resp.Snapshot.AutomaticFailover != nil {
-		ko.Status.AutomaticFailover = resp.Snapshot.AutomaticFailover
+	if resp.Snapshot.AutomaticFailover != "" {
+		ko.Status.AutomaticFailover = aws.String(string(resp.Snapshot.AutomaticFailover))
 	} else {
 		ko.Status.AutomaticFailover = nil
 	}
@@ -404,8 +400,8 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.CacheSubnetGroupName = nil
 	}
-	if resp.Snapshot.DataTiering != nil {
-		ko.Status.DataTiering = resp.Snapshot.DataTiering
+	if resp.Snapshot.DataTiering != "" {
+		ko.Status.DataTiering = aws.String(string(resp.Snapshot.DataTiering))
 	} else {
 		ko.Status.DataTiering = nil
 	}
@@ -452,25 +448,14 @@ func (rm *resourceManager) sdkCreate(
 					f12elemf4.PrimaryOutpostARN = f12iter.NodeGroupConfiguration.PrimaryOutpostArn
 				}
 				if f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones != nil {
-					f12elemf4f3 := []*string{}
-					for _, f12elemf4f3iter := range f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones {
-						var f12elemf4f3elem string
-						f12elemf4f3elem = *f12elemf4f3iter
-						f12elemf4f3 = append(f12elemf4f3, &f12elemf4f3elem)
-					}
-					f12elemf4.ReplicaAvailabilityZones = f12elemf4f3
+					f12elemf4.ReplicaAvailabilityZones = aws.StringSlice(f12iter.NodeGroupConfiguration.ReplicaAvailabilityZones)
 				}
 				if f12iter.NodeGroupConfiguration.ReplicaCount != nil {
-					f12elemf4.ReplicaCount = f12iter.NodeGroupConfiguration.ReplicaCount
+					replicaCountCopy := int64(*f12iter.NodeGroupConfiguration.ReplicaCount)
+					f12elemf4.ReplicaCount = &replicaCountCopy
 				}
 				if f12iter.NodeGroupConfiguration.ReplicaOutpostArns != nil {
-					f12elemf4f5 := []*string{}
-					for _, f12elemf4f5iter := range f12iter.NodeGroupConfiguration.ReplicaOutpostArns {
-						var f12elemf4f5elem string
-						f12elemf4f5elem = *f12elemf4f5iter
-						f12elemf4f5 = append(f12elemf4f5, &f12elemf4f5elem)
-					}
-					f12elemf4.ReplicaOutpostARNs = f12elemf4f5
+					f12elemf4.ReplicaOutpostARNs = aws.StringSlice(f12iter.NodeGroupConfiguration.ReplicaOutpostArns)
 				}
 				if f12iter.NodeGroupConfiguration.Slots != nil {
 					f12elemf4.Slots = f12iter.NodeGroupConfiguration.Slots
@@ -490,17 +475,20 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.NodeSnapshots = nil
 	}
 	if resp.Snapshot.NumCacheNodes != nil {
-		ko.Status.NumCacheNodes = resp.Snapshot.NumCacheNodes
+		numCacheNodesCopy := int64(*resp.Snapshot.NumCacheNodes)
+		ko.Status.NumCacheNodes = &numCacheNodesCopy
 	} else {
 		ko.Status.NumCacheNodes = nil
 	}
 	if resp.Snapshot.NumNodeGroups != nil {
-		ko.Status.NumNodeGroups = resp.Snapshot.NumNodeGroups
+		numNodeGroupsCopy := int64(*resp.Snapshot.NumNodeGroups)
+		ko.Status.NumNodeGroups = &numNodeGroupsCopy
 	} else {
 		ko.Status.NumNodeGroups = nil
 	}
 	if resp.Snapshot.Port != nil {
-		ko.Status.Port = resp.Snapshot.Port
+		portCopy := int64(*resp.Snapshot.Port)
+		ko.Status.Port = &portCopy
 	} else {
 		ko.Status.Port = nil
 	}
@@ -535,7 +523,8 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.SnapshotName = nil
 	}
 	if resp.Snapshot.SnapshotRetentionLimit != nil {
-		ko.Status.SnapshotRetentionLimit = resp.Snapshot.SnapshotRetentionLimit
+		snapshotRetentionLimitCopy := int64(*resp.Snapshot.SnapshotRetentionLimit)
+		ko.Status.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	} else {
 		ko.Status.SnapshotRetentionLimit = nil
 	}
@@ -583,30 +572,30 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateSnapshotInput{}
 
 	if r.ko.Spec.CacheClusterID != nil {
-		res.SetCacheClusterId(*r.ko.Spec.CacheClusterID)
+		res.CacheClusterId = r.ko.Spec.CacheClusterID
 	}
 	if r.ko.Spec.KMSKeyID != nil {
-		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
+		res.KmsKeyId = r.ko.Spec.KMSKeyID
 	}
 	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+		res.ReplicationGroupId = r.ko.Spec.ReplicationGroupID
 	}
 	if r.ko.Spec.SnapshotName != nil {
-		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+		res.SnapshotName = r.ko.Spec.SnapshotName
 	}
 	if r.ko.Spec.Tags != nil {
-		f4 := []*svcsdk.Tag{}
+		f4 := []svcsdktypes.Tag{}
 		for _, f4iter := range r.ko.Spec.Tags {
-			f4elem := &svcsdk.Tag{}
+			f4elem := &svcsdktypes.Tag{}
 			if f4iter.Key != nil {
-				f4elem.SetKey(*f4iter.Key)
+				f4elem.Key = f4iter.Key
 			}
 			if f4iter.Value != nil {
-				f4elem.SetValue(*f4iter.Value)
+				f4elem.Value = f4iter.Value
 			}
-			f4 = append(f4, f4elem)
+			f4 = append(f4, *f4elem)
 		}
-		res.SetTags(f4)
+		res.Tags = f4
 	}
 
 	return res, nil
@@ -639,7 +628,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteSnapshotOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteSnapshotWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteSnapshot(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteSnapshot", err)
 	return nil, err
 }
@@ -652,7 +641,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteSnapshotInput{}
 
 	if r.ko.Spec.SnapshotName != nil {
-		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+		res.SnapshotName = r.ko.Spec.SnapshotName
 	}
 
 	return res, nil
@@ -762,11 +751,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "InvalidParameter",
 		"InvalidParameterValue",
 		"InvalidParameterCombination",

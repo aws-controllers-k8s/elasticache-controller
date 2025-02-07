@@ -15,6 +15,7 @@ package replication_group
 
 import (
 	"context"
+
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 
 	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"

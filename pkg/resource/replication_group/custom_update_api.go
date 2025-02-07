@@ -17,12 +17,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/pkg/errors"
 	"reflect"
 	"sort"
 	"strconv"
+
+	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/pkg/errors"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"

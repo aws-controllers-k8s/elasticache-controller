@@ -28,8 +28,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.CacheParameterGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +50,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +75,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeCacheParameterGroupsOutput
-	resp, err = rm.sdkapi.DescribeCacheParameterGroupsWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeCacheParameterGroups(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheParameterGroups", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "CacheParameterGroupNotFound" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "CacheParameterGroupNotFound" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -149,7 +152,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeCacheParameterGroupsInput{}
 
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 
 	return res, nil
@@ -174,7 +177,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateCacheParameterGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateCacheParameterGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateCacheParameterGroup(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateCacheParameterGroup", err)
 	if err != nil {
 		return nil, err
@@ -229,27 +232,27 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateCacheParameterGroupInput{}
 
 	if r.ko.Spec.CacheParameterGroupFamily != nil {
-		res.SetCacheParameterGroupFamily(*r.ko.Spec.CacheParameterGroupFamily)
+		res.CacheParameterGroupFamily = r.ko.Spec.CacheParameterGroupFamily
 	}
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 	if r.ko.Spec.Description != nil {
-		res.SetDescription(*r.ko.Spec.Description)
+		res.Description = r.ko.Spec.Description
 	}
 	if r.ko.Spec.Tags != nil {
-		f3 := []*svcsdk.Tag{}
+		f3 := []svcsdktypes.Tag{}
 		for _, f3iter := range r.ko.Spec.Tags {
-			f3elem := &svcsdk.Tag{}
+			f3elem := &svcsdktypes.Tag{}
 			if f3iter.Key != nil {
-				f3elem.SetKey(*f3iter.Key)
+				f3elem.Key = f3iter.Key
 			}
 			if f3iter.Value != nil {
-				f3elem.SetValue(*f3iter.Value)
+				f3elem.Value = f3iter.Value
 			}
-			f3 = append(f3, f3elem)
+			f3 = append(f3, *f3elem)
 		}
-		res.SetTags(f3)
+		res.Tags = f3
 	}
 
 	return res, nil
@@ -282,7 +285,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteCacheParameterGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteCacheParameterGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteCacheParameterGroup(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteCacheParameterGroup", err)
 	return nil, err
 }
@@ -295,7 +298,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteCacheParameterGroupInput{}
 
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 
 	return res, nil
@@ -403,11 +406,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "CacheParameterGroupAlreadyExists",
 		"CacheParameterGroupQuotaExceeded",
 		"InvalidCacheParameterGroupState",

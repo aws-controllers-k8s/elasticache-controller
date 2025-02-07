@@ -28,8 +28,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.UserGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +50,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +75,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeUserGroupsOutput
-	resp, err = rm.sdkapi.DescribeUserGroupsWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeUserGroups(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeUserGroups", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "UserGroupNotFound" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "UserGroupNotFound" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -108,37 +111,24 @@ func (rm *resourceManager) sdkFind(
 		if elem.PendingChanges != nil {
 			f3 := &svcapitypes.UserGroupPendingChanges{}
 			if elem.PendingChanges.UserIdsToAdd != nil {
-				f3f0 := []*string{}
-				for _, f3f0iter := range elem.PendingChanges.UserIdsToAdd {
-					var f3f0elem string
-					f3f0elem = *f3f0iter
-					f3f0 = append(f3f0, &f3f0elem)
-				}
-				f3.UserIDsToAdd = f3f0
+				f3.UserIDsToAdd = aws.StringSlice(elem.PendingChanges.UserIdsToAdd)
 			}
 			if elem.PendingChanges.UserIdsToRemove != nil {
-				f3f1 := []*string{}
-				for _, f3f1iter := range elem.PendingChanges.UserIdsToRemove {
-					var f3f1elem string
-					f3f1elem = *f3f1iter
-					f3f1 = append(f3f1, &f3f1elem)
-				}
-				f3.UserIDsToRemove = f3f1
+				f3.UserIDsToRemove = aws.StringSlice(elem.PendingChanges.UserIdsToRemove)
 			}
 			ko.Status.PendingChanges = f3
 		} else {
 			ko.Status.PendingChanges = nil
 		}
 		if elem.ReplicationGroups != nil {
-			f4 := []*string{}
-			for _, f4iter := range elem.ReplicationGroups {
-				var f4elem string
-				f4elem = *f4iter
-				f4 = append(f4, &f4elem)
-			}
-			ko.Status.ReplicationGroups = f4
+			ko.Status.ReplicationGroups = aws.StringSlice(elem.ReplicationGroups)
 		} else {
 			ko.Status.ReplicationGroups = nil
+		}
+		if elem.ServerlessCaches != nil {
+			ko.Status.ServerlessCaches = aws.StringSlice(elem.ServerlessCaches)
+		} else {
+			ko.Status.ServerlessCaches = nil
 		}
 		if elem.Status != nil {
 			ko.Status.Status = elem.Status
@@ -151,13 +141,7 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.UserGroupID = nil
 		}
 		if elem.UserIds != nil {
-			f7 := []*string{}
-			for _, f7iter := range elem.UserIds {
-				var f7elem string
-				f7elem = *f7iter
-				f7 = append(f7, &f7elem)
-			}
-			ko.Spec.UserIDs = f7
+			ko.Spec.UserIDs = aws.StringSlice(elem.UserIds)
 		} else {
 			ko.Spec.UserIDs = nil
 		}
@@ -195,7 +179,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeUserGroupsInput{}
 
 	if r.ko.Spec.UserGroupID != nil {
-		res.SetUserGroupId(*r.ko.Spec.UserGroupID)
+		res.UserGroupId = r.ko.Spec.UserGroupID
 	}
 
 	return res, nil
@@ -220,7 +204,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateUserGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateUserGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateUserGroup(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateUserGroup", err)
 	if err != nil {
 		return nil, err
@@ -249,37 +233,24 @@ func (rm *resourceManager) sdkCreate(
 	if resp.PendingChanges != nil {
 		f3 := &svcapitypes.UserGroupPendingChanges{}
 		if resp.PendingChanges.UserIdsToAdd != nil {
-			f3f0 := []*string{}
-			for _, f3f0iter := range resp.PendingChanges.UserIdsToAdd {
-				var f3f0elem string
-				f3f0elem = *f3f0iter
-				f3f0 = append(f3f0, &f3f0elem)
-			}
-			f3.UserIDsToAdd = f3f0
+			f3.UserIDsToAdd = aws.StringSlice(resp.PendingChanges.UserIdsToAdd)
 		}
 		if resp.PendingChanges.UserIdsToRemove != nil {
-			f3f1 := []*string{}
-			for _, f3f1iter := range resp.PendingChanges.UserIdsToRemove {
-				var f3f1elem string
-				f3f1elem = *f3f1iter
-				f3f1 = append(f3f1, &f3f1elem)
-			}
-			f3.UserIDsToRemove = f3f1
+			f3.UserIDsToRemove = aws.StringSlice(resp.PendingChanges.UserIdsToRemove)
 		}
 		ko.Status.PendingChanges = f3
 	} else {
 		ko.Status.PendingChanges = nil
 	}
 	if resp.ReplicationGroups != nil {
-		f4 := []*string{}
-		for _, f4iter := range resp.ReplicationGroups {
-			var f4elem string
-			f4elem = *f4iter
-			f4 = append(f4, &f4elem)
-		}
-		ko.Status.ReplicationGroups = f4
+		ko.Status.ReplicationGroups = aws.StringSlice(resp.ReplicationGroups)
 	} else {
 		ko.Status.ReplicationGroups = nil
+	}
+	if resp.ServerlessCaches != nil {
+		ko.Status.ServerlessCaches = aws.StringSlice(resp.ServerlessCaches)
+	} else {
+		ko.Status.ServerlessCaches = nil
 	}
 	if resp.Status != nil {
 		ko.Status.Status = resp.Status
@@ -292,13 +263,7 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.UserGroupID = nil
 	}
 	if resp.UserIds != nil {
-		f7 := []*string{}
-		for _, f7iter := range resp.UserIds {
-			var f7elem string
-			f7elem = *f7iter
-			f7 = append(f7, &f7elem)
-		}
-		ko.Spec.UserIDs = f7
+		ko.Spec.UserIDs = aws.StringSlice(resp.UserIds)
 	} else {
 		ko.Spec.UserIDs = nil
 	}
@@ -321,33 +286,27 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateUserGroupInput{}
 
 	if r.ko.Spec.Engine != nil {
-		res.SetEngine(*r.ko.Spec.Engine)
+		res.Engine = r.ko.Spec.Engine
 	}
 	if r.ko.Spec.Tags != nil {
-		f1 := []*svcsdk.Tag{}
+		f1 := []svcsdktypes.Tag{}
 		for _, f1iter := range r.ko.Spec.Tags {
-			f1elem := &svcsdk.Tag{}
+			f1elem := &svcsdktypes.Tag{}
 			if f1iter.Key != nil {
-				f1elem.SetKey(*f1iter.Key)
+				f1elem.Key = f1iter.Key
 			}
 			if f1iter.Value != nil {
-				f1elem.SetValue(*f1iter.Value)
+				f1elem.Value = f1iter.Value
 			}
-			f1 = append(f1, f1elem)
+			f1 = append(f1, *f1elem)
 		}
-		res.SetTags(f1)
+		res.Tags = f1
 	}
 	if r.ko.Spec.UserGroupID != nil {
-		res.SetUserGroupId(*r.ko.Spec.UserGroupID)
+		res.UserGroupId = r.ko.Spec.UserGroupID
 	}
 	if r.ko.Spec.UserIDs != nil {
-		f3 := []*string{}
-		for _, f3iter := range r.ko.Spec.UserIDs {
-			var f3elem string
-			f3elem = *f3iter
-			f3 = append(f3, &f3elem)
-		}
-		res.SetUserIds(f3)
+		res.UserIds = aws.ToStringSlice(r.ko.Spec.UserIDs)
 	}
 
 	return res, nil
@@ -380,7 +339,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteUserGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteUserGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteUserGroup(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteUserGroup", err)
 	return nil, err
 }
@@ -393,7 +352,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteUserGroupInput{}
 
 	if r.ko.Spec.UserGroupID != nil {
-		res.SetUserGroupId(*r.ko.Spec.UserGroupID)
+		res.UserGroupId = r.ko.Spec.UserGroupID
 	}
 
 	return res, nil
@@ -501,11 +460,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "DuplicateUserNameFault",
 		"UserGroupAlreadyExistsFault",
 		"InvalidParameterCombination",

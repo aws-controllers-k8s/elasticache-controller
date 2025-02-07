@@ -6,4 +6,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: public.ecr.aws/aws-controllers-k8s/elasticache-controller
-  newTag: 0.1.0
+  newTag: 1.6.0

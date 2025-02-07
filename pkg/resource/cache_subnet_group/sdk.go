@@ -28,8 +28,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.CacheSubnetGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +50,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +75,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeCacheSubnetGroupsOutput
-	resp, err = rm.sdkapi.DescribeCacheSubnetGroupsWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeCacheSubnetGroups(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheSubnetGroups", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "CacheSubnetGroupNotFoundFault" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "CacheSubnetGroupNotFoundFault" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -126,11 +129,31 @@ func (rm *resourceManager) sdkFind(
 					}
 					f3elem.SubnetOutpost = f3elemf2
 				}
+				if f3iter.SupportedNetworkTypes != nil {
+					f3elemf3 := []*string{}
+					for _, f3elemf3iter := range f3iter.SupportedNetworkTypes {
+						var f3elemf3elem *string
+						f3elemf3elem = aws.String(string(f3elemf3iter))
+						f3elemf3 = append(f3elemf3, f3elemf3elem)
+					}
+					f3elem.SupportedNetworkTypes = f3elemf3
+				}
 				f3 = append(f3, f3elem)
 			}
 			ko.Status.Subnets = f3
 		} else {
 			ko.Status.Subnets = nil
+		}
+		if elem.SupportedNetworkTypes != nil {
+			f4 := []*string{}
+			for _, f4iter := range elem.SupportedNetworkTypes {
+				var f4elem *string
+				f4elem = aws.String(string(f4iter))
+				f4 = append(f4, f4elem)
+			}
+			ko.Status.SupportedNetworkTypes = f4
+		} else {
+			ko.Status.SupportedNetworkTypes = nil
 		}
 		if elem.VpcId != nil {
 			ko.Status.VPCID = elem.VpcId
@@ -180,7 +203,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeCacheSubnetGroupsInput{}
 
 	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+		res.CacheSubnetGroupName = r.ko.Spec.CacheSubnetGroupName
 	}
 
 	return res, nil
@@ -205,7 +228,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateCacheSubnetGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateCacheSubnetGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateCacheSubnetGroup(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateCacheSubnetGroup", err)
 	if err != nil {
 		return nil, err
@@ -252,11 +275,31 @@ func (rm *resourceManager) sdkCreate(
 				}
 				f3elem.SubnetOutpost = f3elemf2
 			}
+			if f3iter.SupportedNetworkTypes != nil {
+				f3elemf3 := []*string{}
+				for _, f3elemf3iter := range f3iter.SupportedNetworkTypes {
+					var f3elemf3elem *string
+					f3elemf3elem = aws.String(string(f3elemf3iter))
+					f3elemf3 = append(f3elemf3, f3elemf3elem)
+				}
+				f3elem.SupportedNetworkTypes = f3elemf3
+			}
 			f3 = append(f3, f3elem)
 		}
 		ko.Status.Subnets = f3
 	} else {
 		ko.Status.Subnets = nil
+	}
+	if resp.CacheSubnetGroup.SupportedNetworkTypes != nil {
+		f4 := []*string{}
+		for _, f4iter := range resp.CacheSubnetGroup.SupportedNetworkTypes {
+			var f4elem *string
+			f4elem = aws.String(string(f4iter))
+			f4 = append(f4, f4elem)
+		}
+		ko.Status.SupportedNetworkTypes = f4
+	} else {
+		ko.Status.SupportedNetworkTypes = nil
 	}
 	if resp.CacheSubnetGroup.VpcId != nil {
 		ko.Status.VPCID = resp.CacheSubnetGroup.VpcId
@@ -277,33 +320,27 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateCacheSubnetGroupInput{}
 
 	if r.ko.Spec.CacheSubnetGroupDescription != nil {
-		res.SetCacheSubnetGroupDescription(*r.ko.Spec.CacheSubnetGroupDescription)
+		res.CacheSubnetGroupDescription = r.ko.Spec.CacheSubnetGroupDescription
 	}
 	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+		res.CacheSubnetGroupName = r.ko.Spec.CacheSubnetGroupName
 	}
 	if r.ko.Spec.SubnetIDs != nil {
-		f2 := []*string{}
-		for _, f2iter := range r.ko.Spec.SubnetIDs {
-			var f2elem string
-			f2elem = *f2iter
-			f2 = append(f2, &f2elem)
-		}
-		res.SetSubnetIds(f2)
+		res.SubnetIds = aws.ToStringSlice(r.ko.Spec.SubnetIDs)
 	}
 	if r.ko.Spec.Tags != nil {
-		f3 := []*svcsdk.Tag{}
+		f3 := []svcsdktypes.Tag{}
 		for _, f3iter := range r.ko.Spec.Tags {
-			f3elem := &svcsdk.Tag{}
+			f3elem := &svcsdktypes.Tag{}
 			if f3iter.Key != nil {
-				f3elem.SetKey(*f3iter.Key)
+				f3elem.Key = f3iter.Key
 			}
 			if f3iter.Value != nil {
-				f3elem.SetValue(*f3iter.Value)
+				f3elem.Value = f3iter.Value
 			}
-			f3 = append(f3, f3elem)
+			f3 = append(f3, *f3elem)
 		}
-		res.SetTags(f3)
+		res.Tags = f3
 	}
 
 	return res, nil
@@ -329,7 +366,7 @@ func (rm *resourceManager) sdkUpdate(
 
 	var resp *svcsdk.ModifyCacheSubnetGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.ModifyCacheSubnetGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.ModifyCacheSubnetGroup(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyCacheSubnetGroup", err)
 	if err != nil {
 		return nil, err
@@ -376,11 +413,31 @@ func (rm *resourceManager) sdkUpdate(
 				}
 				f3elem.SubnetOutpost = f3elemf2
 			}
+			if f3iter.SupportedNetworkTypes != nil {
+				f3elemf3 := []*string{}
+				for _, f3elemf3iter := range f3iter.SupportedNetworkTypes {
+					var f3elemf3elem *string
+					f3elemf3elem = aws.String(string(f3elemf3iter))
+					f3elemf3 = append(f3elemf3, f3elemf3elem)
+				}
+				f3elem.SupportedNetworkTypes = f3elemf3
+			}
 			f3 = append(f3, f3elem)
 		}
 		ko.Status.Subnets = f3
 	} else {
 		ko.Status.Subnets = nil
+	}
+	if resp.CacheSubnetGroup.SupportedNetworkTypes != nil {
+		f4 := []*string{}
+		for _, f4iter := range resp.CacheSubnetGroup.SupportedNetworkTypes {
+			var f4elem *string
+			f4elem = aws.String(string(f4iter))
+			f4 = append(f4, f4elem)
+		}
+		ko.Status.SupportedNetworkTypes = f4
+	} else {
+		ko.Status.SupportedNetworkTypes = nil
 	}
 	if resp.CacheSubnetGroup.VpcId != nil {
 		ko.Status.VPCID = resp.CacheSubnetGroup.VpcId
@@ -402,19 +459,13 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	res := &svcsdk.ModifyCacheSubnetGroupInput{}
 
 	if r.ko.Spec.CacheSubnetGroupDescription != nil {
-		res.SetCacheSubnetGroupDescription(*r.ko.Spec.CacheSubnetGroupDescription)
+		res.CacheSubnetGroupDescription = r.ko.Spec.CacheSubnetGroupDescription
 	}
 	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+		res.CacheSubnetGroupName = r.ko.Spec.CacheSubnetGroupName
 	}
 	if r.ko.Spec.SubnetIDs != nil {
-		f2 := []*string{}
-		for _, f2iter := range r.ko.Spec.SubnetIDs {
-			var f2elem string
-			f2elem = *f2iter
-			f2 = append(f2, &f2elem)
-		}
-		res.SetSubnetIds(f2)
+		res.SubnetIds = aws.ToStringSlice(r.ko.Spec.SubnetIDs)
 	}
 
 	return res, nil
@@ -436,7 +487,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteCacheSubnetGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteCacheSubnetGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteCacheSubnetGroup(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteCacheSubnetGroup", err)
 	return nil, err
 }
@@ -449,7 +500,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteCacheSubnetGroupInput{}
 
 	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+		res.CacheSubnetGroupName = r.ko.Spec.CacheSubnetGroupName
 	}
 
 	return res, nil
@@ -557,11 +608,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "CacheSubnetGroupQuotaExceeded",
 		"CacheSubnetQuotaExceededFault",
 		"SubnetInUse",
