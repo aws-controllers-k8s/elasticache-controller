@@ -2,7 +2,7 @@ service:
   full_name: "Amazon ElastiCache"
   short_name: "ElastiCache"
   link: "https://aws.amazon.com/elasticache/"
-  documentation: "https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html"
+  documentation: "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html"
 api_versions:
   - api_version: v1alpha1
     status: available

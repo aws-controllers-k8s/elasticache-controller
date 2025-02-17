@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 
@@ -28,8 +29,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +43,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.ReplicationGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +51,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +76,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeReplicationGroupsOutput
-	resp, err = rm.sdkapi.DescribeReplicationGroupsWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeReplicationGroups(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeReplicationGroups", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "ReplicationGroupNotFoundFault" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "ReplicationGroupNotFoundFault" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -115,8 +119,8 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.AutoMinorVersionUpgrade = nil
 		}
-		if elem.AutomaticFailover != nil {
-			ko.Status.AutomaticFailover = elem.AutomaticFailover
+		if elem.AutomaticFailover != "" {
+			ko.Status.AutomaticFailover = aws.String(string(elem.AutomaticFailover))
 		} else {
 			ko.Status.AutomaticFailover = nil
 		}
@@ -136,14 +140,15 @@ func (rm *resourceManager) sdkFind(
 				f8.Address = elem.ConfigurationEndpoint.Address
 			}
 			if elem.ConfigurationEndpoint.Port != nil {
-				f8.Port = elem.ConfigurationEndpoint.Port
+				portCopy := int64(*elem.ConfigurationEndpoint.Port)
+				f8.Port = &portCopy
 			}
 			ko.Status.ConfigurationEndpoint = f8
 		} else {
 			ko.Status.ConfigurationEndpoint = nil
 		}
-		if elem.DataTiering != nil {
-			ko.Status.DataTiering = elem.DataTiering
+		if elem.DataTiering != "" {
+			ko.Status.DataTiering = aws.String(string(elem.DataTiering))
 		} else {
 			ko.Status.DataTiering = nil
 		}
@@ -152,15 +157,20 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.Description = nil
 		}
+		if elem.Engine != nil {
+			ko.Spec.Engine = elem.Engine
+		} else {
+			ko.Spec.Engine = nil
+		}
 		if elem.GlobalReplicationGroupInfo != nil {
-			f11 := &svcapitypes.GlobalReplicationGroupInfo{}
+			f12 := &svcapitypes.GlobalReplicationGroupInfo{}
 			if elem.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
-				f11.GlobalReplicationGroupID = elem.GlobalReplicationGroupInfo.GlobalReplicationGroupId
+				f12.GlobalReplicationGroupID = elem.GlobalReplicationGroupInfo.GlobalReplicationGroupId
 			}
 			if elem.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
-				f11.GlobalReplicationGroupMemberRole = elem.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
+				f12.GlobalReplicationGroupMemberRole = elem.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 			}
-			ko.Status.GlobalReplicationGroupInfo = f11
+			ko.Status.GlobalReplicationGroupInfo = f12
 		} else {
 			ko.Status.GlobalReplicationGroupInfo = nil
 		}
@@ -170,221 +180,200 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.KMSKeyID = nil
 		}
 		if elem.LogDeliveryConfigurations != nil {
-			f13 := []*svcapitypes.LogDeliveryConfigurationRequest{}
-			for _, f13iter := range elem.LogDeliveryConfigurations {
-				f13elem := &svcapitypes.LogDeliveryConfigurationRequest{}
-				if f13iter.DestinationDetails != nil {
-					f13elemf0 := &svcapitypes.DestinationDetails{}
-					if f13iter.DestinationDetails.CloudWatchLogsDetails != nil {
-						f13elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-						if f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-							f13elemf0f0.LogGroup = f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+			f14 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+			for _, f14iter := range elem.LogDeliveryConfigurations {
+				f14elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+				if f14iter.DestinationDetails != nil {
+					f14elemf0 := &svcapitypes.DestinationDetails{}
+					if f14iter.DestinationDetails.CloudWatchLogsDetails != nil {
+						f14elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+						if f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+							f14elemf0f0.LogGroup = f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 						}
-						f13elemf0.CloudWatchLogsDetails = f13elemf0f0
+						f14elemf0.CloudWatchLogsDetails = f14elemf0f0
 					}
-					if f13iter.DestinationDetails.KinesisFirehoseDetails != nil {
-						f13elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-						if f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-							f13elemf0f1.DeliveryStream = f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					if f14iter.DestinationDetails.KinesisFirehoseDetails != nil {
+						f14elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+						if f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+							f14elemf0f1.DeliveryStream = f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 						}
-						f13elemf0.KinesisFirehoseDetails = f13elemf0f1
+						f14elemf0.KinesisFirehoseDetails = f14elemf0f1
 					}
-					f13elem.DestinationDetails = f13elemf0
+					f14elem.DestinationDetails = f14elemf0
 				}
-				if f13iter.DestinationType != nil {
-					f13elem.DestinationType = f13iter.DestinationType
+				if f14iter.DestinationType != "" {
+					f14elem.DestinationType = aws.String(string(f14iter.DestinationType))
 				}
-				if f13iter.LogFormat != nil {
-					f13elem.LogFormat = f13iter.LogFormat
+				if f14iter.LogFormat != "" {
+					f14elem.LogFormat = aws.String(string(f14iter.LogFormat))
 				}
-				if f13iter.LogType != nil {
-					f13elem.LogType = f13iter.LogType
+				if f14iter.LogType != "" {
+					f14elem.LogType = aws.String(string(f14iter.LogType))
 				}
-				f13 = append(f13, f13elem)
+				f14 = append(f14, f14elem)
 			}
-			ko.Spec.LogDeliveryConfigurations = f13
+			ko.Spec.LogDeliveryConfigurations = f14
 		} else {
 			ko.Spec.LogDeliveryConfigurations = nil
 		}
 		if elem.MemberClusters != nil {
-			f14 := []*string{}
-			for _, f14iter := range elem.MemberClusters {
-				var f14elem string
-				f14elem = *f14iter
-				f14 = append(f14, &f14elem)
-			}
-			ko.Status.MemberClusters = f14
+			ko.Status.MemberClusters = aws.StringSlice(elem.MemberClusters)
 		} else {
 			ko.Status.MemberClusters = nil
 		}
 		if elem.MemberClustersOutpostArns != nil {
-			f15 := []*string{}
-			for _, f15iter := range elem.MemberClustersOutpostArns {
-				var f15elem string
-				f15elem = *f15iter
-				f15 = append(f15, &f15elem)
-			}
-			ko.Status.MemberClustersOutpostARNs = f15
+			ko.Status.MemberClustersOutpostARNs = aws.StringSlice(elem.MemberClustersOutpostArns)
 		} else {
 			ko.Status.MemberClustersOutpostARNs = nil
 		}
-		if elem.MultiAZ != nil {
-			ko.Status.MultiAZ = elem.MultiAZ
+		if elem.MultiAZ != "" {
+			ko.Status.MultiAZ = aws.String(string(elem.MultiAZ))
 		} else {
 			ko.Status.MultiAZ = nil
 		}
 		if elem.NodeGroups != nil {
-			f17 := []*svcapitypes.NodeGroup{}
-			for _, f17iter := range elem.NodeGroups {
-				f17elem := &svcapitypes.NodeGroup{}
-				if f17iter.NodeGroupId != nil {
-					f17elem.NodeGroupID = f17iter.NodeGroupId
+			f18 := []*svcapitypes.NodeGroup{}
+			for _, f18iter := range elem.NodeGroups {
+				f18elem := &svcapitypes.NodeGroup{}
+				if f18iter.NodeGroupId != nil {
+					f18elem.NodeGroupID = f18iter.NodeGroupId
 				}
-				if f17iter.NodeGroupMembers != nil {
-					f17elemf1 := []*svcapitypes.NodeGroupMember{}
-					for _, f17elemf1iter := range f17iter.NodeGroupMembers {
-						f17elemf1elem := &svcapitypes.NodeGroupMember{}
-						if f17elemf1iter.CacheClusterId != nil {
-							f17elemf1elem.CacheClusterID = f17elemf1iter.CacheClusterId
+				if f18iter.NodeGroupMembers != nil {
+					f18elemf1 := []*svcapitypes.NodeGroupMember{}
+					for _, f18elemf1iter := range f18iter.NodeGroupMembers {
+						f18elemf1elem := &svcapitypes.NodeGroupMember{}
+						if f18elemf1iter.CacheClusterId != nil {
+							f18elemf1elem.CacheClusterID = f18elemf1iter.CacheClusterId
 						}
-						if f17elemf1iter.CacheNodeId != nil {
-							f17elemf1elem.CacheNodeID = f17elemf1iter.CacheNodeId
+						if f18elemf1iter.CacheNodeId != nil {
+							f18elemf1elem.CacheNodeID = f18elemf1iter.CacheNodeId
 						}
-						if f17elemf1iter.CurrentRole != nil {
-							f17elemf1elem.CurrentRole = f17elemf1iter.CurrentRole
+						if f18elemf1iter.CurrentRole != nil {
+							f18elemf1elem.CurrentRole = f18elemf1iter.CurrentRole
 						}
-						if f17elemf1iter.PreferredAvailabilityZone != nil {
-							f17elemf1elem.PreferredAvailabilityZone = f17elemf1iter.PreferredAvailabilityZone
+						if f18elemf1iter.PreferredAvailabilityZone != nil {
+							f18elemf1elem.PreferredAvailabilityZone = f18elemf1iter.PreferredAvailabilityZone
 						}
-						if f17elemf1iter.PreferredOutpostArn != nil {
-							f17elemf1elem.PreferredOutpostARN = f17elemf1iter.PreferredOutpostArn
+						if f18elemf1iter.PreferredOutpostArn != nil {
+							f18elemf1elem.PreferredOutpostARN = f18elemf1iter.PreferredOutpostArn
 						}
-						if f17elemf1iter.ReadEndpoint != nil {
-							f17elemf1elemf5 := &svcapitypes.Endpoint{}
-							if f17elemf1iter.ReadEndpoint.Address != nil {
-								f17elemf1elemf5.Address = f17elemf1iter.ReadEndpoint.Address
+						if f18elemf1iter.ReadEndpoint != nil {
+							f18elemf1elemf5 := &svcapitypes.Endpoint{}
+							if f18elemf1iter.ReadEndpoint.Address != nil {
+								f18elemf1elemf5.Address = f18elemf1iter.ReadEndpoint.Address
 							}
-							if f17elemf1iter.ReadEndpoint.Port != nil {
-								f17elemf1elemf5.Port = f17elemf1iter.ReadEndpoint.Port
+							if f18elemf1iter.ReadEndpoint.Port != nil {
+								portCopy := int64(*f18elemf1iter.ReadEndpoint.Port)
+								f18elemf1elemf5.Port = &portCopy
 							}
-							f17elemf1elem.ReadEndpoint = f17elemf1elemf5
+							f18elemf1elem.ReadEndpoint = f18elemf1elemf5
 						}
-						f17elemf1 = append(f17elemf1, f17elemf1elem)
+						f18elemf1 = append(f18elemf1, f18elemf1elem)
 					}
-					f17elem.NodeGroupMembers = f17elemf1
+					f18elem.NodeGroupMembers = f18elemf1
 				}
-				if f17iter.PrimaryEndpoint != nil {
-					f17elemf2 := &svcapitypes.Endpoint{}
-					if f17iter.PrimaryEndpoint.Address != nil {
-						f17elemf2.Address = f17iter.PrimaryEndpoint.Address
+				if f18iter.PrimaryEndpoint != nil {
+					f18elemf2 := &svcapitypes.Endpoint{}
+					if f18iter.PrimaryEndpoint.Address != nil {
+						f18elemf2.Address = f18iter.PrimaryEndpoint.Address
 					}
-					if f17iter.PrimaryEndpoint.Port != nil {
-						f17elemf2.Port = f17iter.PrimaryEndpoint.Port
+					if f18iter.PrimaryEndpoint.Port != nil {
+						portCopy := int64(*f18iter.PrimaryEndpoint.Port)
+						f18elemf2.Port = &portCopy
 					}
-					f17elem.PrimaryEndpoint = f17elemf2
+					f18elem.PrimaryEndpoint = f18elemf2
 				}
-				if f17iter.ReaderEndpoint != nil {
-					f17elemf3 := &svcapitypes.Endpoint{}
-					if f17iter.ReaderEndpoint.Address != nil {
-						f17elemf3.Address = f17iter.ReaderEndpoint.Address
+				if f18iter.ReaderEndpoint != nil {
+					f18elemf3 := &svcapitypes.Endpoint{}
+					if f18iter.ReaderEndpoint.Address != nil {
+						f18elemf3.Address = f18iter.ReaderEndpoint.Address
 					}
-					if f17iter.ReaderEndpoint.Port != nil {
-						f17elemf3.Port = f17iter.ReaderEndpoint.Port
+					if f18iter.ReaderEndpoint.Port != nil {
+						portCopy := int64(*f18iter.ReaderEndpoint.Port)
+						f18elemf3.Port = &portCopy
 					}
-					f17elem.ReaderEndpoint = f17elemf3
+					f18elem.ReaderEndpoint = f18elemf3
 				}
-				if f17iter.Slots != nil {
-					f17elem.Slots = f17iter.Slots
+				if f18iter.Slots != nil {
+					f18elem.Slots = f18iter.Slots
 				}
-				if f17iter.Status != nil {
-					f17elem.Status = f17iter.Status
+				if f18iter.Status != nil {
+					f18elem.Status = f18iter.Status
 				}
-				f17 = append(f17, f17elem)
+				f18 = append(f18, f18elem)
 			}
-			ko.Status.NodeGroups = f17
+			ko.Status.NodeGroups = f18
 		} else {
 			ko.Status.NodeGroups = nil
 		}
 		if elem.PendingModifiedValues != nil {
-			f18 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
-			if elem.PendingModifiedValues.AuthTokenStatus != nil {
-				f18.AuthTokenStatus = elem.PendingModifiedValues.AuthTokenStatus
+			f19 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
+			if elem.PendingModifiedValues.AuthTokenStatus != "" {
+				f19.AuthTokenStatus = aws.String(string(elem.PendingModifiedValues.AuthTokenStatus))
 			}
-			if elem.PendingModifiedValues.AutomaticFailoverStatus != nil {
-				f18.AutomaticFailoverStatus = elem.PendingModifiedValues.AutomaticFailoverStatus
+			if elem.PendingModifiedValues.AutomaticFailoverStatus != "" {
+				f19.AutomaticFailoverStatus = aws.String(string(elem.PendingModifiedValues.AutomaticFailoverStatus))
 			}
 			if elem.PendingModifiedValues.LogDeliveryConfigurations != nil {
-				f18f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
-				for _, f18f2iter := range elem.PendingModifiedValues.LogDeliveryConfigurations {
-					f18f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
-					if f18f2iter.DestinationDetails != nil {
-						f18f2elemf0 := &svcapitypes.DestinationDetails{}
-						if f18f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
-							f18f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-							if f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-								f18f2elemf0f0.LogGroup = f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+				f19f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
+				for _, f19f2iter := range elem.PendingModifiedValues.LogDeliveryConfigurations {
+					f19f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
+					if f19f2iter.DestinationDetails != nil {
+						f19f2elemf0 := &svcapitypes.DestinationDetails{}
+						if f19f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
+							f19f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+							if f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+								f19f2elemf0f0.LogGroup = f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 							}
-							f18f2elemf0.CloudWatchLogsDetails = f18f2elemf0f0
+							f19f2elemf0.CloudWatchLogsDetails = f19f2elemf0f0
 						}
-						if f18f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
-							f18f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-							if f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-								f18f2elemf0f1.DeliveryStream = f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+						if f19f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
+							f19f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+							if f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+								f19f2elemf0f1.DeliveryStream = f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 							}
-							f18f2elemf0.KinesisFirehoseDetails = f18f2elemf0f1
+							f19f2elemf0.KinesisFirehoseDetails = f19f2elemf0f1
 						}
-						f18f2elem.DestinationDetails = f18f2elemf0
+						f19f2elem.DestinationDetails = f19f2elemf0
 					}
-					if f18f2iter.DestinationType != nil {
-						f18f2elem.DestinationType = f18f2iter.DestinationType
+					if f19f2iter.DestinationType != "" {
+						f19f2elem.DestinationType = aws.String(string(f19f2iter.DestinationType))
 					}
-					if f18f2iter.LogFormat != nil {
-						f18f2elem.LogFormat = f18f2iter.LogFormat
+					if f19f2iter.LogFormat != "" {
+						f19f2elem.LogFormat = aws.String(string(f19f2iter.LogFormat))
 					}
-					if f18f2iter.LogType != nil {
-						f18f2elem.LogType = f18f2iter.LogType
+					if f19f2iter.LogType != "" {
+						f19f2elem.LogType = aws.String(string(f19f2iter.LogType))
 					}
-					f18f2 = append(f18f2, f18f2elem)
+					f19f2 = append(f19f2, f19f2elem)
 				}
-				f18.LogDeliveryConfigurations = f18f2
+				f19.LogDeliveryConfigurations = f19f2
 			}
 			if elem.PendingModifiedValues.PrimaryClusterId != nil {
-				f18.PrimaryClusterID = elem.PendingModifiedValues.PrimaryClusterId
+				f19.PrimaryClusterID = elem.PendingModifiedValues.PrimaryClusterId
 			}
 			if elem.PendingModifiedValues.Resharding != nil {
-				f18f4 := &svcapitypes.ReshardingStatus{}
+				f19f4 := &svcapitypes.ReshardingStatus{}
 				if elem.PendingModifiedValues.Resharding.SlotMigration != nil {
-					f18f4f0 := &svcapitypes.SlotMigration{}
+					f19f4f0 := &svcapitypes.SlotMigration{}
 					if elem.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
-						f18f4f0.ProgressPercentage = elem.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
+						f19f4f0.ProgressPercentage = elem.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
 					}
-					f18f4.SlotMigration = f18f4f0
+					f19f4.SlotMigration = f19f4f0
 				}
-				f18.Resharding = f18f4
+				f19.Resharding = f19f4
 			}
 			if elem.PendingModifiedValues.UserGroups != nil {
-				f18f5 := &svcapitypes.UserGroupsUpdateStatus{}
+				f19f5 := &svcapitypes.UserGroupsUpdateStatus{}
 				if elem.PendingModifiedValues.UserGroups.UserGroupIdsToAdd != nil {
-					f18f5f0 := []*string{}
-					for _, f18f5f0iter := range elem.PendingModifiedValues.UserGroups.UserGroupIdsToAdd {
-						var f18f5f0elem string
-						f18f5f0elem = *f18f5f0iter
-						f18f5f0 = append(f18f5f0, &f18f5f0elem)
-					}
-					f18f5.UserGroupIDsToAdd = f18f5f0
+					f19f5.UserGroupIDsToAdd = aws.StringSlice(elem.PendingModifiedValues.UserGroups.UserGroupIdsToAdd)
 				}
 				if elem.PendingModifiedValues.UserGroups.UserGroupIdsToRemove != nil {
-					f18f5f1 := []*string{}
-					for _, f18f5f1iter := range elem.PendingModifiedValues.UserGroups.UserGroupIdsToRemove {
-						var f18f5f1elem string
-						f18f5f1elem = *f18f5f1iter
-						f18f5f1 = append(f18f5f1, &f18f5f1elem)
-					}
-					f18f5.UserGroupIDsToRemove = f18f5f1
+					f19f5.UserGroupIDsToRemove = aws.StringSlice(elem.PendingModifiedValues.UserGroups.UserGroupIdsToRemove)
 				}
-				f18.UserGroups = f18f5
+				f19.UserGroups = f19f5
 			}
-			ko.Status.PendingModifiedValues = f18
+			ko.Status.PendingModifiedValues = f19
 		} else {
 			ko.Status.PendingModifiedValues = nil
 		}
@@ -399,7 +388,8 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.ReplicationGroupID = nil
 		}
 		if elem.SnapshotRetentionLimit != nil {
-			ko.Spec.SnapshotRetentionLimit = elem.SnapshotRetentionLimit
+			snapshotRetentionLimitCopy := int64(*elem.SnapshotRetentionLimit)
+			ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 		} else {
 			ko.Spec.SnapshotRetentionLimit = nil
 		}
@@ -424,13 +414,7 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.TransitEncryptionEnabled = nil
 		}
 		if elem.UserGroupIds != nil {
-			f26 := []*string{}
-			for _, f26iter := range elem.UserGroupIds {
-				var f26elem string
-				f26elem = *f26iter
-				f26 = append(f26, &f26elem)
-			}
-			ko.Spec.UserGroupIDs = f26
+			ko.Spec.UserGroupIDs = aws.StringSlice(elem.UserGroupIds)
 		} else {
 			ko.Spec.UserGroupIDs = nil
 		}
@@ -526,7 +510,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeReplicationGroupsInput{}
 
 	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+		res.ReplicationGroupId = r.ko.Spec.ReplicationGroupID
 	}
 
 	return res, nil
@@ -551,7 +535,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateReplicationGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateReplicationGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateReplicationGroup(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateReplicationGroup", err)
 	if err != nil {
 		return nil, err
@@ -587,8 +571,8 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.AutoMinorVersionUpgrade = nil
 	}
-	if resp.ReplicationGroup.AutomaticFailover != nil {
-		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
+	if resp.ReplicationGroup.AutomaticFailover != "" {
+		ko.Status.AutomaticFailover = aws.String(string(resp.ReplicationGroup.AutomaticFailover))
 	} else {
 		ko.Status.AutomaticFailover = nil
 	}
@@ -608,14 +592,15 @@ func (rm *resourceManager) sdkCreate(
 			f8.Address = resp.ReplicationGroup.ConfigurationEndpoint.Address
 		}
 		if resp.ReplicationGroup.ConfigurationEndpoint.Port != nil {
-			f8.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
+			portCopy := int64(*resp.ReplicationGroup.ConfigurationEndpoint.Port)
+			f8.Port = &portCopy
 		}
 		ko.Status.ConfigurationEndpoint = f8
 	} else {
 		ko.Status.ConfigurationEndpoint = nil
 	}
-	if resp.ReplicationGroup.DataTiering != nil {
-		ko.Status.DataTiering = resp.ReplicationGroup.DataTiering
+	if resp.ReplicationGroup.DataTiering != "" {
+		ko.Status.DataTiering = aws.String(string(resp.ReplicationGroup.DataTiering))
 	} else {
 		ko.Status.DataTiering = nil
 	}
@@ -624,15 +609,20 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.Description = nil
 	}
+	if resp.ReplicationGroup.Engine != nil {
+		ko.Spec.Engine = resp.ReplicationGroup.Engine
+	} else {
+		ko.Spec.Engine = nil
+	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
-		f11 := &svcapitypes.GlobalReplicationGroupInfo{}
+		f12 := &svcapitypes.GlobalReplicationGroupInfo{}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
-			f11.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
+			f12.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
 		}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
-			f11.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
+			f12.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 		}
-		ko.Status.GlobalReplicationGroupInfo = f11
+		ko.Status.GlobalReplicationGroupInfo = f12
 	} else {
 		ko.Status.GlobalReplicationGroupInfo = nil
 	}
@@ -642,221 +632,200 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.KMSKeyID = nil
 	}
 	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
-		f13 := []*svcapitypes.LogDeliveryConfigurationRequest{}
-		for _, f13iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
-			f13elem := &svcapitypes.LogDeliveryConfigurationRequest{}
-			if f13iter.DestinationDetails != nil {
-				f13elemf0 := &svcapitypes.DestinationDetails{}
-				if f13iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f13elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-					if f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f13elemf0f0.LogGroup = f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+		f14 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f14iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
+			f14elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f14iter.DestinationDetails != nil {
+				f14elemf0 := &svcapitypes.DestinationDetails{}
+				if f14iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f14elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f14elemf0f0.LogGroup = f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f13elemf0.CloudWatchLogsDetails = f13elemf0f0
+					f14elemf0.CloudWatchLogsDetails = f14elemf0f0
 				}
-				if f13iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f13elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-					if f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f13elemf0f1.DeliveryStream = f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+				if f14iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f14elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f14elemf0f1.DeliveryStream = f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f13elemf0.KinesisFirehoseDetails = f13elemf0f1
+					f14elemf0.KinesisFirehoseDetails = f14elemf0f1
 				}
-				f13elem.DestinationDetails = f13elemf0
+				f14elem.DestinationDetails = f14elemf0
 			}
-			if f13iter.DestinationType != nil {
-				f13elem.DestinationType = f13iter.DestinationType
+			if f14iter.DestinationType != "" {
+				f14elem.DestinationType = aws.String(string(f14iter.DestinationType))
 			}
-			if f13iter.LogFormat != nil {
-				f13elem.LogFormat = f13iter.LogFormat
+			if f14iter.LogFormat != "" {
+				f14elem.LogFormat = aws.String(string(f14iter.LogFormat))
 			}
-			if f13iter.LogType != nil {
-				f13elem.LogType = f13iter.LogType
+			if f14iter.LogType != "" {
+				f14elem.LogType = aws.String(string(f14iter.LogType))
 			}
-			f13 = append(f13, f13elem)
+			f14 = append(f14, f14elem)
 		}
-		ko.Spec.LogDeliveryConfigurations = f13
+		ko.Spec.LogDeliveryConfigurations = f14
 	} else {
 		ko.Spec.LogDeliveryConfigurations = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
-		f14 := []*string{}
-		for _, f14iter := range resp.ReplicationGroup.MemberClusters {
-			var f14elem string
-			f14elem = *f14iter
-			f14 = append(f14, &f14elem)
-		}
-		ko.Status.MemberClusters = f14
+		ko.Status.MemberClusters = aws.StringSlice(resp.ReplicationGroup.MemberClusters)
 	} else {
 		ko.Status.MemberClusters = nil
 	}
 	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
-		f15 := []*string{}
-		for _, f15iter := range resp.ReplicationGroup.MemberClustersOutpostArns {
-			var f15elem string
-			f15elem = *f15iter
-			f15 = append(f15, &f15elem)
-		}
-		ko.Status.MemberClustersOutpostARNs = f15
+		ko.Status.MemberClustersOutpostARNs = aws.StringSlice(resp.ReplicationGroup.MemberClustersOutpostArns)
 	} else {
 		ko.Status.MemberClustersOutpostARNs = nil
 	}
-	if resp.ReplicationGroup.MultiAZ != nil {
-		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
+	if resp.ReplicationGroup.MultiAZ != "" {
+		ko.Status.MultiAZ = aws.String(string(resp.ReplicationGroup.MultiAZ))
 	} else {
 		ko.Status.MultiAZ = nil
 	}
 	if resp.ReplicationGroup.NodeGroups != nil {
-		f17 := []*svcapitypes.NodeGroup{}
-		for _, f17iter := range resp.ReplicationGroup.NodeGroups {
-			f17elem := &svcapitypes.NodeGroup{}
-			if f17iter.NodeGroupId != nil {
-				f17elem.NodeGroupID = f17iter.NodeGroupId
+		f18 := []*svcapitypes.NodeGroup{}
+		for _, f18iter := range resp.ReplicationGroup.NodeGroups {
+			f18elem := &svcapitypes.NodeGroup{}
+			if f18iter.NodeGroupId != nil {
+				f18elem.NodeGroupID = f18iter.NodeGroupId
 			}
-			if f17iter.NodeGroupMembers != nil {
-				f17elemf1 := []*svcapitypes.NodeGroupMember{}
-				for _, f17elemf1iter := range f17iter.NodeGroupMembers {
-					f17elemf1elem := &svcapitypes.NodeGroupMember{}
-					if f17elemf1iter.CacheClusterId != nil {
-						f17elemf1elem.CacheClusterID = f17elemf1iter.CacheClusterId
+			if f18iter.NodeGroupMembers != nil {
+				f18elemf1 := []*svcapitypes.NodeGroupMember{}
+				for _, f18elemf1iter := range f18iter.NodeGroupMembers {
+					f18elemf1elem := &svcapitypes.NodeGroupMember{}
+					if f18elemf1iter.CacheClusterId != nil {
+						f18elemf1elem.CacheClusterID = f18elemf1iter.CacheClusterId
 					}
-					if f17elemf1iter.CacheNodeId != nil {
-						f17elemf1elem.CacheNodeID = f17elemf1iter.CacheNodeId
+					if f18elemf1iter.CacheNodeId != nil {
+						f18elemf1elem.CacheNodeID = f18elemf1iter.CacheNodeId
 					}
-					if f17elemf1iter.CurrentRole != nil {
-						f17elemf1elem.CurrentRole = f17elemf1iter.CurrentRole
+					if f18elemf1iter.CurrentRole != nil {
+						f18elemf1elem.CurrentRole = f18elemf1iter.CurrentRole
 					}
-					if f17elemf1iter.PreferredAvailabilityZone != nil {
-						f17elemf1elem.PreferredAvailabilityZone = f17elemf1iter.PreferredAvailabilityZone
+					if f18elemf1iter.PreferredAvailabilityZone != nil {
+						f18elemf1elem.PreferredAvailabilityZone = f18elemf1iter.PreferredAvailabilityZone
 					}
-					if f17elemf1iter.PreferredOutpostArn != nil {
-						f17elemf1elem.PreferredOutpostARN = f17elemf1iter.PreferredOutpostArn
+					if f18elemf1iter.PreferredOutpostArn != nil {
+						f18elemf1elem.PreferredOutpostARN = f18elemf1iter.PreferredOutpostArn
 					}
-					if f17elemf1iter.ReadEndpoint != nil {
-						f17elemf1elemf5 := &svcapitypes.Endpoint{}
-						if f17elemf1iter.ReadEndpoint.Address != nil {
-							f17elemf1elemf5.Address = f17elemf1iter.ReadEndpoint.Address
+					if f18elemf1iter.ReadEndpoint != nil {
+						f18elemf1elemf5 := &svcapitypes.Endpoint{}
+						if f18elemf1iter.ReadEndpoint.Address != nil {
+							f18elemf1elemf5.Address = f18elemf1iter.ReadEndpoint.Address
 						}
-						if f17elemf1iter.ReadEndpoint.Port != nil {
-							f17elemf1elemf5.Port = f17elemf1iter.ReadEndpoint.Port
+						if f18elemf1iter.ReadEndpoint.Port != nil {
+							portCopy := int64(*f18elemf1iter.ReadEndpoint.Port)
+							f18elemf1elemf5.Port = &portCopy
 						}
-						f17elemf1elem.ReadEndpoint = f17elemf1elemf5
+						f18elemf1elem.ReadEndpoint = f18elemf1elemf5
 					}
-					f17elemf1 = append(f17elemf1, f17elemf1elem)
+					f18elemf1 = append(f18elemf1, f18elemf1elem)
 				}
-				f17elem.NodeGroupMembers = f17elemf1
+				f18elem.NodeGroupMembers = f18elemf1
 			}
-			if f17iter.PrimaryEndpoint != nil {
-				f17elemf2 := &svcapitypes.Endpoint{}
-				if f17iter.PrimaryEndpoint.Address != nil {
-					f17elemf2.Address = f17iter.PrimaryEndpoint.Address
+			if f18iter.PrimaryEndpoint != nil {
+				f18elemf2 := &svcapitypes.Endpoint{}
+				if f18iter.PrimaryEndpoint.Address != nil {
+					f18elemf2.Address = f18iter.PrimaryEndpoint.Address
 				}
-				if f17iter.PrimaryEndpoint.Port != nil {
-					f17elemf2.Port = f17iter.PrimaryEndpoint.Port
+				if f18iter.PrimaryEndpoint.Port != nil {
+					portCopy := int64(*f18iter.PrimaryEndpoint.Port)
+					f18elemf2.Port = &portCopy
 				}
-				f17elem.PrimaryEndpoint = f17elemf2
+				f18elem.PrimaryEndpoint = f18elemf2
 			}
-			if f17iter.ReaderEndpoint != nil {
-				f17elemf3 := &svcapitypes.Endpoint{}
-				if f17iter.ReaderEndpoint.Address != nil {
-					f17elemf3.Address = f17iter.ReaderEndpoint.Address
+			if f18iter.ReaderEndpoint != nil {
+				f18elemf3 := &svcapitypes.Endpoint{}
+				if f18iter.ReaderEndpoint.Address != nil {
+					f18elemf3.Address = f18iter.ReaderEndpoint.Address
 				}
-				if f17iter.ReaderEndpoint.Port != nil {
-					f17elemf3.Port = f17iter.ReaderEndpoint.Port
+				if f18iter.ReaderEndpoint.Port != nil {
+					portCopy := int64(*f18iter.ReaderEndpoint.Port)
+					f18elemf3.Port = &portCopy
 				}
-				f17elem.ReaderEndpoint = f17elemf3
+				f18elem.ReaderEndpoint = f18elemf3
 			}
-			if f17iter.Slots != nil {
-				f17elem.Slots = f17iter.Slots
+			if f18iter.Slots != nil {
+				f18elem.Slots = f18iter.Slots
 			}
-			if f17iter.Status != nil {
-				f17elem.Status = f17iter.Status
+			if f18iter.Status != nil {
+				f18elem.Status = f18iter.Status
 			}
-			f17 = append(f17, f17elem)
+			f18 = append(f18, f18elem)
 		}
-		ko.Status.NodeGroups = f17
+		ko.Status.NodeGroups = f18
 	} else {
 		ko.Status.NodeGroups = nil
 	}
 	if resp.ReplicationGroup.PendingModifiedValues != nil {
-		f18 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
-		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != nil {
-			f18.AuthTokenStatus = resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus
+		f19 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
+		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != "" {
+			f19.AuthTokenStatus = aws.String(string(resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus))
 		}
-		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != nil {
-			f18.AutomaticFailoverStatus = resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus
+		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != "" {
+			f19.AutomaticFailoverStatus = aws.String(string(resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus))
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations != nil {
-			f18f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
-			for _, f18f2iter := range resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations {
-				f18f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
-				if f18f2iter.DestinationDetails != nil {
-					f18f2elemf0 := &svcapitypes.DestinationDetails{}
-					if f18f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
-						f18f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-						if f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-							f18f2elemf0f0.LogGroup = f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+			f19f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
+			for _, f19f2iter := range resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations {
+				f19f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
+				if f19f2iter.DestinationDetails != nil {
+					f19f2elemf0 := &svcapitypes.DestinationDetails{}
+					if f19f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
+						f19f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+						if f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+							f19f2elemf0f0.LogGroup = f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 						}
-						f18f2elemf0.CloudWatchLogsDetails = f18f2elemf0f0
+						f19f2elemf0.CloudWatchLogsDetails = f19f2elemf0f0
 					}
-					if f18f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
-						f18f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-						if f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-							f18f2elemf0f1.DeliveryStream = f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					if f19f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
+						f19f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+						if f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+							f19f2elemf0f1.DeliveryStream = f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 						}
-						f18f2elemf0.KinesisFirehoseDetails = f18f2elemf0f1
+						f19f2elemf0.KinesisFirehoseDetails = f19f2elemf0f1
 					}
-					f18f2elem.DestinationDetails = f18f2elemf0
+					f19f2elem.DestinationDetails = f19f2elemf0
 				}
-				if f18f2iter.DestinationType != nil {
-					f18f2elem.DestinationType = f18f2iter.DestinationType
+				if f19f2iter.DestinationType != "" {
+					f19f2elem.DestinationType = aws.String(string(f19f2iter.DestinationType))
 				}
-				if f18f2iter.LogFormat != nil {
-					f18f2elem.LogFormat = f18f2iter.LogFormat
+				if f19f2iter.LogFormat != "" {
+					f19f2elem.LogFormat = aws.String(string(f19f2iter.LogFormat))
 				}
-				if f18f2iter.LogType != nil {
-					f18f2elem.LogType = f18f2iter.LogType
+				if f19f2iter.LogType != "" {
+					f19f2elem.LogType = aws.String(string(f19f2iter.LogType))
 				}
-				f18f2 = append(f18f2, f18f2elem)
+				f19f2 = append(f19f2, f19f2elem)
 			}
-			f18.LogDeliveryConfigurations = f18f2
+			f19.LogDeliveryConfigurations = f19f2
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId != nil {
-			f18.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
+			f19.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.Resharding != nil {
-			f18f4 := &svcapitypes.ReshardingStatus{}
+			f19f4 := &svcapitypes.ReshardingStatus{}
 			if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration != nil {
-				f18f4f0 := &svcapitypes.SlotMigration{}
+				f19f4f0 := &svcapitypes.SlotMigration{}
 				if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
-					f18f4f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
+					f19f4f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
 				}
-				f18f4.SlotMigration = f18f4f0
+				f19f4.SlotMigration = f19f4f0
 			}
-			f18.Resharding = f18f4
+			f19.Resharding = f19f4
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.UserGroups != nil {
-			f18f5 := &svcapitypes.UserGroupsUpdateStatus{}
+			f19f5 := &svcapitypes.UserGroupsUpdateStatus{}
 			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd != nil {
-				f18f5f0 := []*string{}
-				for _, f18f5f0iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd {
-					var f18f5f0elem string
-					f18f5f0elem = *f18f5f0iter
-					f18f5f0 = append(f18f5f0, &f18f5f0elem)
-				}
-				f18f5.UserGroupIDsToAdd = f18f5f0
+				f19f5.UserGroupIDsToAdd = aws.StringSlice(resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd)
 			}
 			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove != nil {
-				f18f5f1 := []*string{}
-				for _, f18f5f1iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove {
-					var f18f5f1elem string
-					f18f5f1elem = *f18f5f1iter
-					f18f5f1 = append(f18f5f1, &f18f5f1elem)
-				}
-				f18f5.UserGroupIDsToRemove = f18f5f1
+				f19f5.UserGroupIDsToRemove = aws.StringSlice(resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove)
 			}
-			f18.UserGroups = f18f5
+			f19.UserGroups = f19f5
 		}
-		ko.Status.PendingModifiedValues = f18
+		ko.Status.PendingModifiedValues = f19
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
@@ -871,7 +840,8 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.ReplicationGroupID = nil
 	}
 	if resp.ReplicationGroup.SnapshotRetentionLimit != nil {
-		ko.Spec.SnapshotRetentionLimit = resp.ReplicationGroup.SnapshotRetentionLimit
+		snapshotRetentionLimitCopy := int64(*resp.ReplicationGroup.SnapshotRetentionLimit)
+		ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	} else {
 		ko.Spec.SnapshotRetentionLimit = nil
 	}
@@ -896,13 +866,7 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
 	if resp.ReplicationGroup.UserGroupIds != nil {
-		f26 := []*string{}
-		for _, f26iter := range resp.ReplicationGroup.UserGroupIds {
-			var f26elem string
-			f26elem = *f26iter
-			f26 = append(f26, &f26elem)
-		}
-		ko.Spec.UserGroupIDs = f26
+		ko.Spec.UserGroupIDs = aws.StringSlice(resp.ReplicationGroup.UserGroupIds)
 	} else {
 		ko.Spec.UserGroupIDs = nil
 	}
@@ -925,7 +889,7 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateReplicationGroupInput{}
 
 	if r.ko.Spec.AtRestEncryptionEnabled != nil {
-		res.SetAtRestEncryptionEnabled(*r.ko.Spec.AtRestEncryptionEnabled)
+		res.AtRestEncryptionEnabled = r.ko.Spec.AtRestEncryptionEnabled
 	}
 	if r.ko.Spec.AuthToken != nil {
 		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
@@ -933,209 +897,192 @@ func (rm *resourceManager) newCreateRequestPayload(
 			return nil, ackrequeue.Needed(err)
 		}
 		if tmpSecret != "" {
-			res.SetAuthToken(tmpSecret)
+			res.AuthToken = aws.String(tmpSecret)
 		}
 	}
 	if r.ko.Spec.AutomaticFailoverEnabled != nil {
-		res.SetAutomaticFailoverEnabled(*r.ko.Spec.AutomaticFailoverEnabled)
+		res.AutomaticFailoverEnabled = r.ko.Spec.AutomaticFailoverEnabled
 	}
 	if r.ko.Spec.CacheNodeType != nil {
-		res.SetCacheNodeType(*r.ko.Spec.CacheNodeType)
+		res.CacheNodeType = r.ko.Spec.CacheNodeType
 	}
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 	if r.ko.Spec.CacheSecurityGroupNames != nil {
-		f5 := []*string{}
-		for _, f5iter := range r.ko.Spec.CacheSecurityGroupNames {
-			var f5elem string
-			f5elem = *f5iter
-			f5 = append(f5, &f5elem)
-		}
-		res.SetCacheSecurityGroupNames(f5)
+		res.CacheSecurityGroupNames = aws.ToStringSlice(r.ko.Spec.CacheSecurityGroupNames)
 	}
 	if r.ko.Spec.CacheSubnetGroupName != nil {
-		res.SetCacheSubnetGroupName(*r.ko.Spec.CacheSubnetGroupName)
+		res.CacheSubnetGroupName = r.ko.Spec.CacheSubnetGroupName
 	}
 	if r.ko.Spec.DataTieringEnabled != nil {
-		res.SetDataTieringEnabled(*r.ko.Spec.DataTieringEnabled)
+		res.DataTieringEnabled = r.ko.Spec.DataTieringEnabled
 	}
 	if r.ko.Spec.Engine != nil {
-		res.SetEngine(*r.ko.Spec.Engine)
+		res.Engine = r.ko.Spec.Engine
 	}
 	if r.ko.Spec.EngineVersion != nil {
-		res.SetEngineVersion(*r.ko.Spec.EngineVersion)
+		res.EngineVersion = r.ko.Spec.EngineVersion
 	}
 	if r.ko.Spec.KMSKeyID != nil {
-		res.SetKmsKeyId(*r.ko.Spec.KMSKeyID)
+		res.KmsKeyId = r.ko.Spec.KMSKeyID
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f11 := []*svcsdk.LogDeliveryConfigurationRequest{}
+		f11 := []svcsdktypes.LogDeliveryConfigurationRequest{}
 		for _, f11iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f11elem := &svcsdk.LogDeliveryConfigurationRequest{}
+			f11elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
 			if f11iter.DestinationDetails != nil {
-				f11elemf0 := &svcsdk.DestinationDetails{}
+				f11elemf0 := &svcsdktypes.DestinationDetails{}
 				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f11elemf0f0 := &svcsdk.CloudWatchLogsDestinationDetails{}
+					f11elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
 					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f11elemf0f0.SetLogGroup(*f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup)
+						f11elemf0f0.LogGroup = f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f11elemf0.SetCloudWatchLogsDetails(f11elemf0f0)
+					f11elemf0.CloudWatchLogsDetails = f11elemf0f0
 				}
 				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f11elemf0f1 := &svcsdk.KinesisFirehoseDestinationDetails{}
+					f11elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
 					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f11elemf0f1.SetDeliveryStream(*f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream)
+						f11elemf0f1.DeliveryStream = f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f11elemf0.SetKinesisFirehoseDetails(f11elemf0f1)
+					f11elemf0.KinesisFirehoseDetails = f11elemf0f1
 				}
-				f11elem.SetDestinationDetails(f11elemf0)
+				f11elem.DestinationDetails = f11elemf0
 			}
 			if f11iter.DestinationType != nil {
-				f11elem.SetDestinationType(*f11iter.DestinationType)
+				f11elem.DestinationType = svcsdktypes.DestinationType(*f11iter.DestinationType)
 			}
 			if f11iter.Enabled != nil {
-				f11elem.SetEnabled(*f11iter.Enabled)
+				f11elem.Enabled = f11iter.Enabled
 			}
 			if f11iter.LogFormat != nil {
-				f11elem.SetLogFormat(*f11iter.LogFormat)
+				f11elem.LogFormat = svcsdktypes.LogFormat(*f11iter.LogFormat)
 			}
 			if f11iter.LogType != nil {
-				f11elem.SetLogType(*f11iter.LogType)
+				f11elem.LogType = svcsdktypes.LogType(*f11iter.LogType)
 			}
-			f11 = append(f11, f11elem)
+			f11 = append(f11, *f11elem)
 		}
-		res.SetLogDeliveryConfigurations(f11)
+		res.LogDeliveryConfigurations = f11
 	}
 	if r.ko.Spec.MultiAZEnabled != nil {
-		res.SetMultiAZEnabled(*r.ko.Spec.MultiAZEnabled)
+		res.MultiAZEnabled = r.ko.Spec.MultiAZEnabled
 	}
 	if r.ko.Spec.NodeGroupConfiguration != nil {
-		f13 := []*svcsdk.NodeGroupConfiguration{}
+		f13 := []svcsdktypes.NodeGroupConfiguration{}
 		for _, f13iter := range r.ko.Spec.NodeGroupConfiguration {
-			f13elem := &svcsdk.NodeGroupConfiguration{}
+			f13elem := &svcsdktypes.NodeGroupConfiguration{}
 			if f13iter.NodeGroupID != nil {
-				f13elem.SetNodeGroupId(*f13iter.NodeGroupID)
+				f13elem.NodeGroupId = f13iter.NodeGroupID
 			}
 			if f13iter.PrimaryAvailabilityZone != nil {
-				f13elem.SetPrimaryAvailabilityZone(*f13iter.PrimaryAvailabilityZone)
+				f13elem.PrimaryAvailabilityZone = f13iter.PrimaryAvailabilityZone
 			}
 			if f13iter.PrimaryOutpostARN != nil {
-				f13elem.SetPrimaryOutpostArn(*f13iter.PrimaryOutpostARN)
+				f13elem.PrimaryOutpostArn = f13iter.PrimaryOutpostARN
 			}
 			if f13iter.ReplicaAvailabilityZones != nil {
-				f13elemf3 := []*string{}
-				for _, f13elemf3iter := range f13iter.ReplicaAvailabilityZones {
-					var f13elemf3elem string
-					f13elemf3elem = *f13elemf3iter
-					f13elemf3 = append(f13elemf3, &f13elemf3elem)
-				}
-				f13elem.SetReplicaAvailabilityZones(f13elemf3)
+				f13elem.ReplicaAvailabilityZones = aws.ToStringSlice(f13iter.ReplicaAvailabilityZones)
 			}
 			if f13iter.ReplicaCount != nil {
-				f13elem.SetReplicaCount(*f13iter.ReplicaCount)
+				replicaCountCopy0 := *f13iter.ReplicaCount
+				if replicaCountCopy0 > math.MaxInt32 || replicaCountCopy0 < math.MinInt32 {
+					return nil, fmt.Errorf("error: field ReplicaCount is of type int32")
+				}
+				replicaCountCopy := int32(replicaCountCopy0)
+				f13elem.ReplicaCount = &replicaCountCopy
 			}
 			if f13iter.ReplicaOutpostARNs != nil {
-				f13elemf5 := []*string{}
-				for _, f13elemf5iter := range f13iter.ReplicaOutpostARNs {
-					var f13elemf5elem string
-					f13elemf5elem = *f13elemf5iter
-					f13elemf5 = append(f13elemf5, &f13elemf5elem)
-				}
-				f13elem.SetReplicaOutpostArns(f13elemf5)
+				f13elem.ReplicaOutpostArns = aws.ToStringSlice(f13iter.ReplicaOutpostARNs)
 			}
 			if f13iter.Slots != nil {
-				f13elem.SetSlots(*f13iter.Slots)
+				f13elem.Slots = f13iter.Slots
 			}
-			f13 = append(f13, f13elem)
+			f13 = append(f13, *f13elem)
 		}
-		res.SetNodeGroupConfiguration(f13)
+		res.NodeGroupConfiguration = f13
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
-		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
+		res.NotificationTopicArn = r.ko.Spec.NotificationTopicARN
 	}
 	if r.ko.Spec.NumNodeGroups != nil {
-		res.SetNumNodeGroups(*r.ko.Spec.NumNodeGroups)
+		numNodeGroupsCopy0 := *r.ko.Spec.NumNodeGroups
+		if numNodeGroupsCopy0 > math.MaxInt32 || numNodeGroupsCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field NumNodeGroups is of type int32")
+		}
+		numNodeGroupsCopy := int32(numNodeGroupsCopy0)
+		res.NumNodeGroups = &numNodeGroupsCopy
 	}
 	if r.ko.Spec.Port != nil {
-		res.SetPort(*r.ko.Spec.Port)
+		portCopy0 := *r.ko.Spec.Port
+		if portCopy0 > math.MaxInt32 || portCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field Port is of type int32")
+		}
+		portCopy := int32(portCopy0)
+		res.Port = &portCopy
 	}
 	if r.ko.Spec.PreferredCacheClusterAZs != nil {
-		f17 := []*string{}
-		for _, f17iter := range r.ko.Spec.PreferredCacheClusterAZs {
-			var f17elem string
-			f17elem = *f17iter
-			f17 = append(f17, &f17elem)
-		}
-		res.SetPreferredCacheClusterAZs(f17)
+		res.PreferredCacheClusterAZs = aws.ToStringSlice(r.ko.Spec.PreferredCacheClusterAZs)
 	}
 	if r.ko.Spec.PreferredMaintenanceWindow != nil {
-		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
+		res.PreferredMaintenanceWindow = r.ko.Spec.PreferredMaintenanceWindow
 	}
 	if r.ko.Spec.PrimaryClusterID != nil {
-		res.SetPrimaryClusterId(*r.ko.Spec.PrimaryClusterID)
+		res.PrimaryClusterId = r.ko.Spec.PrimaryClusterID
 	}
 	if r.ko.Spec.ReplicasPerNodeGroup != nil {
-		res.SetReplicasPerNodeGroup(*r.ko.Spec.ReplicasPerNodeGroup)
+		replicasPerNodeGroupCopy0 := *r.ko.Spec.ReplicasPerNodeGroup
+		if replicasPerNodeGroupCopy0 > math.MaxInt32 || replicasPerNodeGroupCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field ReplicasPerNodeGroup is of type int32")
+		}
+		replicasPerNodeGroupCopy := int32(replicasPerNodeGroupCopy0)
+		res.ReplicasPerNodeGroup = &replicasPerNodeGroupCopy
 	}
 	if r.ko.Spec.Description != nil {
-		res.SetReplicationGroupDescription(*r.ko.Spec.Description)
+		res.ReplicationGroupDescription = r.ko.Spec.Description
 	}
 	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+		res.ReplicationGroupId = r.ko.Spec.ReplicationGroupID
 	}
 	if r.ko.Spec.SecurityGroupIDs != nil {
-		f23 := []*string{}
-		for _, f23iter := range r.ko.Spec.SecurityGroupIDs {
-			var f23elem string
-			f23elem = *f23iter
-			f23 = append(f23, &f23elem)
-		}
-		res.SetSecurityGroupIds(f23)
+		res.SecurityGroupIds = aws.ToStringSlice(r.ko.Spec.SecurityGroupIDs)
 	}
 	if r.ko.Spec.SnapshotARNs != nil {
-		f24 := []*string{}
-		for _, f24iter := range r.ko.Spec.SnapshotARNs {
-			var f24elem string
-			f24elem = *f24iter
-			f24 = append(f24, &f24elem)
-		}
-		res.SetSnapshotArns(f24)
+		res.SnapshotArns = aws.ToStringSlice(r.ko.Spec.SnapshotARNs)
 	}
 	if r.ko.Spec.SnapshotName != nil {
-		res.SetSnapshotName(*r.ko.Spec.SnapshotName)
+		res.SnapshotName = r.ko.Spec.SnapshotName
 	}
 	if r.ko.Spec.SnapshotRetentionLimit != nil {
-		res.SetSnapshotRetentionLimit(*r.ko.Spec.SnapshotRetentionLimit)
+		snapshotRetentionLimitCopy0 := *r.ko.Spec.SnapshotRetentionLimit
+		if snapshotRetentionLimitCopy0 > math.MaxInt32 || snapshotRetentionLimitCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field SnapshotRetentionLimit is of type int32")
+		}
+		snapshotRetentionLimitCopy := int32(snapshotRetentionLimitCopy0)
+		res.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	}
 	if r.ko.Spec.SnapshotWindow != nil {
-		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
+		res.SnapshotWindow = r.ko.Spec.SnapshotWindow
 	}
 	if r.ko.Spec.Tags != nil {
-		f28 := []*svcsdk.Tag{}
+		f28 := []svcsdktypes.Tag{}
 		for _, f28iter := range r.ko.Spec.Tags {
-			f28elem := &svcsdk.Tag{}
+			f28elem := &svcsdktypes.Tag{}
 			if f28iter.Key != nil {
-				f28elem.SetKey(*f28iter.Key)
+				f28elem.Key = f28iter.Key
 			}
 			if f28iter.Value != nil {
-				f28elem.SetValue(*f28iter.Value)
+				f28elem.Value = f28iter.Value
 			}
-			f28 = append(f28, f28elem)
+			f28 = append(f28, *f28elem)
 		}
-		res.SetTags(f28)
+		res.Tags = f28
 	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
-		res.SetTransitEncryptionEnabled(*r.ko.Spec.TransitEncryptionEnabled)
+		res.TransitEncryptionEnabled = r.ko.Spec.TransitEncryptionEnabled
 	}
 	if r.ko.Spec.UserGroupIDs != nil {
-		f30 := []*string{}
-		for _, f30iter := range r.ko.Spec.UserGroupIDs {
-			var f30elem string
-			f30elem = *f30iter
-			f30 = append(f30, &f30elem)
-		}
-		res.SetUserGroupIds(f30)
+		res.UserGroupIds = aws.ToStringSlice(r.ko.Spec.UserGroupIDs)
 	}
 
 	return res, nil
@@ -1169,7 +1116,7 @@ func (rm *resourceManager) sdkUpdate(
 		return nil, err
 	}
 	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
-		input.SetLogDeliveryConfigurations(nil)
+		input.LogDeliveryConfigurations = nil
 	}
 	if delta.DifferentAt("UserGroupIDs") {
 		for _, diff := range delta.Differences {
@@ -1179,7 +1126,7 @@ func (rm *resourceManager) sdkUpdate(
 
 				// User groups to add
 				{
-					var userGroupsToAdd []*string
+					var userGroupsToAdd []string
 
 					for _, requiredUserGroup := range requiredUserGroups {
 						found := false
@@ -1191,16 +1138,18 @@ func (rm *resourceManager) sdkUpdate(
 						}
 
 						if !found {
-							userGroupsToAdd = append(userGroupsToAdd, requiredUserGroup)
+							if requiredUserGroup != nil {
+								userGroupsToAdd = append(userGroupsToAdd, *requiredUserGroup)
+							}
 						}
 					}
 
-					input.SetUserGroupIdsToAdd(userGroupsToAdd)
+					input.UserGroupIdsToAdd = userGroupsToAdd
 				}
 
 				// User groups to remove
 				{
-					var userGroupsToRemove []*string
+					var userGroupsToRemove []string
 
 					for _, existingUserGroup := range existingUserGroups {
 						found := false
@@ -1212,11 +1161,13 @@ func (rm *resourceManager) sdkUpdate(
 						}
 
 						if !found {
-							userGroupsToRemove = append(userGroupsToRemove, existingUserGroup)
+							if existingUserGroup != nil {
+								userGroupsToRemove = append(userGroupsToRemove, *existingUserGroup)
+							}
 						}
 					}
 
-					input.SetUserGroupIdsToRemove(userGroupsToRemove)
+					input.UserGroupIdsToRemove = userGroupsToRemove
 				}
 			}
 		}
@@ -1224,7 +1175,7 @@ func (rm *resourceManager) sdkUpdate(
 
 	var resp *svcsdk.ModifyReplicationGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.ModifyReplicationGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.ModifyReplicationGroup(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", err)
 	if err != nil {
 		return nil, err
@@ -1260,8 +1211,8 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Status.AutoMinorVersionUpgrade = nil
 	}
-	if resp.ReplicationGroup.AutomaticFailover != nil {
-		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
+	if resp.ReplicationGroup.AutomaticFailover != "" {
+		ko.Status.AutomaticFailover = aws.String(string(resp.ReplicationGroup.AutomaticFailover))
 	} else {
 		ko.Status.AutomaticFailover = nil
 	}
@@ -1281,14 +1232,15 @@ func (rm *resourceManager) sdkUpdate(
 			f8.Address = resp.ReplicationGroup.ConfigurationEndpoint.Address
 		}
 		if resp.ReplicationGroup.ConfigurationEndpoint.Port != nil {
-			f8.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
+			portCopy := int64(*resp.ReplicationGroup.ConfigurationEndpoint.Port)
+			f8.Port = &portCopy
 		}
 		ko.Status.ConfigurationEndpoint = f8
 	} else {
 		ko.Status.ConfigurationEndpoint = nil
 	}
-	if resp.ReplicationGroup.DataTiering != nil {
-		ko.Status.DataTiering = resp.ReplicationGroup.DataTiering
+	if resp.ReplicationGroup.DataTiering != "" {
+		ko.Status.DataTiering = aws.String(string(resp.ReplicationGroup.DataTiering))
 	} else {
 		ko.Status.DataTiering = nil
 	}
@@ -1297,15 +1249,20 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Spec.Description = nil
 	}
+	if resp.ReplicationGroup.Engine != nil {
+		ko.Spec.Engine = resp.ReplicationGroup.Engine
+	} else {
+		ko.Spec.Engine = nil
+	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
-		f11 := &svcapitypes.GlobalReplicationGroupInfo{}
+		f12 := &svcapitypes.GlobalReplicationGroupInfo{}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
-			f11.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
+			f12.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
 		}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
-			f11.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
+			f12.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 		}
-		ko.Status.GlobalReplicationGroupInfo = f11
+		ko.Status.GlobalReplicationGroupInfo = f12
 	} else {
 		ko.Status.GlobalReplicationGroupInfo = nil
 	}
@@ -1315,221 +1272,200 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.KMSKeyID = nil
 	}
 	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
-		f13 := []*svcapitypes.LogDeliveryConfigurationRequest{}
-		for _, f13iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
-			f13elem := &svcapitypes.LogDeliveryConfigurationRequest{}
-			if f13iter.DestinationDetails != nil {
-				f13elemf0 := &svcapitypes.DestinationDetails{}
-				if f13iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f13elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-					if f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f13elemf0f0.LogGroup = f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+		f14 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f14iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
+			f14elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f14iter.DestinationDetails != nil {
+				f14elemf0 := &svcapitypes.DestinationDetails{}
+				if f14iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f14elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f14elemf0f0.LogGroup = f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f13elemf0.CloudWatchLogsDetails = f13elemf0f0
+					f14elemf0.CloudWatchLogsDetails = f14elemf0f0
 				}
-				if f13iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f13elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-					if f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f13elemf0f1.DeliveryStream = f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+				if f14iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f14elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f14elemf0f1.DeliveryStream = f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f13elemf0.KinesisFirehoseDetails = f13elemf0f1
+					f14elemf0.KinesisFirehoseDetails = f14elemf0f1
 				}
-				f13elem.DestinationDetails = f13elemf0
+				f14elem.DestinationDetails = f14elemf0
 			}
-			if f13iter.DestinationType != nil {
-				f13elem.DestinationType = f13iter.DestinationType
+			if f14iter.DestinationType != "" {
+				f14elem.DestinationType = aws.String(string(f14iter.DestinationType))
 			}
-			if f13iter.LogFormat != nil {
-				f13elem.LogFormat = f13iter.LogFormat
+			if f14iter.LogFormat != "" {
+				f14elem.LogFormat = aws.String(string(f14iter.LogFormat))
 			}
-			if f13iter.LogType != nil {
-				f13elem.LogType = f13iter.LogType
+			if f14iter.LogType != "" {
+				f14elem.LogType = aws.String(string(f14iter.LogType))
 			}
-			f13 = append(f13, f13elem)
+			f14 = append(f14, f14elem)
 		}
-		ko.Spec.LogDeliveryConfigurations = f13
+		ko.Spec.LogDeliveryConfigurations = f14
 	} else {
 		ko.Spec.LogDeliveryConfigurations = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
-		f14 := []*string{}
-		for _, f14iter := range resp.ReplicationGroup.MemberClusters {
-			var f14elem string
-			f14elem = *f14iter
-			f14 = append(f14, &f14elem)
-		}
-		ko.Status.MemberClusters = f14
+		ko.Status.MemberClusters = aws.StringSlice(resp.ReplicationGroup.MemberClusters)
 	} else {
 		ko.Status.MemberClusters = nil
 	}
 	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
-		f15 := []*string{}
-		for _, f15iter := range resp.ReplicationGroup.MemberClustersOutpostArns {
-			var f15elem string
-			f15elem = *f15iter
-			f15 = append(f15, &f15elem)
-		}
-		ko.Status.MemberClustersOutpostARNs = f15
+		ko.Status.MemberClustersOutpostARNs = aws.StringSlice(resp.ReplicationGroup.MemberClustersOutpostArns)
 	} else {
 		ko.Status.MemberClustersOutpostARNs = nil
 	}
-	if resp.ReplicationGroup.MultiAZ != nil {
-		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
+	if resp.ReplicationGroup.MultiAZ != "" {
+		ko.Status.MultiAZ = aws.String(string(resp.ReplicationGroup.MultiAZ))
 	} else {
 		ko.Status.MultiAZ = nil
 	}
 	if resp.ReplicationGroup.NodeGroups != nil {
-		f17 := []*svcapitypes.NodeGroup{}
-		for _, f17iter := range resp.ReplicationGroup.NodeGroups {
-			f17elem := &svcapitypes.NodeGroup{}
-			if f17iter.NodeGroupId != nil {
-				f17elem.NodeGroupID = f17iter.NodeGroupId
+		f18 := []*svcapitypes.NodeGroup{}
+		for _, f18iter := range resp.ReplicationGroup.NodeGroups {
+			f18elem := &svcapitypes.NodeGroup{}
+			if f18iter.NodeGroupId != nil {
+				f18elem.NodeGroupID = f18iter.NodeGroupId
 			}
-			if f17iter.NodeGroupMembers != nil {
-				f17elemf1 := []*svcapitypes.NodeGroupMember{}
-				for _, f17elemf1iter := range f17iter.NodeGroupMembers {
-					f17elemf1elem := &svcapitypes.NodeGroupMember{}
-					if f17elemf1iter.CacheClusterId != nil {
-						f17elemf1elem.CacheClusterID = f17elemf1iter.CacheClusterId
+			if f18iter.NodeGroupMembers != nil {
+				f18elemf1 := []*svcapitypes.NodeGroupMember{}
+				for _, f18elemf1iter := range f18iter.NodeGroupMembers {
+					f18elemf1elem := &svcapitypes.NodeGroupMember{}
+					if f18elemf1iter.CacheClusterId != nil {
+						f18elemf1elem.CacheClusterID = f18elemf1iter.CacheClusterId
 					}
-					if f17elemf1iter.CacheNodeId != nil {
-						f17elemf1elem.CacheNodeID = f17elemf1iter.CacheNodeId
+					if f18elemf1iter.CacheNodeId != nil {
+						f18elemf1elem.CacheNodeID = f18elemf1iter.CacheNodeId
 					}
-					if f17elemf1iter.CurrentRole != nil {
-						f17elemf1elem.CurrentRole = f17elemf1iter.CurrentRole
+					if f18elemf1iter.CurrentRole != nil {
+						f18elemf1elem.CurrentRole = f18elemf1iter.CurrentRole
 					}
-					if f17elemf1iter.PreferredAvailabilityZone != nil {
-						f17elemf1elem.PreferredAvailabilityZone = f17elemf1iter.PreferredAvailabilityZone
+					if f18elemf1iter.PreferredAvailabilityZone != nil {
+						f18elemf1elem.PreferredAvailabilityZone = f18elemf1iter.PreferredAvailabilityZone
 					}
-					if f17elemf1iter.PreferredOutpostArn != nil {
-						f17elemf1elem.PreferredOutpostARN = f17elemf1iter.PreferredOutpostArn
+					if f18elemf1iter.PreferredOutpostArn != nil {
+						f18elemf1elem.PreferredOutpostARN = f18elemf1iter.PreferredOutpostArn
 					}
-					if f17elemf1iter.ReadEndpoint != nil {
-						f17elemf1elemf5 := &svcapitypes.Endpoint{}
-						if f17elemf1iter.ReadEndpoint.Address != nil {
-							f17elemf1elemf5.Address = f17elemf1iter.ReadEndpoint.Address
+					if f18elemf1iter.ReadEndpoint != nil {
+						f18elemf1elemf5 := &svcapitypes.Endpoint{}
+						if f18elemf1iter.ReadEndpoint.Address != nil {
+							f18elemf1elemf5.Address = f18elemf1iter.ReadEndpoint.Address
 						}
-						if f17elemf1iter.ReadEndpoint.Port != nil {
-							f17elemf1elemf5.Port = f17elemf1iter.ReadEndpoint.Port
+						if f18elemf1iter.ReadEndpoint.Port != nil {
+							portCopy := int64(*f18elemf1iter.ReadEndpoint.Port)
+							f18elemf1elemf5.Port = &portCopy
 						}
-						f17elemf1elem.ReadEndpoint = f17elemf1elemf5
+						f18elemf1elem.ReadEndpoint = f18elemf1elemf5
 					}
-					f17elemf1 = append(f17elemf1, f17elemf1elem)
+					f18elemf1 = append(f18elemf1, f18elemf1elem)
 				}
-				f17elem.NodeGroupMembers = f17elemf1
+				f18elem.NodeGroupMembers = f18elemf1
 			}
-			if f17iter.PrimaryEndpoint != nil {
-				f17elemf2 := &svcapitypes.Endpoint{}
-				if f17iter.PrimaryEndpoint.Address != nil {
-					f17elemf2.Address = f17iter.PrimaryEndpoint.Address
+			if f18iter.PrimaryEndpoint != nil {
+				f18elemf2 := &svcapitypes.Endpoint{}
+				if f18iter.PrimaryEndpoint.Address != nil {
+					f18elemf2.Address = f18iter.PrimaryEndpoint.Address
 				}
-				if f17iter.PrimaryEndpoint.Port != nil {
-					f17elemf2.Port = f17iter.PrimaryEndpoint.Port
+				if f18iter.PrimaryEndpoint.Port != nil {
+					portCopy := int64(*f18iter.PrimaryEndpoint.Port)
+					f18elemf2.Port = &portCopy
 				}
-				f17elem.PrimaryEndpoint = f17elemf2
+				f18elem.PrimaryEndpoint = f18elemf2
 			}
-			if f17iter.ReaderEndpoint != nil {
-				f17elemf3 := &svcapitypes.Endpoint{}
-				if f17iter.ReaderEndpoint.Address != nil {
-					f17elemf3.Address = f17iter.ReaderEndpoint.Address
+			if f18iter.ReaderEndpoint != nil {
+				f18elemf3 := &svcapitypes.Endpoint{}
+				if f18iter.ReaderEndpoint.Address != nil {
+					f18elemf3.Address = f18iter.ReaderEndpoint.Address
 				}
-				if f17iter.ReaderEndpoint.Port != nil {
-					f17elemf3.Port = f17iter.ReaderEndpoint.Port
+				if f18iter.ReaderEndpoint.Port != nil {
+					portCopy := int64(*f18iter.ReaderEndpoint.Port)
+					f18elemf3.Port = &portCopy
 				}
-				f17elem.ReaderEndpoint = f17elemf3
+				f18elem.ReaderEndpoint = f18elemf3
 			}
-			if f17iter.Slots != nil {
-				f17elem.Slots = f17iter.Slots
+			if f18iter.Slots != nil {
+				f18elem.Slots = f18iter.Slots
 			}
-			if f17iter.Status != nil {
-				f17elem.Status = f17iter.Status
+			if f18iter.Status != nil {
+				f18elem.Status = f18iter.Status
 			}
-			f17 = append(f17, f17elem)
+			f18 = append(f18, f18elem)
 		}
-		ko.Status.NodeGroups = f17
+		ko.Status.NodeGroups = f18
 	} else {
 		ko.Status.NodeGroups = nil
 	}
 	if resp.ReplicationGroup.PendingModifiedValues != nil {
-		f18 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
-		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != nil {
-			f18.AuthTokenStatus = resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus
+		f19 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
+		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != "" {
+			f19.AuthTokenStatus = aws.String(string(resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus))
 		}
-		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != nil {
-			f18.AutomaticFailoverStatus = resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus
+		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != "" {
+			f19.AutomaticFailoverStatus = aws.String(string(resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus))
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations != nil {
-			f18f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
-			for _, f18f2iter := range resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations {
-				f18f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
-				if f18f2iter.DestinationDetails != nil {
-					f18f2elemf0 := &svcapitypes.DestinationDetails{}
-					if f18f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
-						f18f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-						if f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-							f18f2elemf0f0.LogGroup = f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+			f19f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
+			for _, f19f2iter := range resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations {
+				f19f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
+				if f19f2iter.DestinationDetails != nil {
+					f19f2elemf0 := &svcapitypes.DestinationDetails{}
+					if f19f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
+						f19f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+						if f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+							f19f2elemf0f0.LogGroup = f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 						}
-						f18f2elemf0.CloudWatchLogsDetails = f18f2elemf0f0
+						f19f2elemf0.CloudWatchLogsDetails = f19f2elemf0f0
 					}
-					if f18f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
-						f18f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-						if f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-							f18f2elemf0f1.DeliveryStream = f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					if f19f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
+						f19f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+						if f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+							f19f2elemf0f1.DeliveryStream = f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 						}
-						f18f2elemf0.KinesisFirehoseDetails = f18f2elemf0f1
+						f19f2elemf0.KinesisFirehoseDetails = f19f2elemf0f1
 					}
-					f18f2elem.DestinationDetails = f18f2elemf0
+					f19f2elem.DestinationDetails = f19f2elemf0
 				}
-				if f18f2iter.DestinationType != nil {
-					f18f2elem.DestinationType = f18f2iter.DestinationType
+				if f19f2iter.DestinationType != "" {
+					f19f2elem.DestinationType = aws.String(string(f19f2iter.DestinationType))
 				}
-				if f18f2iter.LogFormat != nil {
-					f18f2elem.LogFormat = f18f2iter.LogFormat
+				if f19f2iter.LogFormat != "" {
+					f19f2elem.LogFormat = aws.String(string(f19f2iter.LogFormat))
 				}
-				if f18f2iter.LogType != nil {
-					f18f2elem.LogType = f18f2iter.LogType
+				if f19f2iter.LogType != "" {
+					f19f2elem.LogType = aws.String(string(f19f2iter.LogType))
 				}
-				f18f2 = append(f18f2, f18f2elem)
+				f19f2 = append(f19f2, f19f2elem)
 			}
-			f18.LogDeliveryConfigurations = f18f2
+			f19.LogDeliveryConfigurations = f19f2
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId != nil {
-			f18.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
+			f19.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.Resharding != nil {
-			f18f4 := &svcapitypes.ReshardingStatus{}
+			f19f4 := &svcapitypes.ReshardingStatus{}
 			if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration != nil {
-				f18f4f0 := &svcapitypes.SlotMigration{}
+				f19f4f0 := &svcapitypes.SlotMigration{}
 				if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
-					f18f4f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
+					f19f4f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
 				}
-				f18f4.SlotMigration = f18f4f0
+				f19f4.SlotMigration = f19f4f0
 			}
-			f18.Resharding = f18f4
+			f19.Resharding = f19f4
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.UserGroups != nil {
-			f18f5 := &svcapitypes.UserGroupsUpdateStatus{}
+			f19f5 := &svcapitypes.UserGroupsUpdateStatus{}
 			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd != nil {
-				f18f5f0 := []*string{}
-				for _, f18f5f0iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd {
-					var f18f5f0elem string
-					f18f5f0elem = *f18f5f0iter
-					f18f5f0 = append(f18f5f0, &f18f5f0elem)
-				}
-				f18f5.UserGroupIDsToAdd = f18f5f0
+				f19f5.UserGroupIDsToAdd = aws.StringSlice(resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd)
 			}
 			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove != nil {
-				f18f5f1 := []*string{}
-				for _, f18f5f1iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove {
-					var f18f5f1elem string
-					f18f5f1elem = *f18f5f1iter
-					f18f5f1 = append(f18f5f1, &f18f5f1elem)
-				}
-				f18f5.UserGroupIDsToRemove = f18f5f1
+				f19f5.UserGroupIDsToRemove = aws.StringSlice(resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove)
 			}
-			f18.UserGroups = f18f5
+			f19.UserGroups = f19f5
 		}
-		ko.Status.PendingModifiedValues = f18
+		ko.Status.PendingModifiedValues = f19
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
@@ -1544,7 +1480,8 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.ReplicationGroupID = nil
 	}
 	if resp.ReplicationGroup.SnapshotRetentionLimit != nil {
-		ko.Spec.SnapshotRetentionLimit = resp.ReplicationGroup.SnapshotRetentionLimit
+		snapshotRetentionLimitCopy := int64(*resp.ReplicationGroup.SnapshotRetentionLimit)
+		ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	} else {
 		ko.Spec.SnapshotRetentionLimit = nil
 	}
@@ -1569,13 +1506,7 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
 	if resp.ReplicationGroup.UserGroupIds != nil {
-		f26 := []*string{}
-		for _, f26iter := range resp.ReplicationGroup.UserGroupIds {
-			var f26elem string
-			f26elem = *f26iter
-			f26 = append(f26, &f26elem)
-		}
-		ko.Spec.UserGroupIDs = f26
+		ko.Spec.UserGroupIDs = aws.StringSlice(resp.ReplicationGroup.UserGroupIds)
 	} else {
 		ko.Spec.UserGroupIDs = nil
 	}
@@ -1598,101 +1529,106 @@ func (rm *resourceManager) newUpdateRequestPayload(
 ) (*svcsdk.ModifyReplicationGroupInput, error) {
 	res := &svcsdk.ModifyReplicationGroupInput{}
 
-	res.SetApplyImmediately(true)
+	res.ApplyImmediately = aws.Bool(true)
 	if r.ko.Spec.AuthToken != nil {
 		tmpSecret, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.AuthToken)
 		if err != nil {
 			return nil, ackrequeue.Needed(err)
 		}
 		if tmpSecret != "" {
-			res.SetAuthToken(tmpSecret)
+			res.AuthToken = aws.String(tmpSecret)
 		}
 	}
 	if r.ko.Status.AutoMinorVersionUpgrade != nil {
-		res.SetAutoMinorVersionUpgrade(*r.ko.Status.AutoMinorVersionUpgrade)
+		res.AutoMinorVersionUpgrade = r.ko.Status.AutoMinorVersionUpgrade
 	}
 	if r.ko.Spec.AutomaticFailoverEnabled != nil {
-		res.SetAutomaticFailoverEnabled(*r.ko.Spec.AutomaticFailoverEnabled)
+		res.AutomaticFailoverEnabled = r.ko.Spec.AutomaticFailoverEnabled
 	}
 	if r.ko.Spec.CacheNodeType != nil {
-		res.SetCacheNodeType(*r.ko.Spec.CacheNodeType)
+		res.CacheNodeType = r.ko.Spec.CacheNodeType
 	}
 	if r.ko.Spec.CacheParameterGroupName != nil {
-		res.SetCacheParameterGroupName(*r.ko.Spec.CacheParameterGroupName)
+		res.CacheParameterGroupName = r.ko.Spec.CacheParameterGroupName
 	}
 	if r.ko.Spec.CacheSecurityGroupNames != nil {
-		f7 := []*string{}
-		for _, f7iter := range r.ko.Spec.CacheSecurityGroupNames {
-			var f7elem string
-			f7elem = *f7iter
-			f7 = append(f7, &f7elem)
-		}
-		res.SetCacheSecurityGroupNames(f7)
+		res.CacheSecurityGroupNames = aws.ToStringSlice(r.ko.Spec.CacheSecurityGroupNames)
+	}
+	if r.ko.Spec.Engine != nil {
+		res.Engine = r.ko.Spec.Engine
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f8 := []*svcsdk.LogDeliveryConfigurationRequest{}
-		for _, f8iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f8elem := &svcsdk.LogDeliveryConfigurationRequest{}
-			if f8iter.DestinationDetails != nil {
-				f8elemf0 := &svcsdk.DestinationDetails{}
-				if f8iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f8elemf0f0 := &svcsdk.CloudWatchLogsDestinationDetails{}
-					if f8iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f8elemf0f0.SetLogGroup(*f8iter.DestinationDetails.CloudWatchLogsDetails.LogGroup)
+		f11 := []svcsdktypes.LogDeliveryConfigurationRequest{}
+		for _, f11iter := range r.ko.Spec.LogDeliveryConfigurations {
+			f11elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
+			if f11iter.DestinationDetails != nil {
+				f11elemf0 := &svcsdktypes.DestinationDetails{}
+				if f11iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f11elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
+					if f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f11elemf0f0.LogGroup = f11iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f8elemf0.SetCloudWatchLogsDetails(f8elemf0f0)
+					f11elemf0.CloudWatchLogsDetails = f11elemf0f0
 				}
-				if f8iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f8elemf0f1 := &svcsdk.KinesisFirehoseDestinationDetails{}
-					if f8iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f8elemf0f1.SetDeliveryStream(*f8iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream)
+				if f11iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f11elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
+					if f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f11elemf0f1.DeliveryStream = f11iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f8elemf0.SetKinesisFirehoseDetails(f8elemf0f1)
+					f11elemf0.KinesisFirehoseDetails = f11elemf0f1
 				}
-				f8elem.SetDestinationDetails(f8elemf0)
+				f11elem.DestinationDetails = f11elemf0
 			}
-			if f8iter.DestinationType != nil {
-				f8elem.SetDestinationType(*f8iter.DestinationType)
+			if f11iter.DestinationType != nil {
+				f11elem.DestinationType = svcsdktypes.DestinationType(*f11iter.DestinationType)
 			}
-			if f8iter.Enabled != nil {
-				f8elem.SetEnabled(*f8iter.Enabled)
+			if f11iter.Enabled != nil {
+				f11elem.Enabled = f11iter.Enabled
 			}
-			if f8iter.LogFormat != nil {
-				f8elem.SetLogFormat(*f8iter.LogFormat)
+			if f11iter.LogFormat != nil {
+				f11elem.LogFormat = svcsdktypes.LogFormat(*f11iter.LogFormat)
 			}
-			if f8iter.LogType != nil {
-				f8elem.SetLogType(*f8iter.LogType)
+			if f11iter.LogType != nil {
+				f11elem.LogType = svcsdktypes.LogType(*f11iter.LogType)
 			}
-			f8 = append(f8, f8elem)
+			f11 = append(f11, *f11elem)
 		}
-		res.SetLogDeliveryConfigurations(f8)
+		res.LogDeliveryConfigurations = f11
 	}
 	if r.ko.Spec.MultiAZEnabled != nil {
-		res.SetMultiAZEnabled(*r.ko.Spec.MultiAZEnabled)
+		res.MultiAZEnabled = r.ko.Spec.MultiAZEnabled
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
-		res.SetNotificationTopicArn(*r.ko.Spec.NotificationTopicARN)
+		res.NotificationTopicArn = r.ko.Spec.NotificationTopicARN
 	}
 	if r.ko.Spec.PreferredMaintenanceWindow != nil {
-		res.SetPreferredMaintenanceWindow(*r.ko.Spec.PreferredMaintenanceWindow)
+		res.PreferredMaintenanceWindow = r.ko.Spec.PreferredMaintenanceWindow
 	}
 	if r.ko.Spec.PrimaryClusterID != nil {
-		res.SetPrimaryClusterId(*r.ko.Spec.PrimaryClusterID)
+		res.PrimaryClusterId = r.ko.Spec.PrimaryClusterID
 	}
 	if r.ko.Spec.Description != nil {
-		res.SetReplicationGroupDescription(*r.ko.Spec.Description)
+		res.ReplicationGroupDescription = r.ko.Spec.Description
 	}
 	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+		res.ReplicationGroupId = r.ko.Spec.ReplicationGroupID
 	}
 	if r.ko.Spec.SnapshotRetentionLimit != nil {
-		res.SetSnapshotRetentionLimit(*r.ko.Spec.SnapshotRetentionLimit)
+		snapshotRetentionLimitCopy0 := *r.ko.Spec.SnapshotRetentionLimit
+		if snapshotRetentionLimitCopy0 > math.MaxInt32 || snapshotRetentionLimitCopy0 < math.MinInt32 {
+			return nil, fmt.Errorf("error: field SnapshotRetentionLimit is of type int32")
+		}
+		snapshotRetentionLimitCopy := int32(snapshotRetentionLimitCopy0)
+		res.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	}
 	if r.ko.Spec.SnapshotWindow != nil {
-		res.SetSnapshotWindow(*r.ko.Spec.SnapshotWindow)
+		res.SnapshotWindow = r.ko.Spec.SnapshotWindow
 	}
 	if r.ko.Status.SnapshottingClusterID != nil {
-		res.SetSnapshottingClusterId(*r.ko.Status.SnapshottingClusterID)
+		res.SnapshottingClusterId = r.ko.Status.SnapshottingClusterID
+	}
+	if r.ko.Spec.TransitEncryptionEnabled != nil {
+		res.TransitEncryptionEnabled = r.ko.Spec.TransitEncryptionEnabled
 	}
 
 	return res, nil
@@ -1747,11 +1683,11 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteReplicationGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteReplicationGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteReplicationGroup(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteReplicationGroup", err)
 	// delete call successful
 	if err == nil {
-		rp, _ := rm.setReplicationGroupOutput(r, resp.ReplicationGroup)
+		rp, _ := rm.setReplicationGroupOutput(ctx, r, resp.ReplicationGroup)
 		// Setting resource synced condition to false will trigger a requeue of
 		// the resource.
 		ackcondition.SetSynced(
@@ -1779,7 +1715,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteReplicationGroupInput{}
 
 	if r.ko.Spec.ReplicationGroupID != nil {
-		res.SetReplicationGroupId(*r.ko.Spec.ReplicationGroupID)
+		res.ReplicationGroupId = r.ko.Spec.ReplicationGroupID
 	}
 
 	return res, nil
@@ -1887,11 +1823,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "InvalidParameter",
 		"InvalidParameterValue",
 		"InvalidParameterCombination",
@@ -1913,8 +1850,9 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 // This method copies the data from given ReplicationGroup by populating it
 // into copy of supplied resource and returns that.
 func (rm *resourceManager) setReplicationGroupOutput(
+	ctx context.Context,
 	r *resource,
-	obj *svcsdk.ReplicationGroup,
+	obj *svcsdktypes.ReplicationGroup,
 ) (*resource, error) {
 	if obj == nil ||
 		r == nil ||
@@ -1953,8 +1891,8 @@ func (rm *resourceManager) setReplicationGroupOutput(
 	} else {
 		ko.Status.AutoMinorVersionUpgrade = nil
 	}
-	if resp.ReplicationGroup.AutomaticFailover != nil {
-		ko.Status.AutomaticFailover = resp.ReplicationGroup.AutomaticFailover
+	if resp.ReplicationGroup.AutomaticFailover != "" {
+		ko.Status.AutomaticFailover = aws.String(string(resp.ReplicationGroup.AutomaticFailover))
 	} else {
 		ko.Status.AutomaticFailover = nil
 	}
@@ -1974,14 +1912,15 @@ func (rm *resourceManager) setReplicationGroupOutput(
 			f8.Address = resp.ReplicationGroup.ConfigurationEndpoint.Address
 		}
 		if resp.ReplicationGroup.ConfigurationEndpoint.Port != nil {
-			f8.Port = resp.ReplicationGroup.ConfigurationEndpoint.Port
+			portCopy := int64(*resp.ReplicationGroup.ConfigurationEndpoint.Port)
+			f8.Port = &portCopy
 		}
 		ko.Status.ConfigurationEndpoint = f8
 	} else {
 		ko.Status.ConfigurationEndpoint = nil
 	}
-	if resp.ReplicationGroup.DataTiering != nil {
-		ko.Status.DataTiering = resp.ReplicationGroup.DataTiering
+	if resp.ReplicationGroup.DataTiering != "" {
+		ko.Status.DataTiering = aws.String(string(resp.ReplicationGroup.DataTiering))
 	} else {
 		ko.Status.DataTiering = nil
 	}
@@ -1990,15 +1929,20 @@ func (rm *resourceManager) setReplicationGroupOutput(
 	} else {
 		ko.Spec.Description = nil
 	}
+	if resp.ReplicationGroup.Engine != nil {
+		ko.Spec.Engine = resp.ReplicationGroup.Engine
+	} else {
+		ko.Spec.Engine = nil
+	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
-		f11 := &svcapitypes.GlobalReplicationGroupInfo{}
+		f12 := &svcapitypes.GlobalReplicationGroupInfo{}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
-			f11.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
+			f12.GlobalReplicationGroupID = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId
 		}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole != nil {
-			f11.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
+			f12.GlobalReplicationGroupMemberRole = resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupMemberRole
 		}
-		ko.Status.GlobalReplicationGroupInfo = f11
+		ko.Status.GlobalReplicationGroupInfo = f12
 	} else {
 		ko.Status.GlobalReplicationGroupInfo = nil
 	}
@@ -2008,221 +1952,200 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Spec.KMSKeyID = nil
 	}
 	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
-		f13 := []*svcapitypes.LogDeliveryConfigurationRequest{}
-		for _, f13iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
-			f13elem := &svcapitypes.LogDeliveryConfigurationRequest{}
-			if f13iter.DestinationDetails != nil {
-				f13elemf0 := &svcapitypes.DestinationDetails{}
-				if f13iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f13elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-					if f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f13elemf0f0.LogGroup = f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+		f14 := []*svcapitypes.LogDeliveryConfigurationRequest{}
+		for _, f14iter := range resp.ReplicationGroup.LogDeliveryConfigurations {
+			f14elem := &svcapitypes.LogDeliveryConfigurationRequest{}
+			if f14iter.DestinationDetails != nil {
+				f14elemf0 := &svcapitypes.DestinationDetails{}
+				if f14iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f14elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+					if f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f14elemf0f0.LogGroup = f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f13elemf0.CloudWatchLogsDetails = f13elemf0f0
+					f14elemf0.CloudWatchLogsDetails = f14elemf0f0
 				}
-				if f13iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f13elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-					if f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f13elemf0f1.DeliveryStream = f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+				if f14iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f14elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+					if f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f14elemf0f1.DeliveryStream = f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f13elemf0.KinesisFirehoseDetails = f13elemf0f1
+					f14elemf0.KinesisFirehoseDetails = f14elemf0f1
 				}
-				f13elem.DestinationDetails = f13elemf0
+				f14elem.DestinationDetails = f14elemf0
 			}
-			if f13iter.DestinationType != nil {
-				f13elem.DestinationType = f13iter.DestinationType
+			if f14iter.DestinationType != "" {
+				f14elem.DestinationType = aws.String(string(f14iter.DestinationType))
 			}
-			if f13iter.LogFormat != nil {
-				f13elem.LogFormat = f13iter.LogFormat
+			if f14iter.LogFormat != "" {
+				f14elem.LogFormat = aws.String(string(f14iter.LogFormat))
 			}
-			if f13iter.LogType != nil {
-				f13elem.LogType = f13iter.LogType
+			if f14iter.LogType != "" {
+				f14elem.LogType = aws.String(string(f14iter.LogType))
 			}
-			f13 = append(f13, f13elem)
+			f14 = append(f14, f14elem)
 		}
-		ko.Spec.LogDeliveryConfigurations = f13
+		ko.Spec.LogDeliveryConfigurations = f14
 	} else {
 		ko.Spec.LogDeliveryConfigurations = nil
 	}
 	if resp.ReplicationGroup.MemberClusters != nil {
-		f14 := []*string{}
-		for _, f14iter := range resp.ReplicationGroup.MemberClusters {
-			var f14elem string
-			f14elem = *f14iter
-			f14 = append(f14, &f14elem)
-		}
-		ko.Status.MemberClusters = f14
+		ko.Status.MemberClusters = aws.StringSlice(resp.ReplicationGroup.MemberClusters)
 	} else {
 		ko.Status.MemberClusters = nil
 	}
 	if resp.ReplicationGroup.MemberClustersOutpostArns != nil {
-		f15 := []*string{}
-		for _, f15iter := range resp.ReplicationGroup.MemberClustersOutpostArns {
-			var f15elem string
-			f15elem = *f15iter
-			f15 = append(f15, &f15elem)
-		}
-		ko.Status.MemberClustersOutpostARNs = f15
+		ko.Status.MemberClustersOutpostARNs = aws.StringSlice(resp.ReplicationGroup.MemberClustersOutpostArns)
 	} else {
 		ko.Status.MemberClustersOutpostARNs = nil
 	}
-	if resp.ReplicationGroup.MultiAZ != nil {
-		ko.Status.MultiAZ = resp.ReplicationGroup.MultiAZ
+	if resp.ReplicationGroup.MultiAZ != "" {
+		ko.Status.MultiAZ = aws.String(string(resp.ReplicationGroup.MultiAZ))
 	} else {
 		ko.Status.MultiAZ = nil
 	}
 	if resp.ReplicationGroup.NodeGroups != nil {
-		f17 := []*svcapitypes.NodeGroup{}
-		for _, f17iter := range resp.ReplicationGroup.NodeGroups {
-			f17elem := &svcapitypes.NodeGroup{}
-			if f17iter.NodeGroupId != nil {
-				f17elem.NodeGroupID = f17iter.NodeGroupId
+		f18 := []*svcapitypes.NodeGroup{}
+		for _, f18iter := range resp.ReplicationGroup.NodeGroups {
+			f18elem := &svcapitypes.NodeGroup{}
+			if f18iter.NodeGroupId != nil {
+				f18elem.NodeGroupID = f18iter.NodeGroupId
 			}
-			if f17iter.NodeGroupMembers != nil {
-				f17elemf1 := []*svcapitypes.NodeGroupMember{}
-				for _, f17elemf1iter := range f17iter.NodeGroupMembers {
-					f17elemf1elem := &svcapitypes.NodeGroupMember{}
-					if f17elemf1iter.CacheClusterId != nil {
-						f17elemf1elem.CacheClusterID = f17elemf1iter.CacheClusterId
+			if f18iter.NodeGroupMembers != nil {
+				f18elemf1 := []*svcapitypes.NodeGroupMember{}
+				for _, f18elemf1iter := range f18iter.NodeGroupMembers {
+					f18elemf1elem := &svcapitypes.NodeGroupMember{}
+					if f18elemf1iter.CacheClusterId != nil {
+						f18elemf1elem.CacheClusterID = f18elemf1iter.CacheClusterId
 					}
-					if f17elemf1iter.CacheNodeId != nil {
-						f17elemf1elem.CacheNodeID = f17elemf1iter.CacheNodeId
+					if f18elemf1iter.CacheNodeId != nil {
+						f18elemf1elem.CacheNodeID = f18elemf1iter.CacheNodeId
 					}
-					if f17elemf1iter.CurrentRole != nil {
-						f17elemf1elem.CurrentRole = f17elemf1iter.CurrentRole
+					if f18elemf1iter.CurrentRole != nil {
+						f18elemf1elem.CurrentRole = f18elemf1iter.CurrentRole
 					}
-					if f17elemf1iter.PreferredAvailabilityZone != nil {
-						f17elemf1elem.PreferredAvailabilityZone = f17elemf1iter.PreferredAvailabilityZone
+					if f18elemf1iter.PreferredAvailabilityZone != nil {
+						f18elemf1elem.PreferredAvailabilityZone = f18elemf1iter.PreferredAvailabilityZone
 					}
-					if f17elemf1iter.PreferredOutpostArn != nil {
-						f17elemf1elem.PreferredOutpostARN = f17elemf1iter.PreferredOutpostArn
+					if f18elemf1iter.PreferredOutpostArn != nil {
+						f18elemf1elem.PreferredOutpostARN = f18elemf1iter.PreferredOutpostArn
 					}
-					if f17elemf1iter.ReadEndpoint != nil {
-						f17elemf1elemf5 := &svcapitypes.Endpoint{}
-						if f17elemf1iter.ReadEndpoint.Address != nil {
-							f17elemf1elemf5.Address = f17elemf1iter.ReadEndpoint.Address
+					if f18elemf1iter.ReadEndpoint != nil {
+						f18elemf1elemf5 := &svcapitypes.Endpoint{}
+						if f18elemf1iter.ReadEndpoint.Address != nil {
+							f18elemf1elemf5.Address = f18elemf1iter.ReadEndpoint.Address
 						}
-						if f17elemf1iter.ReadEndpoint.Port != nil {
-							f17elemf1elemf5.Port = f17elemf1iter.ReadEndpoint.Port
+						if f18elemf1iter.ReadEndpoint.Port != nil {
+							portCopy := int64(*f18elemf1iter.ReadEndpoint.Port)
+							f18elemf1elemf5.Port = &portCopy
 						}
-						f17elemf1elem.ReadEndpoint = f17elemf1elemf5
+						f18elemf1elem.ReadEndpoint = f18elemf1elemf5
 					}
-					f17elemf1 = append(f17elemf1, f17elemf1elem)
+					f18elemf1 = append(f18elemf1, f18elemf1elem)
 				}
-				f17elem.NodeGroupMembers = f17elemf1
+				f18elem.NodeGroupMembers = f18elemf1
 			}
-			if f17iter.PrimaryEndpoint != nil {
-				f17elemf2 := &svcapitypes.Endpoint{}
-				if f17iter.PrimaryEndpoint.Address != nil {
-					f17elemf2.Address = f17iter.PrimaryEndpoint.Address
+			if f18iter.PrimaryEndpoint != nil {
+				f18elemf2 := &svcapitypes.Endpoint{}
+				if f18iter.PrimaryEndpoint.Address != nil {
+					f18elemf2.Address = f18iter.PrimaryEndpoint.Address
 				}
-				if f17iter.PrimaryEndpoint.Port != nil {
-					f17elemf2.Port = f17iter.PrimaryEndpoint.Port
+				if f18iter.PrimaryEndpoint.Port != nil {
+					portCopy := int64(*f18iter.PrimaryEndpoint.Port)
+					f18elemf2.Port = &portCopy
 				}
-				f17elem.PrimaryEndpoint = f17elemf2
+				f18elem.PrimaryEndpoint = f18elemf2
 			}
-			if f17iter.ReaderEndpoint != nil {
-				f17elemf3 := &svcapitypes.Endpoint{}
-				if f17iter.ReaderEndpoint.Address != nil {
-					f17elemf3.Address = f17iter.ReaderEndpoint.Address
+			if f18iter.ReaderEndpoint != nil {
+				f18elemf3 := &svcapitypes.Endpoint{}
+				if f18iter.ReaderEndpoint.Address != nil {
+					f18elemf3.Address = f18iter.ReaderEndpoint.Address
 				}
-				if f17iter.ReaderEndpoint.Port != nil {
-					f17elemf3.Port = f17iter.ReaderEndpoint.Port
+				if f18iter.ReaderEndpoint.Port != nil {
+					portCopy := int64(*f18iter.ReaderEndpoint.Port)
+					f18elemf3.Port = &portCopy
 				}
-				f17elem.ReaderEndpoint = f17elemf3
+				f18elem.ReaderEndpoint = f18elemf3
 			}
-			if f17iter.Slots != nil {
-				f17elem.Slots = f17iter.Slots
+			if f18iter.Slots != nil {
+				f18elem.Slots = f18iter.Slots
 			}
-			if f17iter.Status != nil {
-				f17elem.Status = f17iter.Status
+			if f18iter.Status != nil {
+				f18elem.Status = f18iter.Status
 			}
-			f17 = append(f17, f17elem)
+			f18 = append(f18, f18elem)
 		}
-		ko.Status.NodeGroups = f17
+		ko.Status.NodeGroups = f18
 	} else {
 		ko.Status.NodeGroups = nil
 	}
 	if resp.ReplicationGroup.PendingModifiedValues != nil {
-		f18 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
-		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != nil {
-			f18.AuthTokenStatus = resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus
+		f19 := &svcapitypes.ReplicationGroupPendingModifiedValues{}
+		if resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus != "" {
+			f19.AuthTokenStatus = aws.String(string(resp.ReplicationGroup.PendingModifiedValues.AuthTokenStatus))
 		}
-		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != nil {
-			f18.AutomaticFailoverStatus = resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus
+		if resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus != "" {
+			f19.AutomaticFailoverStatus = aws.String(string(resp.ReplicationGroup.PendingModifiedValues.AutomaticFailoverStatus))
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations != nil {
-			f18f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
-			for _, f18f2iter := range resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations {
-				f18f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
-				if f18f2iter.DestinationDetails != nil {
-					f18f2elemf0 := &svcapitypes.DestinationDetails{}
-					if f18f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
-						f18f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
-						if f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-							f18f2elemf0f0.LogGroup = f18f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+			f19f2 := []*svcapitypes.PendingLogDeliveryConfiguration{}
+			for _, f19f2iter := range resp.ReplicationGroup.PendingModifiedValues.LogDeliveryConfigurations {
+				f19f2elem := &svcapitypes.PendingLogDeliveryConfiguration{}
+				if f19f2iter.DestinationDetails != nil {
+					f19f2elemf0 := &svcapitypes.DestinationDetails{}
+					if f19f2iter.DestinationDetails.CloudWatchLogsDetails != nil {
+						f19f2elemf0f0 := &svcapitypes.CloudWatchLogsDestinationDetails{}
+						if f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+							f19f2elemf0f0.LogGroup = f19f2iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 						}
-						f18f2elemf0.CloudWatchLogsDetails = f18f2elemf0f0
+						f19f2elemf0.CloudWatchLogsDetails = f19f2elemf0f0
 					}
-					if f18f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
-						f18f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
-						if f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-							f18f2elemf0f1.DeliveryStream = f18f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+					if f19f2iter.DestinationDetails.KinesisFirehoseDetails != nil {
+						f19f2elemf0f1 := &svcapitypes.KinesisFirehoseDestinationDetails{}
+						if f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+							f19f2elemf0f1.DeliveryStream = f19f2iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 						}
-						f18f2elemf0.KinesisFirehoseDetails = f18f2elemf0f1
+						f19f2elemf0.KinesisFirehoseDetails = f19f2elemf0f1
 					}
-					f18f2elem.DestinationDetails = f18f2elemf0
+					f19f2elem.DestinationDetails = f19f2elemf0
 				}
-				if f18f2iter.DestinationType != nil {
-					f18f2elem.DestinationType = f18f2iter.DestinationType
+				if f19f2iter.DestinationType != "" {
+					f19f2elem.DestinationType = aws.String(string(f19f2iter.DestinationType))
 				}
-				if f18f2iter.LogFormat != nil {
-					f18f2elem.LogFormat = f18f2iter.LogFormat
+				if f19f2iter.LogFormat != "" {
+					f19f2elem.LogFormat = aws.String(string(f19f2iter.LogFormat))
 				}
-				if f18f2iter.LogType != nil {
-					f18f2elem.LogType = f18f2iter.LogType
+				if f19f2iter.LogType != "" {
+					f19f2elem.LogType = aws.String(string(f19f2iter.LogType))
 				}
-				f18f2 = append(f18f2, f18f2elem)
+				f19f2 = append(f19f2, f19f2elem)
 			}
-			f18.LogDeliveryConfigurations = f18f2
+			f19.LogDeliveryConfigurations = f19f2
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId != nil {
-			f18.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
+			f19.PrimaryClusterID = resp.ReplicationGroup.PendingModifiedValues.PrimaryClusterId
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.Resharding != nil {
-			f18f4 := &svcapitypes.ReshardingStatus{}
+			f19f4 := &svcapitypes.ReshardingStatus{}
 			if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration != nil {
-				f18f4f0 := &svcapitypes.SlotMigration{}
+				f19f4f0 := &svcapitypes.SlotMigration{}
 				if resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage != nil {
-					f18f4f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
+					f19f4f0.ProgressPercentage = resp.ReplicationGroup.PendingModifiedValues.Resharding.SlotMigration.ProgressPercentage
 				}
-				f18f4.SlotMigration = f18f4f0
+				f19f4.SlotMigration = f19f4f0
 			}
-			f18.Resharding = f18f4
+			f19.Resharding = f19f4
 		}
 		if resp.ReplicationGroup.PendingModifiedValues.UserGroups != nil {
-			f18f5 := &svcapitypes.UserGroupsUpdateStatus{}
+			f19f5 := &svcapitypes.UserGroupsUpdateStatus{}
 			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd != nil {
-				f18f5f0 := []*string{}
-				for _, f18f5f0iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd {
-					var f18f5f0elem string
-					f18f5f0elem = *f18f5f0iter
-					f18f5f0 = append(f18f5f0, &f18f5f0elem)
-				}
-				f18f5.UserGroupIDsToAdd = f18f5f0
+				f19f5.UserGroupIDsToAdd = aws.StringSlice(resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToAdd)
 			}
 			if resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove != nil {
-				f18f5f1 := []*string{}
-				for _, f18f5f1iter := range resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove {
-					var f18f5f1elem string
-					f18f5f1elem = *f18f5f1iter
-					f18f5f1 = append(f18f5f1, &f18f5f1elem)
-				}
-				f18f5.UserGroupIDsToRemove = f18f5f1
+				f19f5.UserGroupIDsToRemove = aws.StringSlice(resp.ReplicationGroup.PendingModifiedValues.UserGroups.UserGroupIdsToRemove)
 			}
-			f18.UserGroups = f18f5
+			f19.UserGroups = f19f5
 		}
-		ko.Status.PendingModifiedValues = f18
+		ko.Status.PendingModifiedValues = f19
 	} else {
 		ko.Status.PendingModifiedValues = nil
 	}
@@ -2237,7 +2160,8 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Spec.ReplicationGroupID = nil
 	}
 	if resp.ReplicationGroup.SnapshotRetentionLimit != nil {
-		ko.Spec.SnapshotRetentionLimit = resp.ReplicationGroup.SnapshotRetentionLimit
+		snapshotRetentionLimitCopy := int64(*resp.ReplicationGroup.SnapshotRetentionLimit)
+		ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
 	} else {
 		ko.Spec.SnapshotRetentionLimit = nil
 	}
@@ -2262,18 +2186,12 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Spec.TransitEncryptionEnabled = nil
 	}
 	if resp.ReplicationGroup.UserGroupIds != nil {
-		f26 := []*string{}
-		for _, f26iter := range resp.ReplicationGroup.UserGroupIds {
-			var f26elem string
-			f26elem = *f26iter
-			f26 = append(f26, &f26elem)
-		}
-		ko.Spec.UserGroupIDs = f26
+		ko.Spec.UserGroupIDs = aws.StringSlice(resp.ReplicationGroup.UserGroupIds)
 	} else {
 		ko.Spec.UserGroupIDs = nil
 	}
 
 	rm.setStatusDefaults(ko)
-	rm.customSetOutput(obj, ko) // custom set output from obj
+	rm.customSetOutput(ctx, *obj, ko) // custom set output from obj
 	return &resource{ko}, nil
 }

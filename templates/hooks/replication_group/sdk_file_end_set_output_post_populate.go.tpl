@@ -1,0 +1,1 @@
+    rm.customSetOutput(ctx, *obj, ko)

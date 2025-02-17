@@ -25,11 +25,12 @@ import (
 
 type UserGroupSpec struct {
 
-	// The current supported value is Redis.
+	// The current supported value is Redis user.
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
+	// tag key must be accompanied by a tag value, although null is accepted. Available
+	// for Valkey and Redis OSS only.
 	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user group.
 	// +kubebuilder:validation:Required
@@ -51,7 +52,7 @@ type UserGroupStatus struct {
 	// resource
 	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
-	// The minimum engine version required, which is Redis 6.0
+	// The minimum engine version required, which is Redis OSS 6.0
 	// +kubebuilder:validation:Optional
 	MinimumEngineVersion *string `json:"minimumEngineVersion,omitempty"`
 	// A list of updates being applied to the user group.

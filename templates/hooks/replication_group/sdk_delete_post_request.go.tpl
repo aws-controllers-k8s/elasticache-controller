@@ -1,6 +1,6 @@
 	// delete call successful
 	if err == nil {
-		rp, _ := rm.setReplicationGroupOutput(r, resp.ReplicationGroup)
+		rp, _ := rm.setReplicationGroupOutput(ctx, r, resp.ReplicationGroup)
 		// Setting resource synced condition to false will trigger a requeue of
 		// the resource.
 		ackcondition.SetSynced(

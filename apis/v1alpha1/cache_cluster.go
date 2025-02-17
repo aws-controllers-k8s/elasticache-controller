@@ -41,17 +41,10 @@ type CacheClusterSpec struct {
 	//   - Must be only printable ASCII characters.
 	//
 	//   - Must be at least 16 characters and no more than 128 characters in length.
-	//
-	//   - The only permitted printable special characters are !, &, #, $, ^, <,
-	//     >, and -. Other printable special characters cannot be used in the AUTH
-	//     token.
-	//
-	// For more information, see AUTH password (http://redis.io/commands/AUTH) at
-	// http://redis.io/commands/AUTH.
 	AuthToken *ackv1alpha1.SecretKeyReference `json:"authToken,omitempty"`
-	// If you are running Redis engine version 6.0 or later, set this parameter
-	// to yes if you want to opt-in to the next auto minor version upgrade campaign.
-	// This parameter is disabled for previous versions.
+	// If you are running Valkey 7.2 and above or Redis OSS engine version 6.0 and
+	// above, set this parameter to yes to opt-in to the next auto minor version
+	// upgrade campaign. This parameter is disabled for previous versions.
 	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// The node group (shard) identifier. This parameter is stored as a lowercase
 	// string.
@@ -75,15 +68,15 @@ type CacheClusterSpec struct {
 	//   - General purpose: Current generation: M7g node types: cache.m7g.large,
 	//     cache.m7g.xlarge, cache.m7g.2xlarge, cache.m7g.4xlarge, cache.m7g.8xlarge,
 	//     cache.m7g.12xlarge, cache.m7g.16xlarge For region availability, see Supported
-	//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
-	//     M6g node types (available only for Redis engine version 5.0.6 onward and
-	//     for Memcached engine version 1.5.16 onward): cache.m6g.large, cache.m6g.xlarge,
+	//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//     M6g node types (available only for Redis OSS engine version 5.0.6 onward
+	//     and for Memcached engine version 1.5.16 onward): cache.m6g.large, cache.m6g.xlarge,
 	//     cache.m6g.2xlarge, cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge,
 	//     cache.m6g.16xlarge M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge,
 	//     cache.m5.4xlarge, cache.m5.12xlarge, cache.m5.24xlarge M4 node types:
 	//     cache.m4.large, cache.m4.xlarge, cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge
-	//     T4g node types (available only for Redis engine version 5.0.6 onward and
-	//     Memcached engine version 1.5.16 onward): cache.t4g.micro, cache.t4g.small,
+	//     T4g node types (available only for Redis OSS engine version 5.0.6 onward
+	//     and Memcached engine version 1.5.16 onward): cache.t4g.micro, cache.t4g.small,
 	//     cache.t4g.medium T3 node types: cache.t3.micro, cache.t3.small, cache.t3.medium
 	//     T2 node types: cache.t2.micro, cache.t2.small, cache.t2.medium Previous
 	//     generation: (not recommended. Existing clusters are still supported but
@@ -99,9 +92,9 @@ type CacheClusterSpec struct {
 	//   - Memory optimized: Current generation: R7g node types: cache.r7g.large,
 	//     cache.r7g.xlarge, cache.r7g.2xlarge, cache.r7g.4xlarge, cache.r7g.8xlarge,
 	//     cache.r7g.12xlarge, cache.r7g.16xlarge For region availability, see Supported
-	//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
-	//     R6g node types (available only for Redis engine version 5.0.6 onward and
-	//     for Memcached engine version 1.5.16 onward): cache.r6g.large, cache.r6g.xlarge,
+	//     Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//     R6g node types (available only for Redis OSS engine version 5.0.6 onward
+	//     and for Memcached engine version 1.5.16 onward): cache.r6g.large, cache.r6g.xlarge,
 	//     cache.r6g.2xlarge, cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge,
 	//     cache.r6g.16xlarge R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge,
 	//     cache.r5.4xlarge, cache.r5.12xlarge, cache.r5.24xlarge R4 node types:
@@ -116,12 +109,14 @@ type CacheClusterSpec struct {
 	//
 	//   - All current generation instance types are created in Amazon VPC by default.
 	//
-	//   - Redis append-only files (AOF) are not supported for T1 or T2 instances.
+	//   - Valkey or Redis OSS append-only files (AOF) are not supported for T1
+	//     or T2 instances.
 	//
-	//   - Redis Multi-AZ with automatic failover is not supported on T1 instances.
+	//   - Valkey or Redis OSS Multi-AZ with automatic failover is not supported
+	//     on T1 instances.
 	//
-	//   - Redis configuration variables appendonly and appendfsync are not supported
-	//     on Redis version 2.8.22 and later.
+	//   - The configuration variables appendonly and appendfsync are not supported
+	//     on Valkey, or on Redis OSS version 2.8.22 and later.
 	CacheNodeType *string `json:"cacheNodeType,omitempty"`
 	// The name of the parameter group to associate with this cluster. If this argument
 	// is omitted, the default parameter group for the specified engine is used.
@@ -141,7 +136,7 @@ type CacheClusterSpec struct {
 	//
 	// If you're going to launch your cluster in an Amazon VPC, you need to create
 	// a subnet group before you start creating a cluster. For more information,
-	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SubnetGroups.html).
+	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SubnetGroups.html).
 	CacheSubnetGroupName *string                                  `json:"cacheSubnetGroupName,omitempty"`
 	CacheSubnetGroupRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheSubnetGroupRef,omitempty"`
 	// The name of the cache engine to be used for this cluster.
@@ -153,21 +148,22 @@ type CacheClusterSpec struct {
 	// operation.
 	//
 	// Important: You can upgrade to a newer engine version (see Selecting a Cache
-	// Engine and Version (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SelectEngine.html#VersionManagement)),
+	// Engine and Version (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SelectEngine.html#VersionManagement)),
 	// but you cannot downgrade to an earlier engine version. If you want to use
 	// an earlier engine version, you must delete the existing cluster or replication
 	// group and create it anew with the earlier engine version.
 	EngineVersion *string `json:"engineVersion,omitempty"`
 	// The network type you choose when modifying a cluster, either ipv4 | ipv6.
-	// IPv6 is supported for workloads using Redis engine version 6.2 onward or
-	// Memcached engine version 1.6.6 on all instances built on the Nitro system
-	// (http://aws.amazon.com/ec2/nitro/).
+	// IPv6 is supported for workloads using Valkey 7.2 and above, Redis OSS engine
+	// version 6.2 and above or Memcached engine version 1.6.6 and above on all
+	// instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
 	IPDiscovery *string `json:"ipDiscovery,omitempty"`
 	// Specifies the destination, format and type of the logs.
 	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `json:"logDeliveryConfigurations,omitempty"`
 	// Must be either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads
-	// using Redis engine version 6.2 onward or Memcached engine version 1.6.6 on
-	// all instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
+	// using Valkey 7.2 and above, Redis OSS engine version 6.2 and above or Memcached
+	// engine version 1.6.6 and above on all instances built on the Nitro system
+	// (http://aws.amazon.com/ec2/nitro/).
 	NetworkType *string `json:"networkType,omitempty"`
 	// The Amazon Resource Name (ARN) of the Amazon Simple Notification Service
 	// (SNS) topic to which notifications are sent.
@@ -177,8 +173,8 @@ type CacheClusterSpec struct {
 	NotificationTopicRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"notificationTopicRef,omitempty"`
 	// The initial number of cache nodes that the cluster has.
 	//
-	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 40.
+	// For clusters running Valkey or Redis OSS, this value must be 1. For clusters
+	// running Memcached, this value must be between 1 and 40.
 	//
 	// If you need more than 40 nodes for your Memcached cluster, please fill out
 	// the ElastiCache Limit Increase Request form at http://aws.amazon.com/contact-us/elasticache-node-limit-request/
@@ -239,17 +235,17 @@ type CacheClusterSpec struct {
 	// Private Cloud (Amazon VPC).
 	SecurityGroupIDs []*string `json:"securityGroupIDs,omitempty"`
 	// A single-element string list containing an Amazon Resource Name (ARN) that
-	// uniquely identifies a Redis RDB snapshot file stored in Amazon S3. The snapshot
-	// file is used to populate the node group (shard). The Amazon S3 object name
-	// in the ARN cannot contain any commas.
+	// uniquely identifies a Valkey or Redis OSS RDB snapshot file stored in Amazon
+	// S3. The snapshot file is used to populate the node group (shard). The Amazon
+	// S3 object name in the ARN cannot contain any commas.
 	//
 	// This parameter is only valid if the Engine parameter is redis.
 	//
 	// Example of an Amazon S3 ARN: arn:aws:s3:::my_bucket/snapshot1.rdb
 	SnapshotARNs []*string `json:"snapshotARNs,omitempty"`
-	// The name of a Redis snapshot from which to restore data into the new node
-	// group (shard). The snapshot status changes to restoring while the new node
-	// group (shard) is being created.
+	// The name of a Valkey or Redis OSS snapshot from which to restore data into
+	// the new node group (shard). The snapshot status changes to restoring while
+	// the new node group (shard) is being created.
 	//
 	// This parameter is only valid if the Engine parameter is redis.
 	SnapshotName *string                                  `json:"snapshotName,omitempty"`
@@ -298,12 +294,13 @@ type CacheClusterStatus struct {
 	// to true when you create a cluster.
 	//
 	// Required: Only available when creating a replication group in an Amazon VPC
-	// using redis version 3.2.6, 4.x or later.
+	// using Redis OSS version 3.2.6, 4.x or later.
 	//
 	// Default: false
 	// +kubebuilder:validation:Optional
 	AtRestEncryptionEnabled *bool `json:"atRestEncryptionEnabled,omitempty"`
-	// A flag that enables using an AuthToken (password) when issuing Redis commands.
+	// A flag that enables using an AuthToken (password) when issuing Valkey or
+	// Redis OSS commands.
 	//
 	// Default: false
 	// +kubebuilder:validation:Optional

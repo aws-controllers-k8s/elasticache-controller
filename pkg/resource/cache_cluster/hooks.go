@@ -15,13 +15,15 @@ package cache_cluster
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/util"
@@ -107,7 +109,7 @@ func (rm *resourceManager) updateCacheClusterPayload(input *svcsdk.ModifyCacheCl
 		if nodesDelta > 0 {
 			for i := numNodes; i > numNodes-nodesDelta; i-- {
 				nodeID := fmt.Sprintf("%04d", i)
-				input.CacheNodeIdsToRemove = append(input.CacheNodeIdsToRemove, &nodeID)
+				input.CacheNodeIdsToRemove = append(input.CacheNodeIdsToRemove, nodeID)
 			}
 		}
 	}
@@ -127,7 +129,85 @@ func (rm *resourceManager) updateCacheClusterPayload(input *svcsdk.ModifyCacheCl
 		if len(desiredSpec.PreferredAvailabilityZones) <= oldAZsLen {
 			return errors.New("newly specified AZs in spec.preferredAvailabilityZones must match the number of cache nodes being added")
 		}
-		input.NewAvailabilityZones = desiredSpec.PreferredAvailabilityZones[oldAZsLen:]
+		preferredAvailability := make([]string, 0, len(desiredSpec.PreferredAvailabilityZones[oldAZsLen:]))
+		for az := range desiredSpec.PreferredAvailabilityZones[oldAZsLen:] {
+			if desiredSpec.PreferredAvailabilityZones[az] != nil {
+				preferredAvailability = append(preferredAvailability, *desiredSpec.PreferredAvailabilityZones[az])
+			}
+		}
+		input.NewAvailabilityZones = preferredAvailability
 	}
 	return nil
+}
+
+func (rm *resourceManager) customCreateCacheClusterSetOutput(
+	_ context.Context,
+	r *resource,
+	_ *svcsdk.CreateCacheClusterOutput,
+	ko *svcapitypes.CacheCluster,
+) (*svcapitypes.CacheCluster, error) {
+	rm.setAnnotationsFields(r, ko)
+	return ko, nil
+}
+
+func (rm *resourceManager) customModifyCacheClusterSetOutput(
+	_ context.Context,
+	r *resource,
+	_ *svcsdk.ModifyCacheClusterOutput,
+	ko *svcapitypes.CacheCluster,
+) (*svcapitypes.CacheCluster, error) {
+	rm.setAnnotationsFields(r, ko)
+	return ko, nil
+}
+
+// setAnnotationsFields copies the desired object's annotations, populates any
+// relevant fields, and sets the latest object's annotations to this newly populated map.
+// Fields that are handled by custom modify implementation are not set here.
+// This should only be called upon a successful create or modify call.
+func (rm *resourceManager) setAnnotationsFields(
+	r *resource,
+	ko *svcapitypes.CacheCluster,
+) {
+	annotations := getAnnotationsFields(r, ko)
+	annotations[AnnotationLastRequestedPAZs] = marshalAsAnnotation(r.ko.Spec.PreferredAvailabilityZones)
+	ko.ObjectMeta.Annotations = annotations
+}
+
+// getAnnotationsFields return the annotations map that would be used to set the fields.
+func getAnnotationsFields(
+	r *resource,
+	ko *svcapitypes.CacheCluster,
+) map[string]string {
+	if ko.ObjectMeta.Annotations != nil {
+		return ko.ObjectMeta.Annotations
+	}
+	desiredAnnotations := r.ko.ObjectMeta.GetAnnotations()
+	annotations := make(map[string]string)
+	for k, v := range desiredAnnotations {
+		annotations[k] = v
+	}
+	ko.ObjectMeta.Annotations = annotations
+	return annotations
+}
+
+func marshalAsAnnotation(val interface{}) string {
+	data, err := json.Marshal(val)
+	if err != nil {
+		return "null"
+	}
+	return string(data)
+}
+
+func Int32OrNil(i *int64) *int32 {
+	if i != nil {
+		return aws.Int32(int32(*i))
+	}
+	return aws.Int32(0)
+}
+
+func Int64OrNil(i *int32) *int64 {
+	if i != nil {
+		return aws.Int64(int64(*i))
+	}
+	return aws.Int64(0)
 }

@@ -28,8 +28,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.ElastiCache{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.User{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +50,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -73,10 +75,11 @@ func (rm *resourceManager) sdkFind(
 		return nil, err
 	}
 	var resp *svcsdk.DescribeUsersOutput
-	resp, err = rm.sdkapi.DescribeUsersWithContext(ctx, input)
+	resp, err = rm.sdkapi.DescribeUsers(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeUsers", err)
 	if err != nil {
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "UserNotFound" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "UserNotFound" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -103,10 +106,11 @@ func (rm *resourceManager) sdkFind(
 		if elem.Authentication != nil {
 			f2 := &svcapitypes.Authentication{}
 			if elem.Authentication.PasswordCount != nil {
-				f2.PasswordCount = elem.Authentication.PasswordCount
+				passwordCountCopy := int64(*elem.Authentication.PasswordCount)
+				f2.PasswordCount = &passwordCountCopy
 			}
-			if elem.Authentication.Type != nil {
-				f2.Type = elem.Authentication.Type
+			if elem.Authentication.Type != "" {
+				f2.Type = aws.String(string(elem.Authentication.Type))
 			}
 			ko.Status.Authentication = f2
 		} else {
@@ -128,13 +132,7 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.Status = nil
 		}
 		if elem.UserGroupIds != nil {
-			f6 := []*string{}
-			for _, f6iter := range elem.UserGroupIds {
-				var f6elem string
-				f6elem = *f6iter
-				f6 = append(f6, &f6elem)
-			}
-			ko.Status.UserGroupIDs = f6
+			ko.Status.UserGroupIDs = aws.StringSlice(elem.UserGroupIds)
 		} else {
 			ko.Status.UserGroupIDs = nil
 		}
@@ -178,7 +176,7 @@ func (rm *resourceManager) newListRequestPayload(
 	res := &svcsdk.DescribeUsersInput{}
 
 	if r.ko.Spec.UserID != nil {
-		res.SetUserId(*r.ko.Spec.UserID)
+		res.UserId = r.ko.Spec.UserID
 	}
 
 	return res, nil
@@ -203,7 +201,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateUserOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateUserWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateUser(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateUser", err)
 	if err != nil {
 		return nil, err
@@ -227,10 +225,11 @@ func (rm *resourceManager) sdkCreate(
 	if resp.Authentication != nil {
 		f2 := &svcapitypes.Authentication{}
 		if resp.Authentication.PasswordCount != nil {
-			f2.PasswordCount = resp.Authentication.PasswordCount
+			passwordCountCopy := int64(*resp.Authentication.PasswordCount)
+			f2.PasswordCount = &passwordCountCopy
 		}
-		if resp.Authentication.Type != nil {
-			f2.Type = resp.Authentication.Type
+		if resp.Authentication.Type != "" {
+			f2.Type = aws.String(string(resp.Authentication.Type))
 		}
 		ko.Status.Authentication = f2
 	} else {
@@ -252,13 +251,7 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.Status = nil
 	}
 	if resp.UserGroupIds != nil {
-		f6 := []*string{}
-		for _, f6iter := range resp.UserGroupIds {
-			var f6elem string
-			f6elem = *f6iter
-			f6 = append(f6, &f6elem)
-		}
-		ko.Status.UserGroupIDs = f6
+		ko.Status.UserGroupIDs = aws.StringSlice(resp.UserGroupIds)
 	} else {
 		ko.Status.UserGroupIDs = nil
 	}
@@ -292,16 +285,16 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateUserInput{}
 
 	if r.ko.Spec.AccessString != nil {
-		res.SetAccessString(*r.ko.Spec.AccessString)
+		res.AccessString = r.ko.Spec.AccessString
 	}
 	if r.ko.Spec.Engine != nil {
-		res.SetEngine(*r.ko.Spec.Engine)
+		res.Engine = r.ko.Spec.Engine
 	}
 	if r.ko.Spec.NoPasswordRequired != nil {
-		res.SetNoPasswordRequired(*r.ko.Spec.NoPasswordRequired)
+		res.NoPasswordRequired = r.ko.Spec.NoPasswordRequired
 	}
 	if r.ko.Spec.Passwords != nil {
-		f3 := []*string{}
+		f3 := []string{}
 		for _, f3iter := range r.ko.Spec.Passwords {
 			var f3elem string
 			if f3iter != nil {
@@ -313,29 +306,29 @@ func (rm *resourceManager) newCreateRequestPayload(
 					f3elem = tmpSecret
 				}
 			}
-			f3 = append(f3, &f3elem)
+			f3 = append(f3, f3elem)
 		}
-		res.SetPasswords(f3)
+		res.Passwords = f3
 	}
 	if r.ko.Spec.Tags != nil {
-		f4 := []*svcsdk.Tag{}
+		f4 := []svcsdktypes.Tag{}
 		for _, f4iter := range r.ko.Spec.Tags {
-			f4elem := &svcsdk.Tag{}
+			f4elem := &svcsdktypes.Tag{}
 			if f4iter.Key != nil {
-				f4elem.SetKey(*f4iter.Key)
+				f4elem.Key = f4iter.Key
 			}
 			if f4iter.Value != nil {
-				f4elem.SetValue(*f4iter.Value)
+				f4elem.Value = f4iter.Value
 			}
-			f4 = append(f4, f4elem)
+			f4 = append(f4, *f4elem)
 		}
-		res.SetTags(f4)
+		res.Tags = f4
 	}
 	if r.ko.Spec.UserID != nil {
-		res.SetUserId(*r.ko.Spec.UserID)
+		res.UserId = r.ko.Spec.UserID
 	}
 	if r.ko.Spec.UserName != nil {
-		res.SetUserName(*r.ko.Spec.UserName)
+		res.UserName = r.ko.Spec.UserName
 	}
 
 	return res, nil
@@ -366,7 +359,7 @@ func (rm *resourceManager) sdkUpdate(
 
 	var resp *svcsdk.ModifyUserOutput
 	_ = resp
-	resp, err = rm.sdkapi.ModifyUserWithContext(ctx, input)
+	resp, err = rm.sdkapi.ModifyUser(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "ModifyUser", err)
 	if err != nil {
 		return nil, err
@@ -390,10 +383,11 @@ func (rm *resourceManager) sdkUpdate(
 	if resp.Authentication != nil {
 		f2 := &svcapitypes.Authentication{}
 		if resp.Authentication.PasswordCount != nil {
-			f2.PasswordCount = resp.Authentication.PasswordCount
+			passwordCountCopy := int64(*resp.Authentication.PasswordCount)
+			f2.PasswordCount = &passwordCountCopy
 		}
-		if resp.Authentication.Type != nil {
-			f2.Type = resp.Authentication.Type
+		if resp.Authentication.Type != "" {
+			f2.Type = aws.String(string(resp.Authentication.Type))
 		}
 		ko.Status.Authentication = f2
 	} else {
@@ -415,13 +409,7 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.Status = nil
 	}
 	if resp.UserGroupIds != nil {
-		f6 := []*string{}
-		for _, f6iter := range resp.UserGroupIds {
-			var f6elem string
-			f6elem = *f6iter
-			f6 = append(f6, &f6elem)
-		}
-		ko.Status.UserGroupIDs = f6
+		ko.Status.UserGroupIDs = aws.StringSlice(resp.UserGroupIds)
 	} else {
 		ko.Status.UserGroupIDs = nil
 	}
@@ -455,8 +443,11 @@ func (rm *resourceManager) newUpdateRequestPayload(
 ) (*svcsdk.ModifyUserInput, error) {
 	res := &svcsdk.ModifyUserInput{}
 
+	if r.ko.Spec.Engine != nil {
+		res.Engine = r.ko.Spec.Engine
+	}
 	if r.ko.Spec.UserID != nil {
-		res.SetUserId(*r.ko.Spec.UserID)
+		res.UserId = r.ko.Spec.UserID
 	}
 
 	return res, nil
@@ -478,7 +469,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteUserOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteUserWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteUser(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteUser", err)
 	return nil, err
 }
@@ -491,7 +482,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteUserInput{}
 
 	if r.ko.Spec.UserID != nil {
-		res.SetUserId(*r.ko.Spec.UserID)
+		res.UserId = r.ko.Spec.UserID
 	}
 
 	return res, nil
@@ -599,11 +590,12 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	if err == nil {
 		return false
 	}
-	awsErr, ok := ackerr.AWSError(err)
-	if !ok {
+
+	var terminalErr smithy.APIError
+	if !errors.As(err, &terminalErr) {
 		return false
 	}
-	switch awsErr.Code() {
+	switch terminalErr.ErrorCode() {
 	case "UserAlreadyExists",
 		"UserQuotaExceeded",
 		"DuplicateUserName",

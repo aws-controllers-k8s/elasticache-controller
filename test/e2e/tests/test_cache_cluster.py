@@ -39,6 +39,8 @@ TAGS_PATCH_WAIT_TIME = 120
 
 
 def wait_for_cache_cluster_available(elasticache_client, cache_cluster_id):
+    """Wait for cache cluster to reach 'available' state using boto3 waiter.
+    """
     waiter = elasticache_client.get_waiter(
         'cache_cluster_available',
     )
@@ -48,6 +50,8 @@ def wait_for_cache_cluster_available(elasticache_client, cache_cluster_id):
 
 
 def wait_until_deleted(elasticache_client, cache_cluster_id):
+    """Wait for cache cluster to be fully deleted using boto3 waiter.
+    """
     waiter = elasticache_client.get_waiter(
         'cache_cluster_deleted',
     )
@@ -57,6 +61,8 @@ def wait_until_deleted(elasticache_client, cache_cluster_id):
 
 
 def get_and_assert_status(ref: k8s.CustomResourceReference, expected_status: str, expected_synced: bool):
+    """Get the cache cluster status and assert it matches the expected status.
+    """
     cr = k8s.get_resource(ref)
     assert cr is not None
     assert 'status' in cr

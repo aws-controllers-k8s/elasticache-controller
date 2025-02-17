@@ -69,7 +69,7 @@ type UserStatus struct {
 	// Access permissions string used for this user.
 	// +kubebuilder:validation:Optional
 	LastRequestedAccessString *string `json:"lastRequestedAccessString,omitempty"`
-	// The minimum engine version required, which is Redis 6.0
+	// The minimum engine version required, which is Redis OSS 6.0
 	// +kubebuilder:validation:Optional
 	MinimumEngineVersion *string `json:"minimumEngineVersion,omitempty"`
 	// Indicates the user status. Can be "active", "modifying" or "deleting".
