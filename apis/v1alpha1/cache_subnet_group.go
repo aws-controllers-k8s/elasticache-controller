@@ -30,20 +30,27 @@ import (
 type CacheSubnetGroupSpec struct {
 
 	// A description for the cache subnet group.
+
 	// +kubebuilder:validation:Required
+
 	CacheSubnetGroupDescription *string `json:"cacheSubnetGroupDescription"`
 	// A name for the cache subnet group. This value is stored as a lowercase string.
 	//
 	// Constraints: Must contain no more than 255 alphanumeric characters or hyphens.
 	//
 	// Example: mysubnetgroup
+
 	// +kubebuilder:validation:Required
+
 	CacheSubnetGroupName *string `json:"cacheSubnetGroupName"`
 	// A list of VPC subnet IDs for the cache subnet group.
-	SubnetIDs  []*string                                  `json:"subnetIDs,omitempty"`
+
+	SubnetIDs []*string `json:"subnetIDs,omitempty"`
+
 	SubnetRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"subnetRefs,omitempty"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted.
+
 	Tags []*Tag `json:"tags,omitempty"`
 }
 
@@ -54,7 +61,7 @@ type CacheSubnetGroupStatus struct {
 	// constructed ARN for the resource
 	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
-	// All CRS managed by ACK have a common `Status.Conditions` member that
+	// All CRs managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource

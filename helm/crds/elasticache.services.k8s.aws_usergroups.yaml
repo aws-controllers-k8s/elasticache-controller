@@ -39,13 +39,8 @@ spec:
           spec:
             properties:
               engine:
-                description: The current supported value is Redis user.
                 type: string
               tags:
-                description: |-
-                  A list of tags to be added to this resource. A tag is a key-value pair. A
-                  tag key must be accompanied by a tag value, although null is accepted. Available
-                  for Valkey and Redis OSS only.
                 items:
                   description: |-
                     A tag that can be added to an ElastiCache cluster or replication group. Tags
@@ -62,10 +57,8 @@ spec:
                   type: object
                 type: array
               userGroupID:
-                description: The ID of the user group.
                 type: string
               userIDs:
-                description: The list of user IDs that belong to the user group.
                 items:
                   type: string
                 type: array
@@ -107,7 +100,7 @@ spec:
                 type: object
               conditions:
                 description: |-
-                  All CRS managed by ACK have a common `Status.Conditions` member that
+                  All CRs managed by ACK have a common `Status.Conditions` member that
                   contains a collection of `ackv1alpha1.Condition` objects that describe
                   the various terminal states of the CR and its backend AWS service API
                   resource
