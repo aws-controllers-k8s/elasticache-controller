@@ -28,19 +28,26 @@ type SnapshotSpec struct {
 
 	// The identifier of an existing cluster. The snapshot is created from this
 	// cluster.
+
 	CacheClusterID *string `json:"cacheClusterID,omitempty"`
 	// The ID of the KMS key used to encrypt the snapshot.
+
 	KMSKeyID *string `json:"kmsKeyID,omitempty"`
 	// The identifier of an existing replication group. The snapshot is created
 	// from this replication group.
+
 	ReplicationGroupID *string `json:"replicationGroupID,omitempty"`
 	// A name for the snapshot being created.
+
 	// +kubebuilder:validation:Required
+
 	SnapshotName *string `json:"snapshotName"`
 	// The name of an existing snapshot from which to make a copy.
+
 	SourceSnapshotName *string `json:"sourceSnapshotName,omitempty"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted.
+
 	Tags []*Tag `json:"tags,omitempty"`
 }
 
@@ -51,7 +58,7 @@ type SnapshotStatus struct {
 	// constructed ARN for the resource
 	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
-	// All CRS managed by ACK have a common `Status.Conditions` member that
+	// All CRs managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource

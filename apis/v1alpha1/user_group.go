@@ -26,16 +26,22 @@ import (
 type UserGroupSpec struct {
 
 	// The current supported value is Redis user.
+
 	// +kubebuilder:validation:Required
+
 	Engine *string `json:"engine"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted. Available
 	// for Valkey and Redis OSS only.
+
 	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user group.
+
 	// +kubebuilder:validation:Required
+
 	UserGroupID *string `json:"userGroupID"`
 	// The list of user IDs that belong to the user group.
+
 	UserIDs []*string `json:"userIDs,omitempty"`
 }
 
@@ -46,7 +52,7 @@ type UserGroupStatus struct {
 	// constructed ARN for the resource
 	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
-	// All CRS managed by ACK have a common `Status.Conditions` member that
+	// All CRs managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource

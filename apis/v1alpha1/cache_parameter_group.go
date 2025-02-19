@@ -30,20 +30,28 @@ type CacheParameterGroupSpec struct {
 	//
 	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
 	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x | redis7
+
 	// +kubebuilder:validation:Required
+
 	CacheParameterGroupFamily *string `json:"cacheParameterGroupFamily"`
 	// A user-specified name for the cache parameter group.
+
 	// +kubebuilder:validation:Required
+
 	CacheParameterGroupName *string `json:"cacheParameterGroupName"`
 	// A user-specified description for the cache parameter group.
+
 	// +kubebuilder:validation:Required
+
 	Description *string `json:"description"`
 	// An array of parameter names and values for the parameter update. You must
 	// supply at least one parameter name and value; subsequent arguments are optional.
 	// A maximum of 20 parameters may be modified per request.
+
 	ParameterNameValues []*ParameterNameValue `json:"parameterNameValues,omitempty"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted.
+
 	Tags []*Tag `json:"tags,omitempty"`
 }
 
@@ -54,7 +62,7 @@ type CacheParameterGroupStatus struct {
 	// constructed ARN for the resource
 	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
-	// All CRS managed by ACK have a common `Status.Conditions` member that
+	// All CRs managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
