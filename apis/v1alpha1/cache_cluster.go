@@ -122,6 +122,7 @@ type CacheClusterSpec struct {
 	// is omitted, the default parameter group for the specified engine is used.
 	// You cannot use any parameter group which has cluster-enabled='yes' when creating
 	// a cluster.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	CacheParameterGroupName *string                                  `json:"cacheParameterGroupName,omitempty"`
 	CacheParameterGroupRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheParameterGroupRef,omitempty"`
 	// A list of security group names to associate with this cluster.
@@ -227,6 +228,7 @@ type CacheClusterSpec struct {
 	// provide the best spread of read replicas across Availability Zones.
 	//
 	// This parameter is only valid if the Engine parameter is redis.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	ReplicationGroupID  *string                                  `json:"replicationGroupID,omitempty"`
 	ReplicationGroupRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"replicationGroupRef,omitempty"`
 	// One or more VPC security groups associated with the cluster.
@@ -248,6 +250,7 @@ type CacheClusterSpec struct {
 	// the new node group (shard) is being created.
 	//
 	// This parameter is only valid if the Engine parameter is redis.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	SnapshotName *string                                  `json:"snapshotName,omitempty"`
 	SnapshotRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"snapshotRef,omitempty"`
 	// The number of days for which ElastiCache retains automatic snapshots before
@@ -281,7 +284,7 @@ type CacheClusterStatus struct {
 	// constructed ARN for the resource
 	// +kubebuilder:validation:Optional
 	ACKResourceMetadata *ackv1alpha1.ResourceMetadata `json:"ackResourceMetadata"`
-	// All CRS managed by ACK have a common `Status.Conditions` member that
+	// All CRs managed by ACK have a common `Status.Conditions` member that
 	// contains a collection of `ackv1alpha1.Condition` objects that describe
 	// the various terminal states of the CR and its backend AWS service API
 	// resource
