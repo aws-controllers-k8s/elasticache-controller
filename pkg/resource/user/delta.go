@@ -64,7 +64,9 @@ func newResourceDelta(
 			delta.Add("Spec.NoPasswordRequired", a.ko.Spec.NoPasswordRequired, b.ko.Spec.NoPasswordRequired)
 		}
 	}
-	if !ackcompare.MapStringStringEqual(ToACKTags(a.ko.Spec.Tags), ToACKTags(b.ko.Spec.Tags)) {
+	desiredACKTags, _ := convertToOrderedACKTags(a.ko.Spec.Tags)
+	latestACKTags, _ := convertToOrderedACKTags(b.ko.Spec.Tags)
+	if !ackcompare.MapStringStringEqual(desiredACKTags, latestACKTags) {
 		delta.Add("Spec.Tags", a.ko.Spec.Tags, b.ko.Spec.Tags)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.UserID, b.ko.Spec.UserID) {

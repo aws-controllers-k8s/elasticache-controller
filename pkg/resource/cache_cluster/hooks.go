@@ -93,7 +93,7 @@ func (rm *resourceManager) syncTags(
 	desired *resource,
 	latest *resource,
 ) (err error) {
-	return util.SyncTags(ctx, desired.ko.Spec.Tags, latest.ko.Spec.Tags, latest.ko.Status.ACKResourceMetadata, ToACKTags, rm.sdkapi, rm.metrics)
+	return util.SyncTags(ctx, desired.ko.Spec.Tags, latest.ko.Spec.Tags, latest.ko.Status.ACKResourceMetadata, convertToOrderedACKTags, rm.sdkapi, rm.metrics)
 }
 
 func (rm *resourceManager) updateCacheClusterPayload(input *svcsdk.ModifyCacheClusterInput, desired, latest *resource, delta *ackcompare.Delta) error {
