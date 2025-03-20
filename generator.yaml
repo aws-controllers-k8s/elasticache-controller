@@ -254,7 +254,6 @@ resources:
         - InvalidParameterValue
         - InvalidParameterCombination
         - InvalidUserState
-        - DefaultUserAssociatedToUserGroup
     fields:
       LastRequestedAccessString:
         is_read_only: true

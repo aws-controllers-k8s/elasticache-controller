@@ -601,8 +601,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 		"DuplicateUserName",
 		"InvalidParameterValue",
 		"InvalidParameterCombination",
-		"InvalidUserState",
-		"DefaultUserAssociatedToUserGroup":
+		"InvalidUserState":
 		return true
 	default:
 		return false
