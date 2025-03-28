@@ -84,7 +84,7 @@ func SyncTags(
 	desiredTags []*svcapitypes.Tag,
 	latestTags []*svcapitypes.Tag,
 	latestACKResourceMetadata *ackv1alpha1.ResourceMetadata,
-	toACKTags func(tags []*svcapitypes.Tag) acktags.Tags,
+	toACKTags func(tags []*svcapitypes.Tag) (acktags.Tags, []string),
 	sdkapi *svcsdk.Client,
 	metrics *metrics.Metrics,
 ) (err error) {
@@ -94,8 +94,8 @@ func SyncTags(
 
 	arn := (*string)(latestACKResourceMetadata.ARN)
 
-	from := toACKTags(latestTags)
-	to := toACKTags(desiredTags)
+	from, _ := toACKTags(latestTags)
+	to, _ := toACKTags(desiredTags)
 
 	added, _, removed := ackcompare.GetTagsDifference(from, to)
 
