@@ -221,7 +221,6 @@ resources:
       terminal_codes:
         - CacheParameterGroupAlreadyExists
         - CacheParameterGroupQuotaExceeded
-        - InvalidCacheParameterGroupState
         - InvalidGlobalReplicationGroupState
         - InvalidParameterCombination
         - InvalidParameterValue
@@ -254,7 +253,6 @@ resources:
         - InvalidParameterValue
         - InvalidParameterCombination
         - InvalidUserState
-        - DefaultUserAssociatedToUserGroup
     fields:
       LastRequestedAccessString:
         is_read_only: true

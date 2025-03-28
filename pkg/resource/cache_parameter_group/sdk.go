@@ -414,7 +414,6 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	switch terminalErr.ErrorCode() {
 	case "CacheParameterGroupAlreadyExists",
 		"CacheParameterGroupQuotaExceeded",
-		"InvalidCacheParameterGroupState",
 		"InvalidGlobalReplicationGroupState",
 		"InvalidParameterCombination",
 		"InvalidParameterValue":
