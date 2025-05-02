@@ -4,7 +4,7 @@
 
 image:
   repository: public.ecr.aws/aws-controllers-k8s/elasticache-controller
-  tag: 0.2.3
+  tag: 0.2.4
   pullPolicy: IfNotPresent
   pullSecrets: []
 
