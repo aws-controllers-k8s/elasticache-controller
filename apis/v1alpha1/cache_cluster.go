@@ -235,7 +235,8 @@ type CacheClusterSpec struct {
 	//
 	// Use this parameter only when you are creating a cluster in an Amazon Virtual
 	// Private Cloud (Amazon VPC).
-	SecurityGroupIDs []*string `json:"securityGroupIDs,omitempty"`
+	SecurityGroupIDs  []*string                                  `json:"securityGroupIDs,omitempty"`
+	SecurityGroupRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"securityGroupRefs,omitempty"`
 	// A single-element string list containing an Amazon Resource Name (ARN) that
 	// uniquely identifies a Valkey or Redis OSS RDB snapshot file stored in Amazon
 	// S3. The snapshot file is used to populate the node group (shard). The Amazon

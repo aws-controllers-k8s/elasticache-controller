@@ -327,6 +327,17 @@ func (in *CacheClusterSpec) DeepCopyInto(out *CacheClusterSpec) {
 			}
 		}
 	}
+	if in.SecurityGroupRefs != nil {
+		in, out := &in.SecurityGroupRefs, &out.SecurityGroupRefs
+		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+				(*in).DeepCopyInto(*out)
+			}
+		}
+	}
 	if in.SnapshotARNs != nil {
 		in, out := &in.SnapshotARNs, &out.SnapshotARNs
 		*out = make([]*string, len(*in))
