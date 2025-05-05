@@ -25,6 +25,11 @@ resources:
           service_name: sns
           resource: Topic
           path: Status.ACKResourceMetadata.ARN
+      SecurityGroupIDs:
+        references:
+          resource: SecurityGroup
+          service_name: ec2
+          path: Status.ID
       AuthToken:
         is_secret: true
       PreferredAvailabilityZone:
