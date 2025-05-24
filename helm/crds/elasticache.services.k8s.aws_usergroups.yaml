@@ -39,7 +39,10 @@ spec:
           spec:
             properties:
               engine:
-                description: The current supported value is Redis user.
+                description: |-
+                  The current supported value is Redis user.
+
+                  Regex Pattern: `^[a-zA-Z]*$`
                 type: string
               tags:
                 description: |-

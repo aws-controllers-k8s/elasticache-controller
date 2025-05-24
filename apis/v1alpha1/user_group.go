@@ -26,6 +26,8 @@ import (
 type UserGroupSpec struct {
 
 	// The current supported value is Redis user.
+	//
+	// Regex Pattern: `^[a-zA-Z]*$`
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A

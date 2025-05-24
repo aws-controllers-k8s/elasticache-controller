@@ -39,10 +39,16 @@ spec:
           spec:
             properties:
               accessString:
-                description: Access permissions string used for this user.
+                description: |-
+                  Access permissions string used for this user.
+
+                  Regex Pattern: `\S`
                 type: string
               engine:
-                description: The current supported value is Redis.
+                description: |-
+                  The current supported value is Redis.
+
+                  Regex Pattern: `^[a-zA-Z]*$`
                 type: string
               noPasswordRequired:
                 description: Indicates a password is not required for this user.
@@ -92,7 +98,10 @@ spec:
                   type: object
                 type: array
               userID:
-                description: The ID of the user.
+                description: |-
+                  The ID of the user.
+
+                  Regex Pattern: `^[a-zA-Z][a-zA-Z0-9\-]*$`
                 type: string
               userName:
                 description: The username of the user.
