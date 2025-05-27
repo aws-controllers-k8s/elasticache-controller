@@ -26,9 +26,13 @@ import (
 type UserSpec struct {
 
 	// Access permissions string used for this user.
+	//
+	// Regex Pattern: `\S`
 	// +kubebuilder:validation:Required
 	AccessString *string `json:"accessString"`
 	// The current supported value is Redis.
+	//
+	// Regex Pattern: `^[a-zA-Z]*$`
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// Indicates a password is not required for this user.
@@ -40,6 +44,8 @@ type UserSpec struct {
 	// tag key must be accompanied by a tag value, although null is accepted.
 	Tags []*Tag `json:"tags,omitempty"`
 	// The ID of the user.
+	//
+	// Regex Pattern: `^[a-zA-Z][a-zA-Z0-9\-]*$`
 	// +kubebuilder:validation:Required
 	UserID *string `json:"userID"`
 	// The username of the user.
