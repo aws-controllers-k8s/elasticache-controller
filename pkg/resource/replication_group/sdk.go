@@ -1118,6 +1118,9 @@ func (rm *resourceManager) sdkUpdate(
 	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
 		input.LogDeliveryConfigurations = nil
 	}
+	if !delta.DifferentAt("Spec.TransitEncryptionEnabled") {
+		input.TransitEncryptionEnabled = nil
+	}
 	if delta.DifferentAt("UserGroupIDs") {
 		for _, diff := range delta.Differences {
 			if diff.Path.Contains("UserGroupIDs") {
