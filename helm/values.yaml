@@ -4,7 +4,7 @@
 
 image:
   repository: public.ecr.aws/aws-controllers-k8s/elasticache-controller
-  tag: 1.0.4
+  tag: 0.0.0-non-release-version
   pullPolicy: IfNotPresent
   pullSecrets: []
 
@@ -149,6 +149,7 @@ reconcile:
     - CacheParameterGroup
     - CacheSubnetGroup
     - ReplicationGroup
+    - ServerlessCache
     - Snapshot
     - User
     - UserGroup
