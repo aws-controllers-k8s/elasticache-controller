@@ -58,11 +58,214 @@ var (
 func (rm *resourceManager) sdkFind(
 	ctx context.Context,
 	r *resource,
-) (*resource, error) {
-	// Believe it or not, there are API resources that can be created but there
-	// is no read operation. Point in case: RDS' CreateDBInstanceReadReplica
-	// has no corresponding read operation that I know of...
-	return nil, ackerr.NotImplemented
+) (latest *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkFind")
+	defer func() {
+		exit(err)
+	}()
+	// If any required fields in the input shape are missing, AWS resource is
+	// not created yet. Return NotFound here to indicate to callers that the
+	// resource isn't yet created.
+	if rm.requiredFieldsMissingFromReadManyInput(r) {
+		return nil, ackerr.NotFound
+	}
+
+	input, err := rm.newListRequestPayload(r)
+	if err != nil {
+		return nil, err
+	}
+	var resp *svcsdk.DescribeServerlessCachesOutput
+	resp, err = rm.sdkapi.DescribeServerlessCaches(ctx, input)
+	rm.metrics.RecordAPICall("READ_MANY", "DescribeServerlessCaches", err)
+	if err != nil {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "ServerlessCacheNotFoundFault" {
+			return nil, ackerr.NotFound
+		}
+		return nil, err
+	}
+
+	// Merge in the information we read from the API call above to the copy of
+	// the original Kubernetes object we passed to the function
+	ko := r.ko.DeepCopy()
+
+	found := false
+	for _, elem := range resp.ServerlessCaches {
+		if elem.ARN != nil {
+			if ko.Status.ACKResourceMetadata == nil {
+				ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
+			}
+			tmpARN := ackv1alpha1.AWSResourceName(*elem.ARN)
+			ko.Status.ACKResourceMetadata.ARN = &tmpARN
+		}
+		if elem.CacheUsageLimits != nil {
+			f1 := &svcapitypes.CacheUsageLimits{}
+			if elem.CacheUsageLimits.DataStorage != nil {
+				f1f0 := &svcapitypes.DataStorage{}
+				if elem.CacheUsageLimits.DataStorage.Maximum != nil {
+					maximumCopy := int64(*elem.CacheUsageLimits.DataStorage.Maximum)
+					f1f0.Maximum = &maximumCopy
+				}
+				if elem.CacheUsageLimits.DataStorage.Minimum != nil {
+					minimumCopy := int64(*elem.CacheUsageLimits.DataStorage.Minimum)
+					f1f0.Minimum = &minimumCopy
+				}
+				if elem.CacheUsageLimits.DataStorage.Unit != "" {
+					f1f0.Unit = aws.String(string(elem.CacheUsageLimits.DataStorage.Unit))
+				}
+				f1.DataStorage = f1f0
+			}
+			if elem.CacheUsageLimits.ECPUPerSecond != nil {
+				f1f1 := &svcapitypes.ECPUPerSecond{}
+				if elem.CacheUsageLimits.ECPUPerSecond.Maximum != nil {
+					maximumCopy := int64(*elem.CacheUsageLimits.ECPUPerSecond.Maximum)
+					f1f1.Maximum = &maximumCopy
+				}
+				if elem.CacheUsageLimits.ECPUPerSecond.Minimum != nil {
+					minimumCopy := int64(*elem.CacheUsageLimits.ECPUPerSecond.Minimum)
+					f1f1.Minimum = &minimumCopy
+				}
+				f1.ECPUPerSecond = f1f1
+			}
+			ko.Spec.CacheUsageLimits = f1
+		} else {
+			ko.Spec.CacheUsageLimits = nil
+		}
+		if elem.CreateTime != nil {
+			ko.Status.CreateTime = &metav1.Time{*elem.CreateTime}
+		} else {
+			ko.Status.CreateTime = nil
+		}
+		if elem.DailySnapshotTime != nil {
+			ko.Spec.DailySnapshotTime = elem.DailySnapshotTime
+		} else {
+			ko.Spec.DailySnapshotTime = nil
+		}
+		if elem.Description != nil {
+			ko.Spec.Description = elem.Description
+		} else {
+			ko.Spec.Description = nil
+		}
+		if elem.Endpoint != nil {
+			f5 := &svcapitypes.Endpoint{}
+			if elem.Endpoint.Address != nil {
+				f5.Address = elem.Endpoint.Address
+			}
+			if elem.Endpoint.Port != nil {
+				portCopy := int64(*elem.Endpoint.Port)
+				f5.Port = &portCopy
+			}
+			ko.Status.Endpoint = f5
+		} else {
+			ko.Status.Endpoint = nil
+		}
+		if elem.Engine != nil {
+			ko.Spec.Engine = elem.Engine
+		} else {
+			ko.Spec.Engine = nil
+		}
+		if elem.FullEngineVersion != nil {
+			ko.Status.FullEngineVersion = elem.FullEngineVersion
+		} else {
+			ko.Status.FullEngineVersion = nil
+		}
+		if elem.KmsKeyId != nil {
+			ko.Spec.KMSKeyID = elem.KmsKeyId
+		} else {
+			ko.Spec.KMSKeyID = nil
+		}
+		if elem.MajorEngineVersion != nil {
+			ko.Spec.MajorEngineVersion = elem.MajorEngineVersion
+		} else {
+			ko.Spec.MajorEngineVersion = nil
+		}
+		if elem.ReaderEndpoint != nil {
+			f10 := &svcapitypes.Endpoint{}
+			if elem.ReaderEndpoint.Address != nil {
+				f10.Address = elem.ReaderEndpoint.Address
+			}
+			if elem.ReaderEndpoint.Port != nil {
+				portCopy := int64(*elem.ReaderEndpoint.Port)
+				f10.Port = &portCopy
+			}
+			ko.Status.ReaderEndpoint = f10
+		} else {
+			ko.Status.ReaderEndpoint = nil
+		}
+		if elem.SecurityGroupIds != nil {
+			ko.Spec.SecurityGroupIDs = aws.StringSlice(elem.SecurityGroupIds)
+		} else {
+			ko.Spec.SecurityGroupIDs = nil
+		}
+		if elem.ServerlessCacheName != nil {
+			ko.Spec.ServerlessCacheName = elem.ServerlessCacheName
+		} else {
+			ko.Spec.ServerlessCacheName = nil
+		}
+		if elem.SnapshotRetentionLimit != nil {
+			snapshotRetentionLimitCopy := int64(*elem.SnapshotRetentionLimit)
+			ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
+		} else {
+			ko.Spec.SnapshotRetentionLimit = nil
+		}
+		if elem.Status != nil {
+			ko.Status.Status = elem.Status
+		} else {
+			ko.Status.Status = nil
+		}
+		if elem.SubnetIds != nil {
+			ko.Spec.SubnetIDs = aws.StringSlice(elem.SubnetIds)
+		} else {
+			ko.Spec.SubnetIDs = nil
+		}
+		if elem.UserGroupId != nil {
+			ko.Spec.UserGroupID = elem.UserGroupId
+		} else {
+			ko.Spec.UserGroupID = nil
+		}
+		found = true
+		break
+	}
+	if !found {
+		return nil, ackerr.NotFound
+	}
+
+	rm.setStatusDefaults(ko)
+	// Get the ARN from the resource metadata
+	if ko.Status.ACKResourceMetadata != nil && ko.Status.ACKResourceMetadata.ARN != nil {
+		// Retrieve the tags for the resource
+		resourceARN := string(*ko.Status.ACKResourceMetadata.ARN)
+		tags, err := rm.getTags(ctx, resourceARN)
+		if err == nil {
+			ko.Spec.Tags = tags
+		}
+	}
+	return &resource{ko}, nil
+}
+
+// requiredFieldsMissingFromReadManyInput returns true if there are any fields
+// for the ReadMany Input shape that are required but not present in the
+// resource's Spec or Status
+func (rm *resourceManager) requiredFieldsMissingFromReadManyInput(
+	r *resource,
+) bool {
+	return r.ko.Spec.ServerlessCacheName == nil
+
+}
+
+// newListRequestPayload returns SDK-specific struct for the HTTP request
+// payload of the List API call for the resource
+func (rm *resourceManager) newListRequestPayload(
+	r *resource,
+) (*svcsdk.DescribeServerlessCachesInput, error) {
+	res := &svcsdk.DescribeServerlessCachesInput{}
+
+	if r.ko.Spec.ServerlessCacheName != nil {
+		res.ServerlessCacheName = r.ko.Spec.ServerlessCacheName
+	}
+
+	return res, nil
 }
 
 // sdkCreate creates the supplied resource in the backend AWS service API and
@@ -227,12 +430,6 @@ func (rm *resourceManager) sdkCreate(
 	}
 
 	rm.setStatusDefaults(ko)
-	// Check if Tags are set in the spec and mark the resource as needing to be synced
-	// if they are. This will trigger a requeue and allow the tags to be synced in the
-	// next reconciliation loop.
-	if ko.Spec.Tags != nil {
-		ackcondition.SetSynced(&resource{ko}, corev1.ConditionFalse, nil, nil)
-	}
 	return &resource{ko}, nil
 }
 
@@ -354,269 +551,8 @@ func (rm *resourceManager) sdkUpdate(
 	desired *resource,
 	latest *resource,
 	delta *ackcompare.Delta,
-) (updated *resource, err error) {
-	rlog := ackrtlog.FromContext(ctx)
-	exit := rlog.Trace("rm.sdkUpdate")
-	defer func() {
-		exit(err)
-	}()
-	// If the Tags field is different, sync the tags
-	if delta.DifferentAt("Spec.Tags") {
-		err := rm.syncTags(
-			ctx,
-			latest,
-			desired,
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// If the only difference is in the Tags field, return the desired object and nil
-	// to skip the update operation since we've already synced the tags
-	if !delta.DifferentExcept("Spec.Tags") {
-		return desired, nil
-	}
-	input, err := rm.newUpdateRequestPayload(ctx, desired, delta)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp *svcsdk.ModifyServerlessCacheOutput
-	_ = resp
-	resp, err = rm.sdkapi.ModifyServerlessCache(ctx, input)
-	rm.metrics.RecordAPICall("UPDATE", "ModifyServerlessCache", err)
-	if err != nil {
-		return nil, err
-	}
-	// Merge in the information we read from the API call above to the copy of
-	// the original Kubernetes object we passed to the function
-	ko := desired.ko.DeepCopy()
-
-	if ko.Status.ACKResourceMetadata == nil {
-		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
-	}
-	if resp.ServerlessCache.ARN != nil {
-		arn := ackv1alpha1.AWSResourceName(*resp.ServerlessCache.ARN)
-		ko.Status.ACKResourceMetadata.ARN = &arn
-	}
-	if resp.ServerlessCache.CacheUsageLimits != nil {
-		f1 := &svcapitypes.CacheUsageLimits{}
-		if resp.ServerlessCache.CacheUsageLimits.DataStorage != nil {
-			f1f0 := &svcapitypes.DataStorage{}
-			if resp.ServerlessCache.CacheUsageLimits.DataStorage.Maximum != nil {
-				maximumCopy := int64(*resp.ServerlessCache.CacheUsageLimits.DataStorage.Maximum)
-				f1f0.Maximum = &maximumCopy
-			}
-			if resp.ServerlessCache.CacheUsageLimits.DataStorage.Minimum != nil {
-				minimumCopy := int64(*resp.ServerlessCache.CacheUsageLimits.DataStorage.Minimum)
-				f1f0.Minimum = &minimumCopy
-			}
-			if resp.ServerlessCache.CacheUsageLimits.DataStorage.Unit != "" {
-				f1f0.Unit = aws.String(string(resp.ServerlessCache.CacheUsageLimits.DataStorage.Unit))
-			}
-			f1.DataStorage = f1f0
-		}
-		if resp.ServerlessCache.CacheUsageLimits.ECPUPerSecond != nil {
-			f1f1 := &svcapitypes.ECPUPerSecond{}
-			if resp.ServerlessCache.CacheUsageLimits.ECPUPerSecond.Maximum != nil {
-				maximumCopy := int64(*resp.ServerlessCache.CacheUsageLimits.ECPUPerSecond.Maximum)
-				f1f1.Maximum = &maximumCopy
-			}
-			if resp.ServerlessCache.CacheUsageLimits.ECPUPerSecond.Minimum != nil {
-				minimumCopy := int64(*resp.ServerlessCache.CacheUsageLimits.ECPUPerSecond.Minimum)
-				f1f1.Minimum = &minimumCopy
-			}
-			f1.ECPUPerSecond = f1f1
-		}
-		ko.Spec.CacheUsageLimits = f1
-	} else {
-		ko.Spec.CacheUsageLimits = nil
-	}
-	if resp.ServerlessCache.CreateTime != nil {
-		ko.Status.CreateTime = &metav1.Time{*resp.ServerlessCache.CreateTime}
-	} else {
-		ko.Status.CreateTime = nil
-	}
-	if resp.ServerlessCache.DailySnapshotTime != nil {
-		ko.Spec.DailySnapshotTime = resp.ServerlessCache.DailySnapshotTime
-	} else {
-		ko.Spec.DailySnapshotTime = nil
-	}
-	if resp.ServerlessCache.Description != nil {
-		ko.Spec.Description = resp.ServerlessCache.Description
-	} else {
-		ko.Spec.Description = nil
-	}
-	if resp.ServerlessCache.Endpoint != nil {
-		f5 := &svcapitypes.Endpoint{}
-		if resp.ServerlessCache.Endpoint.Address != nil {
-			f5.Address = resp.ServerlessCache.Endpoint.Address
-		}
-		if resp.ServerlessCache.Endpoint.Port != nil {
-			portCopy := int64(*resp.ServerlessCache.Endpoint.Port)
-			f5.Port = &portCopy
-		}
-		ko.Status.Endpoint = f5
-	} else {
-		ko.Status.Endpoint = nil
-	}
-	if resp.ServerlessCache.Engine != nil {
-		ko.Spec.Engine = resp.ServerlessCache.Engine
-	} else {
-		ko.Spec.Engine = nil
-	}
-	if resp.ServerlessCache.FullEngineVersion != nil {
-		ko.Status.FullEngineVersion = resp.ServerlessCache.FullEngineVersion
-	} else {
-		ko.Status.FullEngineVersion = nil
-	}
-	if resp.ServerlessCache.KmsKeyId != nil {
-		ko.Spec.KMSKeyID = resp.ServerlessCache.KmsKeyId
-	} else {
-		ko.Spec.KMSKeyID = nil
-	}
-	if resp.ServerlessCache.MajorEngineVersion != nil {
-		ko.Spec.MajorEngineVersion = resp.ServerlessCache.MajorEngineVersion
-	} else {
-		ko.Spec.MajorEngineVersion = nil
-	}
-	if resp.ServerlessCache.ReaderEndpoint != nil {
-		f10 := &svcapitypes.Endpoint{}
-		if resp.ServerlessCache.ReaderEndpoint.Address != nil {
-			f10.Address = resp.ServerlessCache.ReaderEndpoint.Address
-		}
-		if resp.ServerlessCache.ReaderEndpoint.Port != nil {
-			portCopy := int64(*resp.ServerlessCache.ReaderEndpoint.Port)
-			f10.Port = &portCopy
-		}
-		ko.Status.ReaderEndpoint = f10
-	} else {
-		ko.Status.ReaderEndpoint = nil
-	}
-	if resp.ServerlessCache.SecurityGroupIds != nil {
-		ko.Spec.SecurityGroupIDs = aws.StringSlice(resp.ServerlessCache.SecurityGroupIds)
-	} else {
-		ko.Spec.SecurityGroupIDs = nil
-	}
-	if resp.ServerlessCache.ServerlessCacheName != nil {
-		ko.Spec.ServerlessCacheName = resp.ServerlessCache.ServerlessCacheName
-	} else {
-		ko.Spec.ServerlessCacheName = nil
-	}
-	if resp.ServerlessCache.SnapshotRetentionLimit != nil {
-		snapshotRetentionLimitCopy := int64(*resp.ServerlessCache.SnapshotRetentionLimit)
-		ko.Spec.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
-	} else {
-		ko.Spec.SnapshotRetentionLimit = nil
-	}
-	if resp.ServerlessCache.Status != nil {
-		ko.Status.Status = resp.ServerlessCache.Status
-	} else {
-		ko.Status.Status = nil
-	}
-	if resp.ServerlessCache.SubnetIds != nil {
-		ko.Spec.SubnetIDs = aws.StringSlice(resp.ServerlessCache.SubnetIds)
-	} else {
-		ko.Spec.SubnetIDs = nil
-	}
-	if resp.ServerlessCache.UserGroupId != nil {
-		ko.Spec.UserGroupID = resp.ServerlessCache.UserGroupId
-	} else {
-		ko.Spec.UserGroupID = nil
-	}
-
-	rm.setStatusDefaults(ko)
-	return &resource{ko}, nil
-}
-
-// newUpdateRequestPayload returns an SDK-specific struct for the HTTP request
-// payload of the Update API call for the resource
-func (rm *resourceManager) newUpdateRequestPayload(
-	ctx context.Context,
-	r *resource,
-	delta *ackcompare.Delta,
-) (*svcsdk.ModifyServerlessCacheInput, error) {
-	res := &svcsdk.ModifyServerlessCacheInput{}
-
-	if r.ko.Spec.CacheUsageLimits != nil {
-		f0 := &svcsdktypes.CacheUsageLimits{}
-		if r.ko.Spec.CacheUsageLimits.DataStorage != nil {
-			f0f0 := &svcsdktypes.DataStorage{}
-			if r.ko.Spec.CacheUsageLimits.DataStorage.Maximum != nil {
-				maximumCopy0 := *r.ko.Spec.CacheUsageLimits.DataStorage.Maximum
-				if maximumCopy0 > math.MaxInt32 || maximumCopy0 < math.MinInt32 {
-					return nil, fmt.Errorf("error: field Maximum is of type int32")
-				}
-				maximumCopy := int32(maximumCopy0)
-				f0f0.Maximum = &maximumCopy
-			}
-			if r.ko.Spec.CacheUsageLimits.DataStorage.Minimum != nil {
-				minimumCopy0 := *r.ko.Spec.CacheUsageLimits.DataStorage.Minimum
-				if minimumCopy0 > math.MaxInt32 || minimumCopy0 < math.MinInt32 {
-					return nil, fmt.Errorf("error: field Minimum is of type int32")
-				}
-				minimumCopy := int32(minimumCopy0)
-				f0f0.Minimum = &minimumCopy
-			}
-			if r.ko.Spec.CacheUsageLimits.DataStorage.Unit != nil {
-				f0f0.Unit = svcsdktypes.DataStorageUnit(*r.ko.Spec.CacheUsageLimits.DataStorage.Unit)
-			}
-			f0.DataStorage = f0f0
-		}
-		if r.ko.Spec.CacheUsageLimits.ECPUPerSecond != nil {
-			f0f1 := &svcsdktypes.ECPUPerSecond{}
-			if r.ko.Spec.CacheUsageLimits.ECPUPerSecond.Maximum != nil {
-				maximumCopy0 := *r.ko.Spec.CacheUsageLimits.ECPUPerSecond.Maximum
-				if maximumCopy0 > math.MaxInt32 || maximumCopy0 < math.MinInt32 {
-					return nil, fmt.Errorf("error: field Maximum is of type int32")
-				}
-				maximumCopy := int32(maximumCopy0)
-				f0f1.Maximum = &maximumCopy
-			}
-			if r.ko.Spec.CacheUsageLimits.ECPUPerSecond.Minimum != nil {
-				minimumCopy0 := *r.ko.Spec.CacheUsageLimits.ECPUPerSecond.Minimum
-				if minimumCopy0 > math.MaxInt32 || minimumCopy0 < math.MinInt32 {
-					return nil, fmt.Errorf("error: field Minimum is of type int32")
-				}
-				minimumCopy := int32(minimumCopy0)
-				f0f1.Minimum = &minimumCopy
-			}
-			f0.ECPUPerSecond = f0f1
-		}
-		res.CacheUsageLimits = f0
-	}
-	if r.ko.Spec.DailySnapshotTime != nil {
-		res.DailySnapshotTime = r.ko.Spec.DailySnapshotTime
-	}
-	if r.ko.Spec.Description != nil {
-		res.Description = r.ko.Spec.Description
-	}
-	if r.ko.Spec.Engine != nil {
-		res.Engine = r.ko.Spec.Engine
-	}
-	if r.ko.Spec.MajorEngineVersion != nil {
-		res.MajorEngineVersion = r.ko.Spec.MajorEngineVersion
-	}
-	if r.ko.Spec.SecurityGroupIDs != nil {
-		res.SecurityGroupIds = aws.ToStringSlice(r.ko.Spec.SecurityGroupIDs)
-	}
-	if r.ko.Spec.ServerlessCacheName != nil {
-		res.ServerlessCacheName = r.ko.Spec.ServerlessCacheName
-	}
-	if r.ko.Spec.SnapshotRetentionLimit != nil {
-		snapshotRetentionLimitCopy0 := *r.ko.Spec.SnapshotRetentionLimit
-		if snapshotRetentionLimitCopy0 > math.MaxInt32 || snapshotRetentionLimitCopy0 < math.MinInt32 {
-			return nil, fmt.Errorf("error: field SnapshotRetentionLimit is of type int32")
-		}
-		snapshotRetentionLimitCopy := int32(snapshotRetentionLimitCopy0)
-		res.SnapshotRetentionLimit = &snapshotRetentionLimitCopy
-	}
-	if r.ko.Spec.UserGroupID != nil {
-		res.UserGroupId = r.ko.Spec.UserGroupID
-	}
-
-	return res, nil
+) (*resource, error) {
+	return rm.customUpdateServerlessCache(ctx, desired, latest, delta)
 }
 
 // sdkDelete deletes the supplied resource in the backend AWS service API

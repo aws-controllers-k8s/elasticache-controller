@@ -27,7 +27,6 @@ type ServerlessCacheSpec struct {
 
 	// Sets the cache usage limits for storage and ElastiCache Processing Units
 	// for the cache.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	CacheUsageLimits *CacheUsageLimits `json:"cacheUsageLimits,omitempty"`
 	// The daily time that snapshots will be created from the new serverless cache.
 	// By default this number is populated with 0, i.e. no snapshots will be created
@@ -39,7 +38,6 @@ type ServerlessCacheSpec struct {
 	// The maximum length is 255 characters.
 	Description *string `json:"description,omitempty"`
 	// The name of the cache engine to be used for creating the serverless cache.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	// +kubebuilder:validation:Required
 	Engine *string `json:"engine"`
 	// ARN of the customer managed key for encrypting the data at rest. If no KMS

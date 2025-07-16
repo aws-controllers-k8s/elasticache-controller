@@ -297,15 +297,11 @@ resources:
     update_operation:
       custom_method_name: customUpdateUserGroup
   ServerlessCache:
+    update_operation:
+      custom_method_name: customUpdateServerlessCache
     fields:
       ServerlessCacheName:
         is_primary_key: true
-      CacheUsageLimits:
-        is_immutable: true
-      Engine:
-        is_immutable: true
-      EngineVersion:
-        is_immutable: true
       SecurityGroupIDs:
         references:
           resource: SecurityGroup
@@ -320,18 +316,12 @@ resources:
         references:
           resource: UserGroup
           path: Spec.UserGroupID
-      Status:
-        is_read_only: true
-      ARN:
-        is_read_only: true
-      Endpoint:
-        is_read_only: true
-      CreateTime:
-        is_read_only: true
+    synced:
+      when:
+      - path: Status.Status
+        in:
+        - available
     exceptions:
-      errors:
-        404:
-          code: ServerlessCacheNotFoundFault
       terminal_codes:
         - ServerlessCacheAlreadyExistsFault
         - ServerlessCacheQuotaForCustomerExceededFault
@@ -341,12 +331,8 @@ resources:
         - TagQuotaPerResourceExceeded
         - InvalidKMSKeyFault
     hooks:
-      sdk_create_post_set_output:
-        template_path: hooks/serverless_cache/sdk_create_post_set_output.go.tpl
-      sdk_update_pre_build_request:
-        template_path: hooks/serverless_cache/sdk_update_pre_build_request.go.tpl
-      sdk_read_one_post_set_output:
-        template_path: hooks/serverless_cache/sdk_read_one_post_set_output.go.tpl
+      sdk_read_many_post_set_output:
+        template_path: hooks/serverless_cache/sdk_read_many_post_set_output.go.tpl
     print:
       add_age_column: true
       add_synced_column: true
@@ -361,6 +347,11 @@ resources:
         type: string
         index: 20
 operations:
+  DescribeServerlessCaches:
+    operation_type:
+    - List
+    resource_name:
+      ServerlessCache
   DescribeCacheSubnetGroups:
     set_output_custom_method_name: CustomDescribeCacheSubnetGroupsSetOutput
   DescribeReplicationGroups:

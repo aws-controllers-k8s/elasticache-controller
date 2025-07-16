@@ -85,9 +85,6 @@ spec:
                         type: integer
                     type: object
                 type: object
-                x-kubernetes-validations:
-                - message: Value is immutable once set
-                  rule: self == oldSelf
               dailySnapshotTime:
                 description: |-
                   The daily time that snapshots will be created from the new serverless cache.
@@ -105,9 +102,6 @@ spec:
                 description: The name of the cache engine to be used for creating
                   the serverless cache.
                 type: string
-                x-kubernetes-validations:
-                - message: Value is immutable once set
-                  rule: self == oldSelf
               kmsKeyID:
                 description: |-
                   ARN of the customer managed key for encrypting the data at rest. If no KMS
