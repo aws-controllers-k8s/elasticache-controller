@@ -141,3 +141,24 @@ def retrieve_replication_group(rg_id: str):
 def retrieve_replication_group_tags(rg_arn: str):
     taglist_response = ec.list_tags_for_resource(ResourceName=rg_arn)
     return taglist_response['TagList']
+
+
+def wait_serverless_cache_deleted(serverless_cache_name: str,
+                                  wait_periods: int = 60,
+                                  period_length: int = 10) -> bool:
+    for i in range(wait_periods):
+        logging.debug(f"Waiting for serverless cache {serverless_cache_name} to be deleted ({i})")
+        try:
+            response = ec.describe_serverless_caches(ServerlessCacheName=serverless_cache_name)
+            if len(response['ServerlessCaches']) == 0:
+                return True
+        except ec.exceptions.ServerlessCacheNotFoundFault:
+            return True
+        except Exception as e:
+            if "ServerlessCacheNotFoundFault" in str(e):
+                return True
+        
+        sleep(period_length)
+
+    logging.error(f"Wait for serverless cache {serverless_cache_name} to be deleted timed out")
+    return False

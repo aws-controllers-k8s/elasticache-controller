@@ -23,7 +23,7 @@ from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
 from e2e.bootstrap_resources import get_bootstrap_resources
-from e2e.util import assert_recoverable_condition_set
+from e2e.util import assert_recoverable_condition_set, wait_serverless_cache_deleted
 
 RESOURCE_PLURAL = "serverlesscaches"
 DEFAULT_WAIT_SECS = 120
@@ -34,10 +34,6 @@ def elasticache_client():
     return boto3.client("elasticache")
 
 
-@pytest.fixture(scope="module")
-def sc_deletion_waiter():
-    ec = boto3.client("elasticache")
-    return ec.get_waiter('serverless_cache_deleted')
 
 
 # retrieve resources created in the bootstrap step
@@ -83,14 +79,13 @@ def sc_basic_input(make_sc_name):
 
 
 @pytest.fixture(scope="module")
-def sc_basic(sc_basic_input, make_serverless_cache, sc_deletion_waiter):
+def sc_basic(sc_basic_input, make_serverless_cache):
     (reference, resource) = make_serverless_cache(
         "serverless_cache_basic", sc_basic_input, sc_basic_input["SC_NAME"])
     yield reference, resource
     k8s.delete_custom_resource(reference)
     sleep(DEFAULT_WAIT_SECS)
-    # throws exception if wait fails
-    sc_deletion_waiter.wait(ServerlessCacheName=sc_basic_input['SC_NAME'])
+    wait_serverless_cache_deleted(sc_basic_input['SC_NAME'])
 
 
 @pytest.fixture(scope="module")
@@ -106,14 +101,13 @@ def sc_update_input(make_sc_name):
 
 
 @pytest.fixture(scope="module")
-def sc_update(sc_update_input, make_serverless_cache, sc_deletion_waiter):
+def sc_update(sc_update_input, make_serverless_cache):
     (reference, resource) = make_serverless_cache(
         "serverless_cache_update", sc_update_input, sc_update_input['SC_NAME'])
     yield reference, resource
     k8s.delete_custom_resource(reference)
     sleep(DEFAULT_WAIT_SECS)
-    # throws exception if wait fails
-    sc_deletion_waiter.wait(ServerlessCacheName=sc_update_input['SC_NAME'])
+    wait_serverless_cache_deleted(sc_update_input['SC_NAME'])
 
 
 def wait_for_serverless_cache_available(elasticache_client, sc_name):
@@ -165,7 +159,7 @@ class TestServerlessCache:
         assert resource['spec']['engine'] == sc_basic_input['ENGINE']
         assert resource['spec']['majorEngineVersion'] == sc_basic_input['MAJOR_ENGINE_VERSION']
 
-    def test_sc_invalid_engine(self, make_sc_name, make_serverless_cache, sc_deletion_waiter):
+    def test_sc_invalid_engine(self, make_sc_name, make_serverless_cache):
         input_dict = {
             "SC_NAME": make_sc_name("sc-invalid-engine"),
             "ENGINE": "invalid-engine",
@@ -233,7 +227,7 @@ class TestServerlessCache:
         # Assert tags
         assert_spec_tags(sc_name, new_tags)
 
-    def test_sc_creation_deletion(self, make_sc_name, make_serverless_cache, sc_deletion_waiter, elasticache_client):
+    def test_sc_creation_deletion(self, make_sc_name, make_serverless_cache, elasticache_client):
         input_dict = {
             "SC_NAME": make_sc_name("sc-delete"),
             "ENGINE": "redis",
@@ -262,4 +256,4 @@ class TestServerlessCache:
         resource = k8s.get_resource(reference)
         assert resource['metadata']['deletionTimestamp'] is not None
 
-        sc_deletion_waiter.wait(ServerlessCacheName=input_dict["SC_NAME"])
+        wait_serverless_cache_deleted(input_dict["SC_NAME"])
