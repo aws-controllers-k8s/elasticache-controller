@@ -157,35 +157,46 @@ func (tm *tagsManager) SyncTags(ctx context.Context, desired acktypes.AWSResourc
 
 // TagsEqual compares two sets of tags for equality
 func (tm *tagsManager) TagsEqual(a, b []*svcapitypes.Tag) bool {
-	if len(a) != len(b) {
+	// Filter out tags with nil keys for both slices
+	validA := make([]*svcapitypes.Tag, 0, len(a))
+	for _, tag := range a {
+		if tag.Key != nil {
+			validA = append(validA, tag)
+		}
+	}
+	
+	validB := make([]*svcapitypes.Tag, 0, len(b))
+	for _, tag := range b {
+		if tag.Key != nil {
+			validB = append(validB, tag)
+		}
+	}
+
+	if len(validA) != len(validB) {
 		return false
 	}
 
-	aMap := make(map[string]string, len(a))
-	for _, tag := range a {
-		if tag.Key != nil {
-			key := *tag.Key
-			var val string
-			if tag.Value != nil {
-				val = *tag.Value
-			}
-			aMap[key] = val
-		}
+	aMap := make(map[string]*string, len(validA))
+	for _, tag := range validA {
+		key := *tag.Key
+		aMap[key] = tag.Value
 	}
 
-	for _, tag := range b {
-		if tag.Key == nil {
-			continue
-		}
+	for _, tag := range validB {
 		key := *tag.Key
-		var val string
-		if tag.Value != nil {
-			val = *tag.Value
-		}
 		aVal, ok := aMap[key]
-		if !ok || aVal != val {
+		if !ok {
 			return false
 		}
+		
+		// Compare values, considering nil vs non-nil differences
+		if aVal == nil && tag.Value == nil {
+		} else if aVal == nil || tag.Value == nil {
+			return false
+		} else if *aVal != *tag.Value {
+			return false
+		}
+		
 		delete(aMap, key)
 	}
 
