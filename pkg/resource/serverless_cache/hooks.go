@@ -30,18 +30,24 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const (
+	ServerlessCacheStatusCreating  = "creating"
+	ServerlessCacheStatusDeleting  = "deleting"
+	ServerlessCacheStatusModifying = "modifying"
+)
+
 var (
 	ErrServerlessCacheDeleting = fmt.Errorf(
 		"serverless cache in '%v' state, cannot be modified or deleted",
-		"deleting",
+		ServerlessCacheStatusDeleting,
 	)
 	ErrServerlessCacheCreating = fmt.Errorf(
 		"serverless cache in '%v' state, cannot be modified or deleted",
-		"creating",
+		ServerlessCacheStatusCreating,
 	)
 	ErrServerlessCacheModifying = fmt.Errorf(
 		"serverless cache in '%v' state, cannot be further modified",
-		"modifying",
+		ServerlessCacheStatusModifying,
 	)
 )
 
@@ -84,21 +90,21 @@ func isServerlessCacheCreating(r *resource) bool {
 	if r.ko.Status.Status == nil {
 		return false
 	}
-	return *r.ko.Status.Status == "creating"
+	return *r.ko.Status.Status == ServerlessCacheStatusCreating
 }
 
 func isServerlessCacheDeleting(r *resource) bool {
 	if r.ko.Status.Status == nil {
 		return false
 	}
-	return *r.ko.Status.Status == "deleting"
+	return *r.ko.Status.Status == ServerlessCacheStatusDeleting
 }
 
 func isServerlessCacheModifying(r *resource) bool {
 	if r.ko.Status.Status == nil {
 		return false
 	}
-	return *r.ko.Status.Status == "modifying"
+	return *r.ko.Status.Status == ServerlessCacheStatusModifying
 }
 
 // customUpdateServerlessCache handles updates in a phased approach similar to DynamoDB table updates

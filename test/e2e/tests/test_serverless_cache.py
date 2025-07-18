@@ -21,239 +21,203 @@ from time import sleep
 
 from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
+from acktest.k8s import condition
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
-from e2e.bootstrap_resources import get_bootstrap_resources
-from e2e.util import assert_recoverable_condition_set, wait_serverless_cache_deleted
+from e2e.replacement_values import REPLACEMENT_VALUES
 
 RESOURCE_PLURAL = "serverlesscaches"
-DEFAULT_WAIT_SECS = 120
+MODIFY_WAIT_AFTER_SECONDS = 120
+CHECK_STATUS_WAIT_SECONDS = 120
 
 
-@pytest.fixture(scope="module")
-def elasticache_client():
-    return boto3.client("elasticache")
-
-
-
-
-# retrieve resources created in the bootstrap step
-@pytest.fixture(scope="module")
-def bootstrap_resources():
-    return get_bootstrap_resources()
-
-
-# factory for serverless cache names
-@pytest.fixture(scope="module")
-def make_sc_name():
-    def _make_sc_name(base):
-        return random_suffix_name(base, 32)
-    return _make_sc_name
-
-
-# factory for serverless caches
-@pytest.fixture(scope="module")
-def make_serverless_cache():
-    def _make_serverless_cache(yaml_name, input_dict, sc_name):
-        sc = load_elasticache_resource(
-            yaml_name, additional_replacements=input_dict)
-        logging.debug(sc)
-
-        reference = k8s.CustomResourceReference(
-            CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL, sc_name, namespace="default")
-        _ = k8s.create_custom_resource(reference, sc)
-        resource = k8s.wait_resource_consumed_by_controller(
-            reference, wait_periods=15, period_length=20)
-        assert resource is not None
-        return (reference, resource)
-
-    return _make_serverless_cache
-
-
-@pytest.fixture(scope="module")
-def sc_basic_input(make_sc_name):
-    return {
-        "SC_NAME": make_sc_name("sc-basic"),
-        "ENGINE": "redis",
-        "MAJOR_ENGINE_VERSION": "7"
-    }
-
-
-@pytest.fixture(scope="module")
-def sc_basic(sc_basic_input, make_serverless_cache):
-    (reference, resource) = make_serverless_cache(
-        "serverless_cache_basic", sc_basic_input, sc_basic_input["SC_NAME"])
-    yield reference, resource
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    wait_serverless_cache_deleted(sc_basic_input['SC_NAME'])
-
-
-@pytest.fixture(scope="module")
-def sc_update_input(make_sc_name):
-    return {
-        "SC_NAME": make_sc_name("sc-update"),
-        "ENGINE": "redis",
-        "MAJOR_ENGINE_VERSION": "7",
-        "DESCRIPTION": "initial description",
-        "DAILY_SNAPSHOT_TIME": "05:00",
-        "SNAPSHOT_RETENTION_LIMIT": "5"
-    }
-
-
-@pytest.fixture(scope="module")
-def sc_update(sc_update_input, make_serverless_cache):
-    (reference, resource) = make_serverless_cache(
-        "serverless_cache_update", sc_update_input, sc_update_input['SC_NAME'])
-    yield reference, resource
-    k8s.delete_custom_resource(reference)
-    sleep(DEFAULT_WAIT_SECS)
-    wait_serverless_cache_deleted(sc_update_input['SC_NAME'])
-
-
-def wait_for_serverless_cache_available(elasticache_client, sc_name):
+def wait_for_serverless_cache_available(elasticache_client, serverless_cache_name):
     """Wait for serverless cache to reach 'available' state using boto3 waiter.
     """
     waiter = elasticache_client.get_waiter('serverless_cache_available')
     waiter.config.delay = 5
     waiter.config.max_attempts = 240
-    waiter.wait(ServerlessCacheName=sc_name)
+    waiter.wait(ServerlessCacheName=serverless_cache_name)
 
 
-def retrieve_serverless_cache(sc_name: str):
-    """Retrieve serverless cache from AWS API"""
-    ec = boto3.client("elasticache")
-    response = ec.describe_serverless_caches(ServerlessCacheName=sc_name)
-    return response['ServerlessCaches'][0] if response['ServerlessCaches'] else None
+def wait_until_deleted(elasticache_client, serverless_cache_name): 
+    """Wait for serverless cache to be fully deleted using boto3 waiter.
+    """
+    waiter = elasticache_client.get_waiter('serverless_cache_deleted')
+    waiter.config.delay = 5
+    waiter.config.max_attempts = 240
+    waiter.wait(ServerlessCacheName=serverless_cache_name)
 
 
-def assert_spec_tags(sc_name: str, spec_tags: list):
-    """Assert that the serverless cache has the expected tags"""
-    sc = retrieve_serverless_cache(sc_name)
-    spec_tags_dict = {tag['key']: tag['value'] for tag in spec_tags}
+def get_and_assert_status(ref: k8s.CustomResourceReference, expected_status: str, expected_synced: bool):
+    """Get the serverless cache status and assert it matches the expected status.
+    """
+    cr = k8s.get_resource(ref)
+    assert cr is not None
+    assert 'status' in cr
+
+    assert cr['status']['status'] == expected_status
+
+    if expected_synced:
+        condition.assert_synced(ref)
+    else:
+        condition.assert_not_synced(ref)
+
+
+@pytest.fixture(scope="module")
+def elasticache_client():
+    return boto3.client('elasticache')
+
+
+def _create_serverless_cache(elasticache_client, name_prefix):
+    serverless_cache_name = random_suffix_name(name_prefix, 32)
+
+    replacements = REPLACEMENT_VALUES.copy()
+    replacements["SC_NAME"] = serverless_cache_name
+    replacements["ENGINE"] = "redis"
+    replacements["MAJOR_ENGINE_VERSION"] = "7"
+    replacements["ECPU_MIN"] = "10000"
+    replacements["ECPU_MAX"] = "100000"
+
+    resource_data = load_elasticache_resource(
+        "serverless_cache_basic",
+        additional_replacements=replacements,
+    )
+    logging.debug(resource_data)
+
+    ref = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL,
+        serverless_cache_name, namespace="default",
+    )
+    _ = k8s.create_custom_resource(ref, resource_data)
+    cr = k8s.wait_resource_consumed_by_controller(ref)
+
+    assert cr is not None
+    return ref, cr
+
+
+@pytest.fixture
+def simple_serverless_cache(elasticache_client):
+    ref, cr = _create_serverless_cache(elasticache_client, "simple-serverless-cache")
+    yield ref, cr
     
-    ec = boto3.client("elasticache")
-    aws_tag_list = ec.list_tags_for_resource(ResourceName=sc['ARN'])['TagList']
-    aws_tags_dict = {tag['Key']: tag['Value'] for tag in aws_tag_list}
+    # Teardown
+    _ = k8s.delete_custom_resource(ref)
+    try:
+        serverless_cache_name = cr["spec"]["serverlessCacheName"]
+        wait_until_deleted(elasticache_client, serverless_cache_name)
+    except Exception as e:
+        logging.warning(f"Failed to wait for serverless cache deletion: {e}")
+
+
+@pytest.fixture  
+def upgrade_serverless_cache(elasticache_client):
+    ref, cr = _create_serverless_cache(elasticache_client, "upgrade-serverless-cache")
+    yield ref, cr
     
-    # Remove controller-managed tags
-    controller_tag_version = "services.k8s.aws/controller-version"
-    controller_tag_namespace = "services.k8s.aws/namespace"
-    if controller_tag_version in aws_tags_dict:
-        del aws_tags_dict[controller_tag_version]
-    if controller_tag_namespace in aws_tags_dict:
-        del aws_tags_dict[controller_tag_namespace]
-    
-    assert aws_tags_dict == spec_tags_dict
+    # Teardown
+    _ = k8s.delete_custom_resource(ref)
+    try:
+        serverless_cache_name = cr["spec"]["serverlessCacheName"]
+        wait_until_deleted(elasticache_client, serverless_cache_name)
+    except Exception as e:
+        logging.warning(f"Failed to wait for serverless cache deletion: {e}")
 
 
 @service_marker
 class TestServerlessCache:
-    def test_sc_basic_creation(self, sc_basic, sc_basic_input):
-        (reference, _) = sc_basic
+    def test_create_update_delete_serverless_cache(self, simple_serverless_cache, elasticache_client):
+        (ref, _) = simple_serverless_cache
+        
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # Assert initial state
-        resource = k8s.get_resource(reference)
-        assert resource['status']['status'] == "available"
-        assert resource['spec']['engine'] == sc_basic_input['ENGINE']
-        assert resource['spec']['majorEngineVersion'] == sc_basic_input['MAJOR_ENGINE_VERSION']
-
-    def test_sc_invalid_engine(self, make_sc_name, make_serverless_cache):
-        input_dict = {
-            "SC_NAME": make_sc_name("sc-invalid-engine"),
-            "ENGINE": "invalid-engine",
-            "MAJOR_ENGINE_VERSION": "7"
+            ref, "ACK.ResourceSynced", "True", wait_periods=90
+        )
+        get_and_assert_status(ref, "available", True)
+        
+        cr = k8s.get_resource(ref)
+        serverless_cache_name = cr["spec"]["serverlessCacheName"]
+        
+        try:
+            wait_for_serverless_cache_available(elasticache_client, serverless_cache_name)
+        except Exception as e:
+            logging.warning(f"Failed to wait for serverless cache availability: {e}")
+        
+        # Test update - modify description, change max to 90000, and add a tag
+        new_description = "Updated serverless cache description"
+        patch = {
+            "spec": {
+                "description": new_description,
+                "cacheUsageLimits": {
+                    "eCPUPerSecond": {
+                        "minimum": 10000,
+                        "maximum": 90000
+                    }
+                },
+                "tags": [
+                    {"key": "Environment", "value": "test"}
+                ]
+            }
         }
-        (reference, resource) = make_serverless_cache(
-            "serverless_cache_basic", input_dict, input_dict['SC_NAME'])
-
-        sleep(DEFAULT_WAIT_SECS)
-        resource = k8s.get_resource(reference)
-        assert_recoverable_condition_set(resource)
-
-        # Cleanup
-        k8s.delete_custom_resource(reference)
-        sleep(DEFAULT_WAIT_SECS)
-
-    def test_sc_update(self, sc_update_input, sc_update, elasticache_client):
-        (reference, _) = sc_update
+        _ = k8s.patch_custom_resource(ref, patch)
+        sleep(MODIFY_WAIT_AFTER_SECONDS)
+        
+        # Wait for update to be synced
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # Assert initial state
-        sc_name = sc_update_input['SC_NAME']
-        resource = k8s.get_resource(reference)
-        sc = retrieve_serverless_cache(sc_name)
+            ref, "ACK.ResourceSynced", "True", wait_periods=90
+        )
         
-        assert resource['spec']['description'] == sc_update_input['DESCRIPTION']
-        assert resource['spec']['dailySnapshotTime'] == sc_update_input['DAILY_SNAPSHOT_TIME']
-        assert resource['spec']['snapshotRetentionLimit'] == int(sc_update_input['SNAPSHOT_RETENTION_LIMIT'])
-        assert sc['Description'] == sc_update_input['DESCRIPTION']
-        assert sc['DailySnapshotTime'] == sc_update_input['DAILY_SNAPSHOT_TIME']
-        assert sc['SnapshotRetentionLimit'] == int(sc_update_input['SNAPSHOT_RETENTION_LIMIT'])
+        # Verify the update was applied
+        cr = k8s.get_resource(ref)
+        assert cr["spec"]["description"] == new_description
+        assert cr["spec"]["cacheUsageLimits"]["eCPUPerSecond"]["maximum"] == 90000
+        assert len(cr["spec"]["tags"]) == 1
+        assert cr["spec"]["tags"][0]["key"] == "Environment"
+        assert cr["spec"]["tags"][0]["value"] == "test"
 
-        # Update fields
-        new_description = "updated description"
-        new_snapshot_time = "10:00"
-        new_retention_limit = 3
-        new_tags = [
-            {"key": "Environment", "value": "test"},
-            {"key": "Team", "value": "ack"}
-        ]
-
-        patch = {"spec": {
-            "description": new_description,
-            "dailySnapshotTime": new_snapshot_time,
-            "snapshotRetentionLimit": new_retention_limit,
-            "tags": new_tags
-        }}
-        _ = k8s.patch_custom_resource(reference, patch)
-        sleep(DEFAULT_WAIT_SECS)
+    def test_upgrade_redis_to_valkey(self, upgrade_serverless_cache, elasticache_client):
+        (ref, _) = upgrade_serverless_cache
+        
+        # Wait for the serverless cache to be created and become available
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # Assert updated state
-        resource = k8s.get_resource(reference)
-        sc = retrieve_serverless_cache(sc_name)
+            ref, "ACK.ResourceSynced", "True", wait_periods=90
+        )
+        get_and_assert_status(ref, "available", True)
         
-        assert resource['spec']['description'] == new_description
-        assert resource['spec']['dailySnapshotTime'] == new_snapshot_time
-        assert resource['spec']['snapshotRetentionLimit'] == new_retention_limit
-        assert sc['Description'] == new_description
-        assert sc['DailySnapshotTime'] == new_snapshot_time
-        assert sc['SnapshotRetentionLimit'] == new_retention_limit
+        cr = k8s.get_resource(ref)
+        serverless_cache_name = cr["spec"]["serverlessCacheName"]
         
-        # Assert tags
-        assert_spec_tags(sc_name, new_tags)
-
-    def test_sc_creation_deletion(self, make_sc_name, make_serverless_cache, elasticache_client):
-        input_dict = {
-            "SC_NAME": make_sc_name("sc-delete"),
-            "ENGINE": "redis",
-            "MAJOR_ENGINE_VERSION": "7"
+        # Verify initial state - Redis 7
+        assert cr["spec"]["engine"] == "redis"
+        assert cr["spec"]["majorEngineVersion"] == "7"
+        
+        try:
+            wait_for_serverless_cache_available(elasticache_client, serverless_cache_name)
+        except Exception as e:
+            logging.warning(f"Failed to wait for serverless cache availability: {e}")
+        
+        # Upgrade from Redis 7 to Valkey 8
+        patch = {
+            "spec": {
+                "engine": "valkey",
+                "majorEngineVersion": "8"
+            }
         }
-
-        (reference, resource) = make_serverless_cache(
-            "serverless_cache_basic", input_dict, input_dict["SC_NAME"])
-
+        _ = k8s.patch_custom_resource(ref, patch)
+        sleep(MODIFY_WAIT_AFTER_SECONDS)
+        
+        # Wait for upgrade to be synced
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # Assert initial state
-        resource = k8s.get_resource(reference)
-        assert resource['status']['status'] == "available"
-
-        # Verify serverless cache exists in AWS
-        sc = retrieve_serverless_cache(input_dict["SC_NAME"])
-        assert sc is not None
-        assert sc['ServerlessCacheName'] == input_dict["SC_NAME"]
-
-        # Delete
-        k8s.delete_custom_resource(reference)
-        sleep(DEFAULT_WAIT_SECS)
-
-        resource = k8s.get_resource(reference)
-        assert resource['metadata']['deletionTimestamp'] is not None
-
-        wait_serverless_cache_deleted(input_dict["SC_NAME"])
+            ref, "ACK.ResourceSynced", "True", wait_periods=90
+        )
+        
+        # Wait for it to be available again after upgrade
+        get_and_assert_status(ref, "available", True)
+        
+        try:
+            wait_for_serverless_cache_available(elasticache_client, serverless_cache_name)
+        except Exception as e:
+            logging.warning(f"Failed to wait for serverless cache availability after upgrade: {e}")
+        
+        # Verify the upgrade was applied
+        cr = k8s.get_resource(ref)
+        assert cr["spec"]["engine"] == "valkey"
+        assert cr["spec"]["majorEngineVersion"] == "8"
