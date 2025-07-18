@@ -249,6 +249,15 @@ type CacheSubnetGroup_SDK struct {
 	VPCID                       *string   `json:"vpcID,omitempty"`
 }
 
+// The usage limits for storage and ElastiCache Processing Units for the cache.
+type CacheUsageLimits struct {
+	// The data storage limit.
+	DataStorage *DataStorage `json:"dataStorage,omitempty"`
+	// The configuration for the number of ElastiCache Processing Units (ECPU) the
+	// cache can consume per second.
+	ECPUPerSecond *ECPUPerSecond `json:"eCPUPerSecond,omitempty"`
+}
+
 // The configuration details of the CloudWatch Logs destination.
 type CloudWatchLogsDestinationDetails struct {
 	LogGroup *string `json:"logGroup,omitempty"`
@@ -272,8 +281,9 @@ type CustomerNodeEndpoint struct {
 
 // The data storage limit.
 type DataStorage struct {
-	Maximum *int64 `json:"maximum,omitempty"`
-	Minimum *int64 `json:"minimum,omitempty"`
+	Maximum *int64  `json:"maximum,omitempty"`
+	Minimum *int64  `json:"minimum,omitempty"`
+	Unit    *string `json:"unit,omitempty"`
 }
 
 // Configuration details of either a CloudWatch Logs destination or Kinesis
@@ -640,29 +650,6 @@ type SecurityGroupMembership struct {
 	Status          *string `json:"status,omitempty"`
 }
 
-// The resource representing a serverless cache.
-type ServerlessCache struct {
-	ARN               *string      `json:"arn,omitempty"`
-	CreateTime        *metav1.Time `json:"createTime,omitempty"`
-	DailySnapshotTime *string      `json:"dailySnapshotTime,omitempty"`
-	Description       *string      `json:"description,omitempty"`
-	// Represents the information required for client programs to connect to a cache
-	// node. This value is read-only.
-	Endpoint           *Endpoint `json:"endpoint,omitempty"`
-	Engine             *string   `json:"engine,omitempty"`
-	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
-	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
-	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
-	// Represents the information required for client programs to connect to a cache
-	// node. This value is read-only.
-	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`
-	SecurityGroupIDs       []*string `json:"securityGroupIDs,omitempty"`
-	ServerlessCacheName    *string   `json:"serverlessCacheName,omitempty"`
-	SnapshotRetentionLimit *int64    `json:"snapshotRetentionLimit,omitempty"`
-	Status                 *string   `json:"status,omitempty"`
-	UserGroupID            *string   `json:"userGroupID,omitempty"`
-}
-
 // The configuration settings for a specific serverless cache.
 type ServerlessCacheConfiguration struct {
 	Engine              *string `json:"engine,omitempty"`
@@ -681,6 +668,32 @@ type ServerlessCacheSnapshot struct {
 	ServerlessCacheSnapshotName *string      `json:"serverlessCacheSnapshotName,omitempty"`
 	SnapshotType                *string      `json:"snapshotType,omitempty"`
 	Status                      *string      `json:"status,omitempty"`
+}
+
+// The resource representing a serverless cache.
+type ServerlessCache_SDK struct {
+	ARN *string `json:"arn,omitempty"`
+	// The usage limits for storage and ElastiCache Processing Units for the cache.
+	CacheUsageLimits  *CacheUsageLimits `json:"cacheUsageLimits,omitempty"`
+	CreateTime        *metav1.Time      `json:"createTime,omitempty"`
+	DailySnapshotTime *string           `json:"dailySnapshotTime,omitempty"`
+	Description       *string           `json:"description,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node. This value is read-only.
+	Endpoint           *Endpoint `json:"endpoint,omitempty"`
+	Engine             *string   `json:"engine,omitempty"`
+	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
+	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
+	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node. This value is read-only.
+	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`
+	SecurityGroupIDs       []*string `json:"securityGroupIDs,omitempty"`
+	ServerlessCacheName    *string   `json:"serverlessCacheName,omitempty"`
+	SnapshotRetentionLimit *int64    `json:"snapshotRetentionLimit,omitempty"`
+	Status                 *string   `json:"status,omitempty"`
+	SubnetIDs              []*string `json:"subnetIDs,omitempty"`
+	UserGroupID            *string   `json:"userGroupID,omitempty"`
 }
 
 // An update that you can apply to your Valkey or Redis OSS clusters.
