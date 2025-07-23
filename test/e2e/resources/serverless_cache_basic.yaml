@@ -1,0 +1,13 @@
+# Basic ServerlessCache for testing basic creation and deletion
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ServerlessCache
+metadata:
+  name: $SC_NAME
+spec:
+  serverlessCacheName: $SC_NAME
+  engine: $ENGINE
+  majorEngineVersion: "$MAJOR_ENGINE_VERSION"
+  cacheUsageLimits:
+    eCPUPerSecond:
+      minimum: $ECPU_MIN
+      maximum: $ECPU_MAX

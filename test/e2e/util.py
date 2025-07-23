@@ -141,3 +141,5 @@ def retrieve_replication_group(rg_id: str):
 def retrieve_replication_group_tags(rg_arn: str):
     taglist_response = ec.list_tags_for_resource(ResourceName=rg_arn)
     return taglist_response['TagList']
+
+

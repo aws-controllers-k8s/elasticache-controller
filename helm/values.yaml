@@ -149,6 +149,7 @@ reconcile:
     - CacheParameterGroup
     - CacheSubnetGroup
     - ReplicationGroup
+    - ServerlessCache
     - Snapshot
     - User
     - UserGroup
