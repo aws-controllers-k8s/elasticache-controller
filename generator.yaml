@@ -178,7 +178,8 @@ resources:
       PrimaryClusterId: # note: "PrimaryClusterID" will not function properly
         compare:
           is_ignored: true
-      
+      NetworkType:
+        is_immutable: true
     hooks:
       sdk_read_many_post_set_output:
         template_path: hooks/replication_group/sdk_read_many_post_set_output.go.tpl
@@ -426,11 +427,5 @@ ignore:
     - CreateReplicationGroupInput.ClusterMode
     - ModifyReplicationGroupOutput.ReplicationGroup.ClusterMode
     - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
-    - CreateReplicationGroupInput.IpDiscovery
-    - CreateReplicationGroupOutput.ReplicationGroup.IpDiscovery
     - Subnet.SupportedNetworkTypes
     - CreateReplicationGroupInput.ServerlessCacheSnapshotName
-    - CreateReplicationGroupOutput.ReplicationGroup.NetworkType
-    - CreateReplicationGroupInput.NetworkType
-    # - ModifyReplicationGroupOutput.ReplicationGroup.ipDiscovery
-    # - ModifyReplicationGroupInput.ipDiscovery

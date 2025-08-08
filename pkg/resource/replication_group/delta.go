@@ -119,11 +119,25 @@ func newResourceDelta(
 			delta.Add("Spec.EngineVersion", a.ko.Spec.EngineVersion, b.ko.Spec.EngineVersion)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery) {
+		delta.Add("Spec.IPDiscovery", a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery)
+	} else if a.ko.Spec.IPDiscovery != nil && b.ko.Spec.IPDiscovery != nil {
+		if *a.ko.Spec.IPDiscovery != *b.ko.Spec.IPDiscovery {
+			delta.Add("Spec.IPDiscovery", a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID) {
 		delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 	} else if a.ko.Spec.KMSKeyID != nil && b.ko.Spec.KMSKeyID != nil {
 		if *a.ko.Spec.KMSKeyID != *b.ko.Spec.KMSKeyID {
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
+		}
+	}
+	if ackcompare.HasNilDifference(a.ko.Spec.NetworkType, b.ko.Spec.NetworkType) {
+		delta.Add("Spec.NetworkType", a.ko.Spec.NetworkType, b.ko.Spec.NetworkType)
+	} else if a.ko.Spec.NetworkType != nil && b.ko.Spec.NetworkType != nil {
+		if *a.ko.Spec.NetworkType != *b.ko.Spec.NetworkType {
+			delta.Add("Spec.NetworkType", a.ko.Spec.NetworkType, b.ko.Spec.NetworkType)
 		}
 	}
 	if len(a.ko.Spec.NodeGroupConfiguration) != len(b.ko.Spec.NodeGroupConfiguration) {
