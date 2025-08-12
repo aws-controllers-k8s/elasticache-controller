@@ -2804,6 +2804,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.IPDiscovery != nil {
+		in, out := &in.IPDiscovery, &out.IPDiscovery
+		*out = new(string)
+		**out = **in
+	}
 	if in.KMSKeyID != nil {
 		in, out := &in.KMSKeyID, &out.KMSKeyID
 		*out = new(string)
@@ -2823,6 +2828,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 	if in.MultiAZEnabled != nil {
 		in, out := &in.MultiAZEnabled, &out.MultiAZEnabled
 		*out = new(bool)
+		**out = **in
+	}
+	if in.NetworkType != nil {
+		in, out := &in.NetworkType, &out.NetworkType
+		*out = new(string)
 		**out = **in
 	}
 	if in.NodeGroupConfiguration != nil {
@@ -3207,6 +3217,11 @@ func (in *ReplicationGroup_SDK) DeepCopyInto(out *ReplicationGroup_SDK) {
 		*out = new(GlobalReplicationGroupInfo)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.IPDiscovery != nil {
+		in, out := &in.IPDiscovery, &out.IPDiscovery
+		*out = new(string)
+		**out = **in
+	}
 	if in.KMSKeyID != nil {
 		in, out := &in.KMSKeyID, &out.KMSKeyID
 		*out = new(string)
@@ -3247,6 +3262,11 @@ func (in *ReplicationGroup_SDK) DeepCopyInto(out *ReplicationGroup_SDK) {
 	}
 	if in.MultiAZ != nil {
 		in, out := &in.MultiAZ, &out.MultiAZ
+		*out = new(string)
+		**out = **in
+	}
+	if in.NetworkType != nil {
+		in, out := &in.NetworkType, &out.NetworkType
 		*out = new(string)
 		**out = **in
 	}

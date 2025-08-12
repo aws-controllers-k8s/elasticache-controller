@@ -5,6 +5,8 @@ metadata:
 spec:
   cacheNodeType: cache.t3.micro
   engine: redis
+  ipDiscovery: $IP_DISCOVERY
+  networkType: $NETWORK_TYPE
   numNodeGroups: 2
   preferredMaintenanceWindow: $PMW
   replicasPerNodeGroup: 1

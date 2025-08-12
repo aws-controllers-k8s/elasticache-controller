@@ -164,6 +164,11 @@ type ReplicationGroupSpec struct {
 	// existing cluster or replication group and create it anew with the earlier
 	// engine version.
 	EngineVersion *string `json:"engineVersion,omitempty"`
+	// The network type you choose when creating a replication group, either ipv4
+	// | ipv6. IPv6 is supported for workloads using Valkey 7.2 and above, Redis
+	// OSS engine version 6.2 and above or Memcached engine version 1.6.6 and above
+	// on all instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
+	IPDiscovery *string `json:"ipDiscovery,omitempty"`
 	// The ID of the KMS key used to encrypt the disk in the cluster.
 	KMSKeyID *string `json:"kmsKeyID,omitempty"`
 	// Specifies the destination, format and type of the logs.
@@ -171,6 +176,12 @@ type ReplicationGroupSpec struct {
 	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
 	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html).
 	MultiAZEnabled *bool `json:"multiAZEnabled,omitempty"`
+	// Must be either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads
+	// using Valkey 7.2 and above, Redis OSS engine version 6.2 and above or Memcached
+	// engine version 1.6.6 and above on all instances built on the Nitro system
+	// (http://aws.amazon.com/ec2/nitro/).
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	NetworkType *string `json:"networkType,omitempty"`
 	// A list of node group (shard) configuration options. Each node group (shard)
 	// configuration has the following members: PrimaryAvailabilityZone, ReplicaAvailabilityZones,
 	// ReplicaCount, and Slots.

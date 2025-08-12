@@ -113,6 +113,8 @@ def rg_update_input(make_rg_name):
         "DESCRIPTION": "description1",
         "SRL": "5",
         "SW": "05:00-09:00",
+        "IP_DISCOVERY": "ipv4",
+        "NETWORK_TYPE": "ipv4"
     }
 
 
@@ -197,10 +199,15 @@ class TestReplicationGroup:
             reference, "ACK.ResourceSynced", "True", wait_periods=90)
 
         # desired initial state
+        cr = k8s.get_resource(reference)
+        assert 'ipDiscovery' in cr['spec']
+        assert cr['spec']['ipDiscovery'] == 'ipv4'
         pmw = rg_update_input['PMW']
         description = rg_update_input['DESCRIPTION']
         srl = int(rg_update_input['SRL'])
         sw = rg_update_input['SW']
+        ip_discovery = rg_update_input['IP_DISCOVERY']
+        network_type = rg_update_input['NETWORK_TYPE']
         tags = [
             {"key": "tag_to_remove",  "value": "should_be_removed"},
             {"key": "tag_to_update", "value": "old_value"}
@@ -217,6 +224,8 @@ class TestReplicationGroup:
         assert resource['spec']['description'] == description
         assert rg['SnapshotRetentionLimit'] == srl
         assert rg['SnapshotWindow'] == sw
+        assert rg['IpDiscovery'] == ip_discovery
+        assert rg['NetworkType'] == network_type
         assert_spec_tags(rg_id, tags)
 
         # change field values, wait for resource to sync

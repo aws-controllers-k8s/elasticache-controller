@@ -585,11 +585,13 @@ type ReplicationGroup_SDK struct {
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `json:"globalReplicationGroupInfo,omitempty"`
+	IPDiscovery                *string                     `json:"ipDiscovery,omitempty"`
 	KMSKeyID                   *string                     `json:"kmsKeyID,omitempty"`
 	LogDeliveryConfigurations  []*LogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	MemberClusters             []*string                   `json:"memberClusters,omitempty"`
 	MemberClustersOutpostARNs  []*string                   `json:"memberClustersOutpostARNs,omitempty"`
 	MultiAZ                    *string                     `json:"multiAZ,omitempty"`
+	NetworkType                *string                     `json:"networkType,omitempty"`
 	NodeGroups                 []*NodeGroup                `json:"nodeGroups,omitempty"`
 	// The settings to be applied to the Valkey or Redis OSS replication group,
 	// either immediately or during the next maintenance window.
