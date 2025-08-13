@@ -87,6 +87,7 @@ rules:
   - cachesubnetgroups
   - replicationgroups
   - serverlesscaches
+  - serverlesscachesnapshots
   - snapshots
   - usergroups
   - users
@@ -106,6 +107,7 @@ rules:
   - cachesubnetgroups/status
   - replicationgroups/status
   - serverlesscaches/status
+  - serverlesscachesnapshots/status
   - snapshots/status
   - usergroups/status
   - users/status
@@ -113,6 +115,14 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - kms.services.k8s.aws
+  resources:
+  - keys
+  - keys/status
+  verbs:
+  - get
+  - list
 - apiGroups:
   - services.k8s.aws
   resources:
