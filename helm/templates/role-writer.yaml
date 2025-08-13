@@ -21,6 +21,7 @@ rules:
   - cachesubnetgroups
   - replicationgroups
   - serverlesscaches
+  - serverlesscachesnapshots
   - snapshots
   - users
   - usergroups
@@ -40,6 +41,7 @@ rules:
   - cachesubnetgroups
   - replicationgroups
   - serverlesscaches
+  - serverlesscachesnapshots
   - snapshots
   - users
   - usergroups
