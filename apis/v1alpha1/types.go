@@ -216,6 +216,12 @@ type CacheParameterGroup_SDK struct {
 	IsGlobal                  *bool   `json:"isGlobal,omitempty"`
 }
 
+// Represents a cluster's status within a particular cache security group.
+type CacheSecurityGroupMembership struct {
+	CacheSecurityGroupName *string `json:"cacheSecurityGroupName,omitempty"`
+	Status                 *string `json:"status,omitempty"`
+}
+
 // Represents the output of one of the following operations:
 //
 //   - AuthorizeCacheSecurityGroupIngress
@@ -223,17 +229,12 @@ type CacheParameterGroup_SDK struct {
 //   - CreateCacheSecurityGroup
 //
 //   - RevokeCacheSecurityGroupIngress
-type CacheSecurityGroup struct {
-	ARN                    *string `json:"arn,omitempty"`
-	CacheSecurityGroupName *string `json:"cacheSecurityGroupName,omitempty"`
-	Description            *string `json:"description,omitempty"`
-	OwnerID                *string `json:"ownerID,omitempty"`
-}
-
-// Represents a cluster's status within a particular cache security group.
-type CacheSecurityGroupMembership struct {
-	CacheSecurityGroupName *string `json:"cacheSecurityGroupName,omitempty"`
-	Status                 *string `json:"status,omitempty"`
+type CacheSecurityGroup_SDK struct {
+	ARN                    *string             `json:"arn,omitempty"`
+	CacheSecurityGroupName *string             `json:"cacheSecurityGroupName,omitempty"`
+	Description            *string             `json:"description,omitempty"`
+	EC2SecurityGroups      []*EC2SecurityGroup `json:"ec2SecurityGroups,omitempty"`
+	OwnerID                *string             `json:"ownerID,omitempty"`
 }
 
 // Represents the output of one of the following operations:
