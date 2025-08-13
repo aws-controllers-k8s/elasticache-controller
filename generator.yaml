@@ -348,6 +348,63 @@ resources:
         json_path: .status.endpoint.address
         type: string
         index: 20
+  ServerlessCacheSnapshot:
+    fields:
+      # Primary identifiers
+      snapshotName:
+        is_primary_key: true
+      serverlessCacheSnapshotArn:
+        is_read_only: true
+      
+      # Immutable fields
+      snapshotName:
+        is_immutable: true
+      serverlessCacheName:
+        is_immutable: true
+        references:
+          resource: ServerlessCache
+          path: Spec.serverlessCacheName
+      
+      # Computed fields
+      status:
+        is_read_only: true
+      snapshotCreationTime:
+        is_read_only: true
+      engineVersion:
+        is_read_only: true
+      cacheUsageInBytes:
+        is_read_only: true
+      
+      # Reference fields
+      kmsKeyId:
+        references:
+          service_name: kms
+          resource: Key
+          path: Status.ACKResourceMetadata.ARN
+    
+    # Configure exception handling
+    exceptions:
+      errors:
+        404:
+          code: ServerlessCacheSnapshotNotFoundFault
+      terminal_codes:
+        - ServerlessCacheSnapshotAlreadyExistsFault
+        - InvalidParameterValueException
+        - ServiceLinkedRoleNotFoundFault
+        - InvalidServerlessCacheSnapshotStateFault
+    
+    # Configure tagging
+    tags:
+      ignore: false
+    
+    # Add hooks for tag support
+    hooks:
+      sdk_create_post_set_output:
+        template_path: hooks/serverless_cache_snapshot/sdk_create_post_set_output.go.tpl
+      sdk_update_pre_build_request:
+        template_path: hooks/serverless_cache_snapshot/sdk_update_pre_build_request.go.tpl
+      sdk_read_one_post_set_output:
+        template_path: hooks/serverless_cache_snapshot/sdk_read_one_post_set_output.go.tpl
 operations:
   DescribeServerlessCaches:
     operation_type:
@@ -391,7 +448,6 @@ operations:
       ApplyImmediately: aws.Bool(true)
 ignore:
   resource_names:
-    - ServerlessCacheSnapshot
     - GlobalReplicationGroup
     - CacheSecurityGroup
   field_paths:

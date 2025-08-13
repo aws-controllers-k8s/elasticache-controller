@@ -5,7 +5,6 @@
 image:
   repository: public.ecr.aws/aws-controllers-k8s/elasticache-controller
   tag: 1.2.1
-  pullPolicy: IfNotPresent
   pullSecrets: []
 
 nameOverride: ""
@@ -150,6 +149,7 @@ reconcile:
     - CacheSubnetGroup
     - ReplicationGroup
     - ServerlessCache
+    - ServerlessCacheSnapshot
     - Snapshot
     - User
     - UserGroup
