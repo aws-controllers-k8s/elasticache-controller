@@ -84,6 +84,7 @@ rules:
   resources:
   - cacheclusters
   - cacheparametergroups
+  - cachesecuritygroups
   - cachesubnetgroups
   - replicationgroups
   - serverlesscaches
@@ -103,6 +104,7 @@ rules:
   resources:
   - cacheclusters/status
   - cacheparametergroups/status
+  - cachesecuritygroups/status
   - cachesubnetgroups/status
   - replicationgroups/status
   - serverlesscaches/status
