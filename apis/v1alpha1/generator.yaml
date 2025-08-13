@@ -91,6 +91,38 @@ resources:
         template_path: hooks/cache_cluster/sdk_update_post_set_output.go.tpl
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"
+  CacheSecurityGroup:
+    fields:
+      CacheSecurityGroupName:
+        is_primary_key: true
+        is_immutable: true
+      OwnerId:
+        is_read_only: true
+      EC2SecurityGroups:
+        references:
+          resource: SecurityGroup
+          service_name: ec2
+          path: Status.ID
+    exceptions:
+      errors:
+        404:
+          code: CacheSecurityGroupNotFoundFault
+      terminal_codes:
+        - CacheSecurityGroupAlreadyExistsFault
+        - InvalidParameterValueException
+        - InvalidParameterCombinationException
+        - CacheSecurityGroupQuotaExceededFault
+        - AuthorizationAlreadyExistsFault
+        - InvalidCacheSecurityGroupStateFault
+        - TagQuotaPerResourceExceeded
+        - InvalidARNFault
+    hooks:
+      sdk_create_post_set_output:
+        template_path: hooks/cache_security_group/sdk_create_post_set_output.go.tpl
+      sdk_update_pre_build_request:
+        template_path: hooks/cache_security_group/sdk_update_pre_build_request.go.tpl
+      sdk_read_one_post_set_output:
+        template_path: hooks/cache_security_group/sdk_read_one_post_set_output.go.tpl
   CacheSubnetGroup:
     exceptions:
       errors:
@@ -393,7 +425,6 @@ ignore:
   resource_names:
     - ServerlessCacheSnapshot
     - GlobalReplicationGroup
-    - CacheSecurityGroup
   field_paths:
     - DescribeSnapshotsInput.CacheClusterId
     - DescribeSnapshotsInput.ReplicationGroupId

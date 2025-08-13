@@ -25,20 +25,20 @@ import (
 
 type UserGroupSpec struct {
 
-	// The current supported value is Redis user.
-	//
-	// Regex Pattern: `^[a-zA-Z]*$`
-	// +kubebuilder:validation:Required
-	Engine *string `json:"engine"`
-	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted. Available
-	// for Valkey and Redis OSS only.
-	Tags []*Tag `json:"tags,omitempty"`
-	// The ID of the user group.
-	// +kubebuilder:validation:Required
-	UserGroupID *string `json:"userGroupID"`
-	// The list of user IDs that belong to the user group.
-	UserIDs []*string `json:"userIDs,omitempty"`
+// The current supported value is Redis user.
+//
+// Regex Pattern: `^[a-zA-Z]*$`
+// +kubebuilder:validation:Required
+Engine *string `json:"engine"`
+// A list of tags to be added to this resource. A tag is a key-value pair. A
+// tag key must be accompanied by a tag value, although null is accepted. Available
+// for Valkey and Redis OSS only.
+Tags []*Tag `json:"tags,omitempty"`
+// The ID of the user group.
+// +kubebuilder:validation:Required
+UserGroupID *string `json:"userGroupID"`
+// The list of user IDs that belong to the user group.
+UserIDs []*string `json:"userIDs,omitempty"`
 }
 
 // UserGroupStatus defines the observed state of UserGroup
@@ -74,8 +74,8 @@ type UserGroupStatus struct {
 type UserGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              UserGroupSpec   `json:"spec,omitempty"`
-	Status            UserGroupStatus `json:"status,omitempty"`
+	Spec   UserGroupSpec   `json:"spec,omitempty"`
+	Status UserGroupStatus `json:"status,omitempty"`
 }
 
 // UserGroupList contains a list of UserGroup
@@ -83,7 +83,7 @@ type UserGroup struct {
 type UserGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []UserGroup `json:"items"`
+	Items []UserGroup `json:"items"`
 }
 
 func init() {

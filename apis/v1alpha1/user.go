@@ -25,32 +25,32 @@ import (
 
 type UserSpec struct {
 
-	// Access permissions string used for this user.
-	//
-	// Regex Pattern: `\S`
-	// +kubebuilder:validation:Required
-	AccessString *string `json:"accessString"`
-	// The current supported value is Redis.
-	//
-	// Regex Pattern: `^[a-zA-Z]*$`
-	// +kubebuilder:validation:Required
-	Engine *string `json:"engine"`
-	// Indicates a password is not required for this user.
-	NoPasswordRequired *bool `json:"noPasswordRequired,omitempty"`
-	// Passwords used for this user. You can create up to two passwords for each
-	// user.
-	Passwords []*ackv1alpha1.SecretKeyReference `json:"passwords,omitempty"`
-	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
-	Tags []*Tag `json:"tags,omitempty"`
-	// The ID of the user.
-	//
-	// Regex Pattern: `^[a-zA-Z][a-zA-Z0-9\-]*$`
-	// +kubebuilder:validation:Required
-	UserID *string `json:"userID"`
-	// The username of the user.
-	// +kubebuilder:validation:Required
-	UserName *string `json:"userName"`
+// Access permissions string used for this user.
+//
+// Regex Pattern: `\S`
+// +kubebuilder:validation:Required
+AccessString *string `json:"accessString"`
+// The current supported value is Redis.
+//
+// Regex Pattern: `^[a-zA-Z]*$`
+// +kubebuilder:validation:Required
+Engine *string `json:"engine"`
+// Indicates a password is not required for this user.
+NoPasswordRequired *bool `json:"noPasswordRequired,omitempty"`
+// Passwords used for this user. You can create up to two passwords for each
+// user.
+Passwords []*ackv1alpha1.SecretKeyReference `json:"passwords,omitempty"`
+// A list of tags to be added to this resource. A tag is a key-value pair. A
+// tag key must be accompanied by a tag value, although null is accepted.
+Tags []*Tag `json:"tags,omitempty"`
+// The ID of the user.
+//
+// Regex Pattern: `^[a-zA-Z][a-zA-Z0-9\-]*$`
+// +kubebuilder:validation:Required
+UserID *string `json:"userID"`
+// The username of the user.
+// +kubebuilder:validation:Required
+UserName *string `json:"userName"`
 }
 
 // UserStatus defines the observed state of User
@@ -92,8 +92,8 @@ type UserStatus struct {
 type User struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              UserSpec   `json:"spec,omitempty"`
-	Status            UserStatus `json:"status,omitempty"`
+	Spec   UserSpec   `json:"spec,omitempty"`
+	Status UserStatus `json:"status,omitempty"`
 }
 
 // UserList contains a list of User
@@ -101,7 +101,7 @@ type User struct {
 type UserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []User `json:"items"`
+	Items []User `json:"items"`
 }
 
 func init() {

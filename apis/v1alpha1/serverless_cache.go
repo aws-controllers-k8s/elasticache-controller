@@ -25,55 +25,55 @@ import (
 // The resource representing a serverless cache.
 type ServerlessCacheSpec struct {
 
-	// Sets the cache usage limits for storage and ElastiCache Processing Units
-	// for the cache.
-	CacheUsageLimits *CacheUsageLimits `json:"cacheUsageLimits,omitempty"`
-	// The daily time that snapshots will be created from the new serverless cache.
-	// By default this number is populated with 0, i.e. no snapshots will be created
-	// on an automatic daily basis. Available for Valkey, Redis OSS and Serverless
-	// Memcached only.
-	DailySnapshotTime *string `json:"dailySnapshotTime,omitempty"`
-	// User-provided description for the serverless cache. The default is NULL,
-	// i.e. if no description is provided then an empty string will be returned.
-	// The maximum length is 255 characters.
-	Description *string `json:"description,omitempty"`
-	// The name of the cache engine to be used for creating the serverless cache.
-	// +kubebuilder:validation:Required
-	Engine *string `json:"engine"`
-	// ARN of the customer managed key for encrypting the data at rest. If no KMS
-	// key is provided, a default service key is used.
-	KMSKeyID *string `json:"kmsKeyID,omitempty"`
-	// The version of the cache engine that will be used to create the serverless
-	// cache.
-	MajorEngineVersion *string `json:"majorEngineVersion,omitempty"`
-	// A list of the one or more VPC security groups to be associated with the serverless
-	// cache. The security group will authorize traffic access for the VPC end-point
-	// (private-link). If no other information is given this will be the VPC’s
-	// Default Security Group that is associated with the cluster VPC end-point.
-	SecurityGroupIDs  []*string                                  `json:"securityGroupIDs,omitempty"`
-	SecurityGroupRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"securityGroupRefs,omitempty"`
-	// User-provided identifier for the serverless cache. This parameter is stored
-	// as a lowercase string.
-	// +kubebuilder:validation:Required
-	ServerlessCacheName *string `json:"serverlessCacheName"`
-	// The ARN(s) of the snapshot that the new serverless cache will be created
-	// from. Available for Valkey, Redis OSS and Serverless Memcached only.
-	SnapshotARNsToRestore []*string `json:"snapshotARNsToRestore,omitempty"`
-	// The number of snapshots that will be retained for the serverless cache that
-	// is being created. As new snapshots beyond this limit are added, the oldest
-	// snapshots will be deleted on a rolling basis. Available for Valkey, Redis
-	// OSS and Serverless Memcached only.
-	SnapshotRetentionLimit *int64 `json:"snapshotRetentionLimit,omitempty"`
-	// A list of the identifiers of the subnets where the VPC endpoint for the serverless
-	// cache will be deployed. All the subnetIds must belong to the same VPC.
-	SubnetIDs  []*string                                  `json:"subnetIDs,omitempty"`
-	SubnetRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"subnetRefs,omitempty"`
-	// The list of tags (key, value) pairs to be added to the serverless cache resource.
-	// Default is NULL.
-	Tags []*Tag `json:"tags,omitempty"`
-	// The identifier of the UserGroup to be associated with the serverless cache.
-	// Available for Valkey and Redis OSS only. Default is NULL.
-	UserGroupID *string `json:"userGroupID,omitempty"`
+// Sets the cache usage limits for storage and ElastiCache Processing Units
+// for the cache.
+CacheUsageLimits *CacheUsageLimits `json:"cacheUsageLimits,omitempty"`
+// The daily time that snapshots will be created from the new serverless cache.
+// By default this number is populated with 0, i.e. no snapshots will be created
+// on an automatic daily basis. Available for Valkey, Redis OSS and Serverless
+// Memcached only.
+DailySnapshotTime *string `json:"dailySnapshotTime,omitempty"`
+// User-provided description for the serverless cache. The default is NULL,
+// i.e. if no description is provided then an empty string will be returned.
+// The maximum length is 255 characters.
+Description *string `json:"description,omitempty"`
+// The name of the cache engine to be used for creating the serverless cache.
+// +kubebuilder:validation:Required
+Engine *string `json:"engine"`
+// ARN of the customer managed key for encrypting the data at rest. If no KMS
+// key is provided, a default service key is used.
+KMSKeyID *string `json:"kmsKeyID,omitempty"`
+// The version of the cache engine that will be used to create the serverless
+// cache.
+MajorEngineVersion *string `json:"majorEngineVersion,omitempty"`
+// A list of the one or more VPC security groups to be associated with the serverless
+// cache. The security group will authorize traffic access for the VPC end-point
+// (private-link). If no other information is given this will be the VPC’s
+// Default Security Group that is associated with the cluster VPC end-point.
+SecurityGroupIDs []*string `json:"securityGroupIDs,omitempty"`
+SecurityGroupRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"securityGroupRefs,omitempty"`
+// User-provided identifier for the serverless cache. This parameter is stored
+// as a lowercase string.
+// +kubebuilder:validation:Required
+ServerlessCacheName *string `json:"serverlessCacheName"`
+// The ARN(s) of the snapshot that the new serverless cache will be created
+// from. Available for Valkey, Redis OSS and Serverless Memcached only.
+SnapshotARNsToRestore []*string `json:"snapshotARNsToRestore,omitempty"`
+// The number of snapshots that will be retained for the serverless cache that
+// is being created. As new snapshots beyond this limit are added, the oldest
+// snapshots will be deleted on a rolling basis. Available for Valkey, Redis
+// OSS and Serverless Memcached only.
+SnapshotRetentionLimit *int64 `json:"snapshotRetentionLimit,omitempty"`
+// A list of the identifiers of the subnets where the VPC endpoint for the serverless
+// cache will be deployed. All the subnetIds must belong to the same VPC.
+SubnetIDs []*string `json:"subnetIDs,omitempty"`
+SubnetRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"subnetRefs,omitempty"`
+// The list of tags (key, value) pairs to be added to the serverless cache resource.
+// Default is NULL.
+Tags []*Tag `json:"tags,omitempty"`
+// The identifier of the UserGroup to be associated with the serverless cache.
+// Available for Valkey and Redis OSS only. Default is NULL.
+UserGroupID *string `json:"userGroupID,omitempty"`
 }
 
 // ServerlessCacheStatus defines the observed state of ServerlessCache
@@ -95,13 +95,13 @@ type ServerlessCacheStatus struct {
 	// +kubebuilder:validation:Optional
 	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// The name and version number of the engine the serverless cache is compatible
-	// with.
+// with.
 	// +kubebuilder:validation:Optional
 	FullEngineVersion *string `json:"fullEngineVersion,omitempty"`
 	// +kubebuilder:validation:Optional
 	ReaderEndpoint *Endpoint `json:"readerEndpoint,omitempty"`
 	// The current status of the serverless cache. The allowed values are CREATING,
-	// AVAILABLE, DELETING, CREATE-FAILED and MODIFYING.
+// AVAILABLE, DELETING, CREATE-FAILED and MODIFYING.
 	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`
 }
@@ -116,8 +116,8 @@ type ServerlessCacheStatus struct {
 type ServerlessCache struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ServerlessCacheSpec   `json:"spec,omitempty"`
-	Status            ServerlessCacheStatus `json:"status,omitempty"`
+	Spec   ServerlessCacheSpec   `json:"spec,omitempty"`
+	Status ServerlessCacheStatus `json:"status,omitempty"`
 }
 
 // ServerlessCacheList contains a list of ServerlessCache
@@ -125,7 +125,7 @@ type ServerlessCache struct {
 type ServerlessCacheList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ServerlessCache `json:"items"`
+	Items []ServerlessCache `json:"items"`
 }
 
 func init() {

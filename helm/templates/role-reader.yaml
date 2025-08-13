@@ -18,6 +18,7 @@ rules:
   resources:
   - cacheclusters
   - cacheparametergroups
+  - cachesecuritygroups
   - cachesubnetgroups
   - replicationgroups
   - serverlesscaches

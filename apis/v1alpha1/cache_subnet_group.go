@@ -23,28 +23,28 @@ import (
 // CacheSubnetGroupSpec defines the desired state of CacheSubnetGroup.
 //
 // Represents the output of one of the following operations:
-//
-//   - CreateCacheSubnetGroup
-//
-//   - ModifyCacheSubnetGroup
+// 
+//    * CreateCacheSubnetGroup
+// 
+//    * ModifyCacheSubnetGroup
 type CacheSubnetGroupSpec struct {
 
-	// A description for the cache subnet group.
-	// +kubebuilder:validation:Required
-	CacheSubnetGroupDescription *string `json:"cacheSubnetGroupDescription"`
-	// A name for the cache subnet group. This value is stored as a lowercase string.
-	//
-	// Constraints: Must contain no more than 255 alphanumeric characters or hyphens.
-	//
-	// Example: mysubnetgroup
-	// +kubebuilder:validation:Required
-	CacheSubnetGroupName *string `json:"cacheSubnetGroupName"`
-	// A list of VPC subnet IDs for the cache subnet group.
-	SubnetIDs  []*string                                  `json:"subnetIDs,omitempty"`
-	SubnetRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"subnetRefs,omitempty"`
-	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
-	Tags []*Tag `json:"tags,omitempty"`
+// A description for the cache subnet group.
+// +kubebuilder:validation:Required
+CacheSubnetGroupDescription *string `json:"cacheSubnetGroupDescription"`
+// A name for the cache subnet group. This value is stored as a lowercase string.
+// 
+// Constraints: Must contain no more than 255 alphanumeric characters or hyphens.
+// 
+// Example: mysubnetgroup
+// +kubebuilder:validation:Required
+CacheSubnetGroupName *string `json:"cacheSubnetGroupName"`
+// A list of VPC subnet IDs for the cache subnet group.
+SubnetIDs []*string `json:"subnetIDs,omitempty"`
+SubnetRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"subnetRefs,omitempty"`
+// A list of tags to be added to this resource. A tag is a key-value pair. A
+// tag key must be accompanied by a tag value, although null is accepted.
+Tags []*Tag `json:"tags,omitempty"`
 }
 
 // CacheSubnetGroupStatus defines the observed state of CacheSubnetGroup
@@ -61,14 +61,14 @@ type CacheSubnetGroupStatus struct {
 	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// A list of events. Each element in the list contains detailed information
-	// about one event.
+// about one event.
 	// +kubebuilder:validation:Optional
 	Events []*Event `json:"events,omitempty"`
 	// A list of subnets associated with the cache subnet group.
 	// +kubebuilder:validation:Optional
 	Subnets []*Subnet `json:"subnets,omitempty"`
 	// The Amazon Virtual Private Cloud identifier (VPC ID) of the cache subnet
-	// group.
+// group.
 	// +kubebuilder:validation:Optional
 	VPCID *string `json:"vpcID,omitempty"`
 }
@@ -79,8 +79,8 @@ type CacheSubnetGroupStatus struct {
 type CacheSubnetGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              CacheSubnetGroupSpec   `json:"spec,omitempty"`
-	Status            CacheSubnetGroupStatus `json:"status,omitempty"`
+	Spec   CacheSubnetGroupSpec   `json:"spec,omitempty"`
+	Status CacheSubnetGroupStatus `json:"status,omitempty"`
 }
 
 // CacheSubnetGroupList contains a list of CacheSubnetGroup
@@ -88,7 +88,7 @@ type CacheSubnetGroup struct {
 type CacheSubnetGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CacheSubnetGroup `json:"items"`
+	Items []CacheSubnetGroup `json:"items"`
 }
 
 func init() {

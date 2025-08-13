@@ -25,26 +25,26 @@ import (
 // Represents the output of a CreateCacheParameterGroup operation.
 type CacheParameterGroupSpec struct {
 
-	// The name of the cache parameter group family that the cache parameter group
-	// can be used with.
-	//
-	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
-	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x | redis7
-	// +kubebuilder:validation:Required
-	CacheParameterGroupFamily *string `json:"cacheParameterGroupFamily"`
-	// A user-specified name for the cache parameter group.
-	// +kubebuilder:validation:Required
-	CacheParameterGroupName *string `json:"cacheParameterGroupName"`
-	// A user-specified description for the cache parameter group.
-	// +kubebuilder:validation:Required
-	Description *string `json:"description"`
-	// An array of parameter names and values for the parameter update. You must
-	// supply at least one parameter name and value; subsequent arguments are optional.
-	// A maximum of 20 parameters may be modified per request.
-	ParameterNameValues []*ParameterNameValue `json:"parameterNameValues,omitempty"`
-	// A list of tags to be added to this resource. A tag is a key-value pair. A
-	// tag key must be accompanied by a tag value, although null is accepted.
-	Tags []*Tag `json:"tags,omitempty"`
+// The name of the cache parameter group family that the cache parameter group
+// can be used with.
+// 
+// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x | redis7
+// +kubebuilder:validation:Required
+CacheParameterGroupFamily *string `json:"cacheParameterGroupFamily"`
+// A user-specified name for the cache parameter group.
+// +kubebuilder:validation:Required
+CacheParameterGroupName *string `json:"cacheParameterGroupName"`
+// A user-specified description for the cache parameter group.
+// +kubebuilder:validation:Required
+Description *string `json:"description"`
+// An array of parameter names and values for the parameter update. You must
+// supply at least one parameter name and value; subsequent arguments are optional.
+// A maximum of 20 parameters may be modified per request.
+ParameterNameValues []*ParameterNameValue `json:"parameterNameValues,omitempty"`
+// A list of tags to be added to this resource. A tag is a key-value pair. A
+// tag key must be accompanied by a tag value, although null is accepted.
+Tags []*Tag `json:"tags,omitempty"`
 }
 
 // CacheParameterGroupStatus defines the observed state of CacheParameterGroup
@@ -61,7 +61,7 @@ type CacheParameterGroupStatus struct {
 	// +kubebuilder:validation:Optional
 	Conditions []*ackv1alpha1.Condition `json:"conditions"`
 	// A list of events. Each element in the list contains detailed information
-	// about one event.
+// about one event.
 	// +kubebuilder:validation:Optional
 	Events []*Event `json:"events,omitempty"`
 	// Indicates whether the parameter group is associated with a Global datastore
@@ -78,8 +78,8 @@ type CacheParameterGroupStatus struct {
 type CacheParameterGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              CacheParameterGroupSpec   `json:"spec,omitempty"`
-	Status            CacheParameterGroupStatus `json:"status,omitempty"`
+	Spec   CacheParameterGroupSpec   `json:"spec,omitempty"`
+	Status CacheParameterGroupStatus `json:"status,omitempty"`
 }
 
 // CacheParameterGroupList contains a list of CacheParameterGroup
@@ -87,7 +87,7 @@ type CacheParameterGroup struct {
 type CacheParameterGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CacheParameterGroup `json:"items"`
+	Items []CacheParameterGroup `json:"items"`
 }
 
 func init() {

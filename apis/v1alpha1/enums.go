@@ -18,7 +18,7 @@ package v1alpha1
 type AZMode string
 
 const (
-	AZMode_cross_az  AZMode = "cross-az"
+	AZMode_cross_az AZMode = "cross-az"
 	AZMode_single_az AZMode = "single-az"
 )
 
@@ -26,7 +26,7 @@ type AuthTokenUpdateStatus string
 
 const (
 	AuthTokenUpdateStatus_ROTATING AuthTokenUpdateStatus = "ROTATING"
-	AuthTokenUpdateStatus_SETTING  AuthTokenUpdateStatus = "SETTING"
+	AuthTokenUpdateStatus_SETTING AuthTokenUpdateStatus = "SETTING"
 )
 
 type AuthTokenUpdateStrategyType string
@@ -34,30 +34,30 @@ type AuthTokenUpdateStrategyType string
 const (
 	AuthTokenUpdateStrategyType_DELETE AuthTokenUpdateStrategyType = "DELETE"
 	AuthTokenUpdateStrategyType_ROTATE AuthTokenUpdateStrategyType = "ROTATE"
-	AuthTokenUpdateStrategyType_SET    AuthTokenUpdateStrategyType = "SET"
+	AuthTokenUpdateStrategyType_SET AuthTokenUpdateStrategyType = "SET"
 )
 
 type AuthenticationType string
 
 const (
-	AuthenticationType_iam         AuthenticationType = "iam"
+	AuthenticationType_iam AuthenticationType = "iam"
 	AuthenticationType_no_password AuthenticationType = "no-password"
-	AuthenticationType_password    AuthenticationType = "password"
+	AuthenticationType_password AuthenticationType = "password"
 )
 
 type AutomaticFailoverStatus string
 
 const (
-	AutomaticFailoverStatus_disabled  AutomaticFailoverStatus = "disabled"
+	AutomaticFailoverStatus_disabled AutomaticFailoverStatus = "disabled"
 	AutomaticFailoverStatus_disabling AutomaticFailoverStatus = "disabling"
-	AutomaticFailoverStatus_enabled   AutomaticFailoverStatus = "enabled"
-	AutomaticFailoverStatus_enabling  AutomaticFailoverStatus = "enabling"
+	AutomaticFailoverStatus_enabled AutomaticFailoverStatus = "enabled"
+	AutomaticFailoverStatus_enabling AutomaticFailoverStatus = "enabling"
 )
 
 type ChangeType string
 
 const (
-	ChangeType_immediate       ChangeType = "immediate"
+	ChangeType_immediate ChangeType = "immediate"
 	ChangeType_requires_reboot ChangeType = "requires-reboot"
 )
 
@@ -65,8 +65,8 @@ type ClusterMode string
 
 const (
 	ClusterMode_compatible ClusterMode = "compatible"
-	ClusterMode_disabled   ClusterMode = "disabled"
-	ClusterMode_enabled    ClusterMode = "enabled"
+	ClusterMode_disabled ClusterMode = "disabled"
+	ClusterMode_enabled ClusterMode = "enabled"
 )
 
 type DataStorageUnit string
@@ -79,13 +79,13 @@ type DataTieringStatus string
 
 const (
 	DataTieringStatus_disabled DataTieringStatus = "disabled"
-	DataTieringStatus_enabled  DataTieringStatus = "enabled"
+	DataTieringStatus_enabled DataTieringStatus = "enabled"
 )
 
 type DestinationType string
 
 const (
-	DestinationType_cloudwatch_logs  DestinationType = "cloudwatch-logs"
+	DestinationType_cloudwatch_logs DestinationType = "cloudwatch-logs"
 	DestinationType_kinesis_firehose DestinationType = "kinesis-firehose"
 )
 
@@ -99,18 +99,18 @@ const (
 type InputAuthenticationType string
 
 const (
-	InputAuthenticationType_iam                  InputAuthenticationType = "iam"
+	InputAuthenticationType_iam InputAuthenticationType = "iam"
 	InputAuthenticationType_no_password_required InputAuthenticationType = "no-password-required"
-	InputAuthenticationType_password             InputAuthenticationType = "password"
+	InputAuthenticationType_password InputAuthenticationType = "password"
 )
 
 type LogDeliveryConfigurationStatus string
 
 const (
-	LogDeliveryConfigurationStatus_active    LogDeliveryConfigurationStatus = "active"
+	LogDeliveryConfigurationStatus_active LogDeliveryConfigurationStatus = "active"
 	LogDeliveryConfigurationStatus_disabling LogDeliveryConfigurationStatus = "disabling"
-	LogDeliveryConfigurationStatus_enabling  LogDeliveryConfigurationStatus = "enabling"
-	LogDeliveryConfigurationStatus_error     LogDeliveryConfigurationStatus = "error"
+	LogDeliveryConfigurationStatus_enabling LogDeliveryConfigurationStatus = "enabling"
+	LogDeliveryConfigurationStatus_error LogDeliveryConfigurationStatus = "error"
 	LogDeliveryConfigurationStatus_modifying LogDeliveryConfigurationStatus = "modifying"
 )
 
@@ -125,46 +125,46 @@ type LogType string
 
 const (
 	LogType_engine_log LogType = "engine-log"
-	LogType_slow_log   LogType = "slow-log"
+	LogType_slow_log LogType = "slow-log"
 )
 
 type MultiAZStatus string
 
 const (
 	MultiAZStatus_disabled MultiAZStatus = "disabled"
-	MultiAZStatus_enabled  MultiAZStatus = "enabled"
+	MultiAZStatus_enabled MultiAZStatus = "enabled"
 )
 
 type NetworkType string
 
 const (
 	NetworkType_dual_stack NetworkType = "dual_stack"
-	NetworkType_ipv4       NetworkType = "ipv4"
-	NetworkType_ipv6       NetworkType = "ipv6"
+	NetworkType_ipv4 NetworkType = "ipv4"
+	NetworkType_ipv6 NetworkType = "ipv6"
 )
 
 type NodeUpdateInitiatedBy string
 
 const (
 	NodeUpdateInitiatedBy_customer NodeUpdateInitiatedBy = "customer"
-	NodeUpdateInitiatedBy_system   NodeUpdateInitiatedBy = "system"
+	NodeUpdateInitiatedBy_system NodeUpdateInitiatedBy = "system"
 )
 
 type NodeUpdateStatus string
 
 const (
-	NodeUpdateStatus_complete         NodeUpdateStatus = "complete"
-	NodeUpdateStatus_in_progress      NodeUpdateStatus = "in-progress"
-	NodeUpdateStatus_not_applied      NodeUpdateStatus = "not-applied"
-	NodeUpdateStatus_stopped          NodeUpdateStatus = "stopped"
-	NodeUpdateStatus_stopping         NodeUpdateStatus = "stopping"
+	NodeUpdateStatus_complete NodeUpdateStatus = "complete"
+	NodeUpdateStatus_in_progress NodeUpdateStatus = "in-progress"
+	NodeUpdateStatus_not_applied NodeUpdateStatus = "not-applied"
+	NodeUpdateStatus_stopped NodeUpdateStatus = "stopped"
+	NodeUpdateStatus_stopping NodeUpdateStatus = "stopping"
 	NodeUpdateStatus_waiting_to_start NodeUpdateStatus = "waiting-to-start"
 )
 
 type OutpostMode string
 
 const (
-	OutpostMode_cross_outpost  OutpostMode = "cross-outpost"
+	OutpostMode_cross_outpost OutpostMode = "cross-outpost"
 	OutpostMode_single_outpost OutpostMode = "single-outpost"
 )
 
@@ -172,16 +172,16 @@ type PendingAutomaticFailoverStatus string
 
 const (
 	PendingAutomaticFailoverStatus_disabled PendingAutomaticFailoverStatus = "disabled"
-	PendingAutomaticFailoverStatus_enabled  PendingAutomaticFailoverStatus = "enabled"
+	PendingAutomaticFailoverStatus_enabled PendingAutomaticFailoverStatus = "enabled"
 )
 
 type ServiceUpdateSeverity string
 
 const (
-	ServiceUpdateSeverity_critical  ServiceUpdateSeverity = "critical"
+	ServiceUpdateSeverity_critical ServiceUpdateSeverity = "critical"
 	ServiceUpdateSeverity_important ServiceUpdateSeverity = "important"
-	ServiceUpdateSeverity_low       ServiceUpdateSeverity = "low"
-	ServiceUpdateSeverity_medium    ServiceUpdateSeverity = "medium"
+	ServiceUpdateSeverity_low ServiceUpdateSeverity = "low"
+	ServiceUpdateSeverity_medium ServiceUpdateSeverity = "medium"
 )
 
 type ServiceUpdateStatus string
@@ -189,7 +189,7 @@ type ServiceUpdateStatus string
 const (
 	ServiceUpdateStatus_available ServiceUpdateStatus = "available"
 	ServiceUpdateStatus_cancelled ServiceUpdateStatus = "cancelled"
-	ServiceUpdateStatus_expired   ServiceUpdateStatus = "expired"
+	ServiceUpdateStatus_expired ServiceUpdateStatus = "expired"
 )
 
 type ServiceUpdateType string
@@ -202,41 +202,41 @@ type SlaMet string
 
 const (
 	SlaMet_n_a SlaMet = "n/a"
-	SlaMet_no  SlaMet = "no"
+	SlaMet_no SlaMet = "no"
 	SlaMet_yes SlaMet = "yes"
 )
 
 type SourceType string
 
 const (
-	SourceType_cache_cluster             SourceType = "cache-cluster"
-	SourceType_cache_parameter_group     SourceType = "cache-parameter-group"
-	SourceType_cache_security_group      SourceType = "cache-security-group"
-	SourceType_cache_subnet_group        SourceType = "cache-subnet-group"
-	SourceType_replication_group         SourceType = "replication-group"
-	SourceType_serverless_cache          SourceType = "serverless-cache"
+	SourceType_cache_cluster SourceType = "cache-cluster"
+	SourceType_cache_parameter_group SourceType = "cache-parameter-group"
+	SourceType_cache_security_group SourceType = "cache-security-group"
+	SourceType_cache_subnet_group SourceType = "cache-subnet-group"
+	SourceType_replication_group SourceType = "replication-group"
+	SourceType_serverless_cache SourceType = "serverless-cache"
 	SourceType_serverless_cache_snapshot SourceType = "serverless-cache-snapshot"
-	SourceType_user                      SourceType = "user"
-	SourceType_user_group                SourceType = "user-group"
+	SourceType_user SourceType = "user"
+	SourceType_user_group SourceType = "user-group"
 )
 
 type TransitEncryptionMode string
 
 const (
 	TransitEncryptionMode_preferred TransitEncryptionMode = "preferred"
-	TransitEncryptionMode_required  TransitEncryptionMode = "required"
+	TransitEncryptionMode_required TransitEncryptionMode = "required"
 )
 
 type UpdateActionStatus string
 
 const (
-	UpdateActionStatus_complete         UpdateActionStatus = "complete"
-	UpdateActionStatus_in_progress      UpdateActionStatus = "in-progress"
-	UpdateActionStatus_not_applicable   UpdateActionStatus = "not-applicable"
-	UpdateActionStatus_not_applied      UpdateActionStatus = "not-applied"
-	UpdateActionStatus_scheduled        UpdateActionStatus = "scheduled"
-	UpdateActionStatus_scheduling       UpdateActionStatus = "scheduling"
-	UpdateActionStatus_stopped          UpdateActionStatus = "stopped"
-	UpdateActionStatus_stopping         UpdateActionStatus = "stopping"
+	UpdateActionStatus_complete UpdateActionStatus = "complete"
+	UpdateActionStatus_in_progress UpdateActionStatus = "in-progress"
+	UpdateActionStatus_not_applicable UpdateActionStatus = "not-applicable"
+	UpdateActionStatus_not_applied UpdateActionStatus = "not-applied"
+	UpdateActionStatus_scheduled UpdateActionStatus = "scheduled"
+	UpdateActionStatus_scheduling UpdateActionStatus = "scheduling"
+	UpdateActionStatus_stopped UpdateActionStatus = "stopped"
+	UpdateActionStatus_stopping UpdateActionStatus = "stopping"
 	UpdateActionStatus_waiting_to_start UpdateActionStatus = "waiting-to-start"
 )

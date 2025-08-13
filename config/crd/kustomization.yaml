@@ -4,6 +4,7 @@ resources:
   - common
   - bases/elasticache.services.k8s.aws_cacheclusters.yaml
   - bases/elasticache.services.k8s.aws_cacheparametergroups.yaml
+  - bases/elasticache.services.k8s.aws_cachesecuritygroups.yaml
   - bases/elasticache.services.k8s.aws_cachesubnetgroups.yaml
   - bases/elasticache.services.k8s.aws_replicationgroups.yaml
   - bases/elasticache.services.k8s.aws_serverlesscaches.yaml

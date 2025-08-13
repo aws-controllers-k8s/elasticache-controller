@@ -147,6 +147,7 @@ reconcile:
   resources:
     - CacheCluster
     - CacheParameterGroup
+    - CacheSecurityGroup
     - CacheSubnetGroup
     - ReplicationGroup
     - ServerlessCache
