@@ -45,7 +45,6 @@ const (
 var (
 	condMsgCurrentlyDeleting      = "CacheCluster is currently being deleted"
 	condMsgNoDeleteWhileModifying = "Cannot delete CacheCluster while it is being modified"
-	condMsgCurrentlyUpdating      = "CacheCluster is currently being updated"
 )
 
 var (
