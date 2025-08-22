@@ -75,6 +75,8 @@ func (rm *resourceManager) sdkFind(
 	if err != nil {
 		return nil, err
 	}
+	// Include cache node info to get endpoint details for clusters
+	input.ShowCacheNodeInfo = aws.Bool(true)
 	var resp *svcsdk.DescribeCacheClustersOutput
 	resp, err = rm.sdkapi.DescribeCacheClusters(ctx, input)
 	rm.metrics.RecordAPICall("READ_MANY", "DescribeCacheClusters", err)
