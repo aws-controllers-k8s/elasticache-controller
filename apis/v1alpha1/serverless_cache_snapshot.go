@@ -28,6 +28,7 @@ type ServerlessCacheSnapshotSpec struct {
 
 	// The ID of the KMS key used to encrypt the snapshot. Available for Valkey,
 	// Redis OSS and Serverless Memcached only. Default: NULL
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	KMSKeyID  *string                                  `json:"kmsKeyID,omitempty"`
 	KMSKeyRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"kmsKeyRef,omitempty"`
 	// The name of an existing serverless cache. The snapshot is created from this
@@ -38,6 +39,7 @@ type ServerlessCacheSnapshotSpec struct {
 	// The name for the snapshot being created. Must be unique for the customer
 	// account. Available for Valkey, Redis OSS and Serverless Memcached only. Must
 	// be between 1 and 255 characters.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	// +kubebuilder:validation:Required
 	ServerlessCacheSnapshotName *string `json:"serverlessCacheSnapshotName"`
 	// A list of tags to be added to the snapshot resource. A tag is a key-value
@@ -88,6 +90,9 @@ type ServerlessCacheSnapshotStatus struct {
 // ServerlessCacheSnapshot is the Schema for the ServerlessCacheSnapshots API
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="STATUS",type=string,priority=0,JSONPath=`.status.status`
+// +kubebuilder:printcolumn:name="Synced",type="string",priority=0,JSONPath=".status.conditions[?(@.type==\"ACK.ResourceSynced\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",priority=0,JSONPath=".metadata.creationTimestamp"
 type ServerlessCacheSnapshot struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

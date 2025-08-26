@@ -15,46 +15,81 @@ package serverless_cache_snapshot
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"time"
 
+	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/util"
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
-	svcsdk "github.com/aws/aws-sdk-go/service/elasticache"
+	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 )
 
-var requeueWaitWhileTagUpdated = ackrequeue.NeededAfter(
-	errors.New("tags update is in progress"),
-	ackrequeue.DefaultRequeueAfterDuration,
+const (
+	ServerlessCacheSnapshotStatusAvailable = "available"
 )
+
+var requeueWaitUntilCanModify = 10 * time.Second
+
+// customUpdateServerlessCacheSnapshot handles updates for serverless cache snapshots.
+// Since immutable fields are enforced by generator configuration, this method
+// only needs to handle tag updates.
+func (rm *resourceManager) customUpdateServerlessCacheSnapshot(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) (updated *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.customUpdateServerlessCacheSnapshot")
+	defer func() { exit(err) }()
+
+	// Check if the snapshot is in a state that allows updates
+	if !isServerlessCacheSnapshotAvailable(latest) {
+		return desired, ackrequeue.NeededAfter(
+			fmt.Errorf("snapshot not in active state"),
+			requeueWaitUntilCanModify,
+		)
+	}
+
+	ko := desired.ko.DeepCopy()
+	rm.setStatusDefaults(ko)
+
+	// Handle tag updates
+	if delta.DifferentAt("Spec.Tags") {
+		if err := rm.syncTags(ctx, desired, latest); err != nil {
+			return &resource{ko}, err
+		}
+		return &resource{ko}, nil
+	}
+
+	return latest, nil
+}
+
+// isServerlessCacheSnapshotAvailable returns true if the snapshot is in a state
+// that allows modifications (currently only tag updates)
+func isServerlessCacheSnapshotAvailable(r *resource) bool {
+	if r.ko.Status.Status == nil {
+		return false
+	}
+	status := *r.ko.Status.Status
+	return status == ServerlessCacheSnapshotStatusAvailable
+}
 
 // getTags retrieves the tags for a given ServerlessCacheSnapshot
 func (rm *resourceManager) getTags(
 	ctx context.Context,
 	resourceARN string,
-) []*svcsdk.Tag {
-	tags, err := util.GetTags(ctx, rm.sdkapi, rm.metrics, resourceARN)
-	if err != nil {
-		return nil
-	}
-
-	// Convert from svcapitypes.Tag to svcsdk.Tag
-	sdkTags := make([]*svcsdk.Tag, len(tags))
-	for i, tag := range tags {
-		sdkTags[i] = &svcsdk.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		}
-	}
-	return sdkTags
+) ([]*svcapitypes.Tag, error) {
+	return util.GetTags(ctx, rm.sdkapi, rm.metrics, resourceARN)
 }
 
 // syncTags synchronizes the tags between the resource spec and the AWS resource
 func (rm *resourceManager) syncTags(
 	ctx context.Context,
-	latest *resource,
 	desired *resource,
+	latest *resource,
 ) error {
-	// If the ARN is not set, we can't sync tags
 	if latest.ko.Status.ACKResourceMetadata == nil || latest.ko.Status.ACKResourceMetadata.ARN == nil {
 		return nil
 	}

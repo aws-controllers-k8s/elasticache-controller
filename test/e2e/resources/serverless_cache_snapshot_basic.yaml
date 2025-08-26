@@ -1,0 +1,8 @@
+# Basic ServerlessCacheSnapshot for testing basic creation and deletion
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ServerlessCacheSnapshot
+metadata:
+  name: $SNAPSHOT_NAME
+spec:
+  serverlessCacheSnapshotName: $SNAPSHOT_NAME
+  serverlessCacheName: $SC_NAME

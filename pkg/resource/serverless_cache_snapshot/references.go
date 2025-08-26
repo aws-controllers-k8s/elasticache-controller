@@ -206,7 +206,7 @@ func (rm *resourceManager) resolveReferenceForServerlessCacheName(
 		if err := getReferencedResourceState_ServerlessCache(ctx, apiReader, obj, *arr.Name, namespace); err != nil {
 			return hasReferences, err
 		}
-		ko.Spec.ServerlessCacheName = obj.Spec.ServerlessCacheName
+		ko.Spec.ServerlessCacheName = (*string)(obj.Spec.ServerlessCacheName)
 	}
 
 	return hasReferences, nil

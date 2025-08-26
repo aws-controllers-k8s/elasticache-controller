@@ -156,6 +156,17 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	rm.setStatusDefaults(ko)
+	// Only fetch tags if the snapshot is available
+	// ListTagsForResource fails when snapshot is still creating
+	if ko.Status.ACKResourceMetadata != nil && ko.Status.ACKResourceMetadata.ARN != nil &&
+		isServerlessCacheSnapshotAvailable(&resource{ko}) {
+		resourceARN := (*string)(ko.Status.ACKResourceMetadata.ARN)
+		tags, err := rm.getTags(ctx, *resourceARN)
+		if err != nil {
+			return nil, err
+		}
+		ko.Spec.Tags = tags
+	}
 	return &resource{ko}, nil
 }
 
@@ -277,7 +288,7 @@ func (rm *resourceManager) sdkCreate(
 
 	rm.setStatusDefaults(ko)
 	// If tags are specified, mark the resource as needing a sync
-	if ko.Spec.Tags != nil && len(ko.Spec.Tags) > 0 {
+	if ko.Spec.Tags != nil {
 		ackcondition.SetSynced(&resource{ko}, corev1.ConditionFalse, nil, nil)
 	}
 	return &resource{ko}, nil
@@ -326,7 +337,7 @@ func (rm *resourceManager) sdkUpdate(
 	latest *resource,
 	delta *ackcompare.Delta,
 ) (*resource, error) {
-	return nil, ackerr.NewTerminalError(ackerr.NotImplemented)
+	return rm.customUpdateServerlessCacheSnapshot(ctx, desired, latest, delta)
 }
 
 // sdkDelete deletes the supplied resource in the backend AWS service API
@@ -474,8 +485,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	switch terminalErr.ErrorCode() {
 	case "ServerlessCacheSnapshotAlreadyExistsFault",
 		"InvalidParameterValueException",
-		"ServiceLinkedRoleNotFoundFault",
-		"InvalidServerlessCacheSnapshotStateFault":
+		"ServiceLinkedRoleNotFoundFault":
 		return true
 	default:
 		return false

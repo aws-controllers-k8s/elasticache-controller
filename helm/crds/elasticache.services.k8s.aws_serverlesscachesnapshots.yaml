@@ -14,7 +14,17 @@ spec:
     singular: serverlesscachesnapshot
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: STATUS
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="ACK.ResourceSynced")].status
+      name: Synced
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: ServerlessCacheSnapshot is the Schema for the ServerlessCacheSnapshots
@@ -49,6 +59,9 @@ spec:
                   The ID of the KMS key used to encrypt the snapshot. Available for Valkey,
                   Redis OSS and Serverless Memcached only. Default: NULL
                 type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
               kmsKeyRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
                   *AWSResourceReference\ntype to provide more user friendly syntax
@@ -97,6 +110,9 @@ spec:
                   account. Available for Valkey, Redis OSS and Serverless Memcached only. Must
                   be between 1 and 255 characters.
                 type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
               tags:
                 description: |-
                   A list of tags to be added to the snapshot resource. A tag is a key-value
