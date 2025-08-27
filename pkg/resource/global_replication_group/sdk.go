@@ -351,11 +351,6 @@ func (rm *resourceManager) sdkCreate(
 	}
 
 	rm.setStatusDefaults(ko)
-	// Check if Tags are specified in the resource and mark the resource as
-	// needing to be synced if so.
-	if ko.Spec.Tags != nil {
-		ackcondition.SetSynced(&resource{ko}, corev1.ConditionFalse, nil, nil)
-	}
 	return &resource{ko}, nil
 }
 
@@ -393,22 +388,6 @@ func (rm *resourceManager) sdkUpdate(
 	defer func() {
 		exit(err)
 	}()
-	// If the Tags field has changed, sync the tags
-	if delta.DifferentAt("Spec.Tags") {
-		err := rm.syncTags(
-			ctx,
-			desired,
-			latest,
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// If the only difference is in the Tags field, we don't need to make an update call
-	if !delta.DifferentExcept("Spec.Tags") {
-		return desired, nil
-	}
 	input, err := rm.newUpdateRequestPayload(ctx, desired, delta)
 	if err != nil {
 		return nil, err

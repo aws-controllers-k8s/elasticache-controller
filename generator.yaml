@@ -79,6 +79,8 @@ resources:
         template_path: hooks/cache_cluster/sdk_create_post_set_output.go.tpl
       sdk_delete_pre_build_request:
         template_path: hooks/cache_cluster/sdk_delete_pre_build_request.go.tpl
+      sdk_read_many_post_build_request:
+        template_path: hooks/cache_cluster/sdk_read_many_post_build_request.go.tpl
       sdk_read_many_post_set_output:
         template_path: hooks/cache_cluster/sdk_read_many_post_set_output.go.tpl
       sdk_update_pre_build_request:
@@ -127,10 +129,6 @@ resources:
         references:
           resource: ReplicationGroup
           path: Spec.ReplicationGroupID
-      Tags:
-        from:
-          operation: ListTagsForResource
-          path: TagList
     exceptions:
       errors:
         404:
@@ -140,13 +138,8 @@ resources:
         - InvalidParameterValueException
         - InvalidGlobalReplicationGroupStateFault
         - ServiceLinkedRoleNotFoundFault
-    hooks:
-      sdk_create_post_set_output:
-        template_path: hooks/global_replication_group/sdk_create_post_set_output.go.tpl
-      sdk_update_pre_build_request:
-        template_path: hooks/global_replication_group/sdk_update_pre_build_request.go.tpl
-      sdk_read_one_post_set_output:
-        template_path: hooks/global_replication_group/sdk_read_one_post_set_output.go.tpl
+    tags:
+      ignore: true
   ReplicationGroup:
     exceptions:
       terminal_codes:
