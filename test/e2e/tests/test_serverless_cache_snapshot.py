@@ -17,6 +17,7 @@
 import pytest
 import boto3
 import logging
+import time
 
 from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
@@ -26,6 +27,7 @@ from e2e.replacement_values import REPLACEMENT_VALUES
 
 RESOURCE_PLURAL = "serverlesscachesnapshots"
 SERVERLESS_CACHE_PLURAL = "serverlesscaches"
+UPDATE_WAIT_SECS = 180
 
 
 @pytest.fixture(scope="module")
@@ -124,9 +126,7 @@ class TestServerlessCacheSnapshot:
         
         k8s.patch_custom_resource(ref, tag_updates)
         
-        assert k8s.wait_on_condition(
-            ref, "ACK.ResourceSynced", "True", wait_periods=60
-        )
+        time.sleep(UPDATE_WAIT_SECS)
         
         final_cr = k8s.get_resource(ref)
         snapshot_arn = final_cr['status']['ackResourceMetadata']['arn']

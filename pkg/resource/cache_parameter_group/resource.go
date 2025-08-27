@@ -97,11 +97,11 @@ func (r *resource) SetIdentifiers(identifier *ackv1alpha1.AWSIdentifiers) error 
 
 // PopulateResourceFromAnnotation populates the fields passed from adoption annotation
 func (r *resource) PopulateResourceFromAnnotation(fields map[string]string) error {
-	tmp, ok := fields["cacheParameterGroupName"]
+	f0, ok := fields["cacheParameterGroupName"]
 	if !ok {
 		return ackerrors.NewTerminalError(fmt.Errorf("required field missing: cacheParameterGroupName"))
 	}
-	r.ko.Spec.CacheParameterGroupName = &tmp
+	r.ko.Spec.CacheParameterGroupName = &f0
 
 	return nil
 }

@@ -484,8 +484,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	}
 	switch terminalErr.ErrorCode() {
 	case "ServerlessCacheSnapshotAlreadyExistsFault",
-		"InvalidParameterValueException",
-		"ServiceLinkedRoleNotFoundFault":
+		"InvalidParameterValueException":
 		return true
 	default:
 		return false

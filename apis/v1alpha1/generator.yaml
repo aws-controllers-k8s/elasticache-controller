@@ -372,7 +372,6 @@ resources:
       terminal_codes:
         - ServerlessCacheSnapshotAlreadyExistsFault
         - InvalidParameterValueException
-        - ServiceLinkedRoleNotFoundFault
     hooks:
       sdk_create_post_set_output:
         template_path: hooks/serverless_cache_snapshot/sdk_create_post_set_output.go.tpl
