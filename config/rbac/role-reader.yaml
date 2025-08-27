@@ -12,6 +12,7 @@ rules:
   - cacheclusters
   - cacheparametergroups
   - cachesubnetgroups
+  - globalreplicationgroups
   - replicationgroups
   - serverlesscaches
   - snapshots
