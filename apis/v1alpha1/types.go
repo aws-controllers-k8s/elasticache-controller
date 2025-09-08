@@ -661,15 +661,17 @@ type ServerlessCacheConfiguration struct {
 
 // The resource representing a serverless cache snapshot. Available for Valkey,
 // Redis OSS and Serverless Memcached only.
-type ServerlessCacheSnapshot struct {
-	ARN                         *string      `json:"arn,omitempty"`
-	BytesUsedForCache           *string      `json:"bytesUsedForCache,omitempty"`
-	CreateTime                  *metav1.Time `json:"createTime,omitempty"`
-	ExpiryTime                  *metav1.Time `json:"expiryTime,omitempty"`
-	KMSKeyID                    *string      `json:"kmsKeyID,omitempty"`
-	ServerlessCacheSnapshotName *string      `json:"serverlessCacheSnapshotName,omitempty"`
-	SnapshotType                *string      `json:"snapshotType,omitempty"`
-	Status                      *string      `json:"status,omitempty"`
+type ServerlessCacheSnapshot_SDK struct {
+	ARN               *string      `json:"arn,omitempty"`
+	BytesUsedForCache *string      `json:"bytesUsedForCache,omitempty"`
+	CreateTime        *metav1.Time `json:"createTime,omitempty"`
+	ExpiryTime        *metav1.Time `json:"expiryTime,omitempty"`
+	KMSKeyID          *string      `json:"kmsKeyID,omitempty"`
+	// The configuration settings for a specific serverless cache.
+	ServerlessCacheConfiguration *ServerlessCacheConfiguration `json:"serverlessCacheConfiguration,omitempty"`
+	ServerlessCacheSnapshotName  *string                       `json:"serverlessCacheSnapshotName,omitempty"`
+	SnapshotType                 *string                       `json:"snapshotType,omitempty"`
+	Status                       *string                       `json:"status,omitempty"`
 }
 
 // The resource representing a serverless cache.

@@ -150,6 +150,7 @@ reconcile:
     - CacheSubnetGroup
     - ReplicationGroup
     - ServerlessCache
+    - ServerlessCacheSnapshot
     - Snapshot
     - User
     - UserGroup
