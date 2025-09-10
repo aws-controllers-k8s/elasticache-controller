@@ -613,7 +613,7 @@ func (rm *resourceManager) modifyReplicationGroup(
 
 	// SecurityGroupIds, EngineVersion
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
-		delta.DifferentAt("Spec.EngineVersion") {
+		delta.DifferentAt("Spec.EngineVersion") || delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.CacheParameterGroupName") {
 		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster, delta)
 		resp, respErr := rm.sdkapi.ModifyReplicationGroup(ctx, input)
 		rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
@@ -622,7 +622,16 @@ func (rm *resourceManager) modifyReplicationGroup(
 			return nil, respErr
 		}
 
-		return rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
+		// The ModifyReplicationGroup API returns stale field Engine that don't
+		// immediately reflect the requested changes, causing the controller to detect false
+		// differences and trigger terminal conditions. Override these fields with the user's
+		// intended values before passing to the generated setReplicationGroupOutput function.
+		normalizedRG := *resp.ReplicationGroup
+		if desired.ko.Spec.Engine != nil {
+			normalizedRG.Engine = desired.ko.Spec.Engine
+		}
+
+		return rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
 	}
 
 	// no updates done
@@ -1167,6 +1176,16 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 	if delta.DifferentAt("Spec.EngineVersion") &&
 		desired.ko.Spec.EngineVersion != nil {
 		input.EngineVersion = desired.ko.Spec.EngineVersion
+	}
+
+	if delta.DifferentAt("Spec.Engine") &&
+		desired.ko.Spec.Engine != nil {
+		input.Engine = desired.ko.Spec.Engine
+	}
+
+	if delta.DifferentAt("Spec.CacheParameterGroupName") &&
+		desired.ko.Spec.CacheParameterGroupName != nil {
+		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
 	}
 
 	return input
