@@ -15,6 +15,7 @@ rules:
   - globalreplicationgroups
   - replicationgroups
   - serverlesscaches
+  - serverlesscachesnapshots
   - snapshots
   - users
   - usergroups

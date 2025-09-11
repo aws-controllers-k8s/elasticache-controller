@@ -22,6 +22,7 @@ rules:
   - globalreplicationgroups
   - replicationgroups
   - serverlesscaches
+  - serverlesscachesnapshots
   - snapshots
   - users
   - usergroups
@@ -42,6 +43,7 @@ rules:
   - globalreplicationgroups
   - replicationgroups
   - serverlesscaches
+  - serverlesscachesnapshots
   - snapshots
   - users
   - usergroups

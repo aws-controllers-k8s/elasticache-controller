@@ -97,11 +97,11 @@ func (r *resource) SetIdentifiers(identifier *ackv1alpha1.AWSIdentifiers) error 
 
 // PopulateResourceFromAnnotation populates the fields passed from adoption annotation
 func (r *resource) PopulateResourceFromAnnotation(fields map[string]string) error {
-	tmp, ok := fields["replicationGroupID"]
+	f2, ok := fields["replicationGroupID"]
 	if !ok {
 		return ackerrors.NewTerminalError(fmt.Errorf("required field missing: replicationGroupID"))
 	}
-	r.ko.Spec.ReplicationGroupID = &tmp
+	r.ko.Spec.ReplicationGroupID = &f2
 
 	return nil
 }

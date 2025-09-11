@@ -20,6 +20,7 @@ import (
 	"os"
 
 	ec2apitypes "github.com/aws-controllers-k8s/ec2-controller/apis/v1alpha1"
+	kmsapitypes "github.com/aws-controllers-k8s/kms-controller/apis/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcfg "github.com/aws-controllers-k8s/runtime/pkg/config"
 	ackrt "github.com/aws-controllers-k8s/runtime/pkg/runtime"
@@ -47,6 +48,7 @@ import (
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/global_replication_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/replication_group"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/serverless_cache"
+	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/serverless_cache_snapshot"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/snapshot"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/user"
 	_ "github.com/aws-controllers-k8s/elasticache-controller/pkg/resource/user_group"
@@ -67,6 +69,7 @@ func init() {
 	_ = svctypes.AddToScheme(scheme)
 	_ = ackv1alpha1.AddToScheme(scheme)
 	_ = ec2apitypes.AddToScheme(scheme)
+	_ = kmsapitypes.AddToScheme(scheme)
 	_ = snsapitypes.AddToScheme(scheme)
 }
 

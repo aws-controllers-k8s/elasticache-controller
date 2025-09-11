@@ -8,6 +8,7 @@ resources:
   - bases/elasticache.services.k8s.aws_globalreplicationgroups.yaml
   - bases/elasticache.services.k8s.aws_replicationgroups.yaml
   - bases/elasticache.services.k8s.aws_serverlesscaches.yaml
+  - bases/elasticache.services.k8s.aws_serverlesscachesnapshots.yaml
   - bases/elasticache.services.k8s.aws_snapshots.yaml
   - bases/elasticache.services.k8s.aws_users.yaml
   - bases/elasticache.services.k8s.aws_usergroups.yaml
