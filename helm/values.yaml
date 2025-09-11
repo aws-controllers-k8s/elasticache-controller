@@ -148,6 +148,7 @@ reconcile:
     - CacheCluster
     - CacheParameterGroup
     - CacheSubnetGroup
+    - GlobalReplicationGroup
     - ReplicationGroup
     - ServerlessCache
     - ServerlessCacheSnapshot
