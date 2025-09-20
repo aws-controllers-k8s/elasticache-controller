@@ -345,27 +345,6 @@ type GlobalNodeGroup struct {
 	Slots             *string `json:"slots,omitempty"`
 }
 
-// Consists of a primary cluster that accepts writes and an associated secondary
-// cluster that resides in a different Amazon region. The secondary cluster
-// accepts only reads. The primary cluster automatically replicates updates
-// to the secondary cluster.
-//
-//   - The GlobalReplicationGroupIdSuffix represents the name of the Global
-//     datastore, which is what you use to associate a secondary cluster.
-type GlobalReplicationGroup struct {
-	ARN                               *string `json:"arn,omitempty"`
-	AtRestEncryptionEnabled           *bool   `json:"atRestEncryptionEnabled,omitempty"`
-	AuthTokenEnabled                  *bool   `json:"authTokenEnabled,omitempty"`
-	CacheNodeType                     *string `json:"cacheNodeType,omitempty"`
-	ClusterEnabled                    *bool   `json:"clusterEnabled,omitempty"`
-	Engine                            *string `json:"engine,omitempty"`
-	EngineVersion                     *string `json:"engineVersion,omitempty"`
-	GlobalReplicationGroupDescription *string `json:"globalReplicationGroupDescription,omitempty"`
-	GlobalReplicationGroupID          *string `json:"globalReplicationGroupID,omitempty"`
-	Status                            *string `json:"status,omitempty"`
-	TransitEncryptionEnabled          *bool   `json:"transitEncryptionEnabled,omitempty"`
-}
-
 // The name of the Global datastore and role of this replication group in the
 // Global datastore.
 type GlobalReplicationGroupInfo struct {
@@ -381,6 +360,29 @@ type GlobalReplicationGroupMember struct {
 	ReplicationGroupRegion *string `json:"replicationGroupRegion,omitempty"`
 	Role                   *string `json:"role,omitempty"`
 	Status                 *string `json:"status,omitempty"`
+}
+
+// Consists of a primary cluster that accepts writes and an associated secondary
+// cluster that resides in a different Amazon region. The secondary cluster
+// accepts only reads. The primary cluster automatically replicates updates
+// to the secondary cluster.
+//
+//   - The GlobalReplicationGroupIdSuffix represents the name of the Global
+//     datastore, which is what you use to associate a secondary cluster.
+type GlobalReplicationGroup_SDK struct {
+	ARN                               *string                         `json:"arn,omitempty"`
+	AtRestEncryptionEnabled           *bool                           `json:"atRestEncryptionEnabled,omitempty"`
+	AuthTokenEnabled                  *bool                           `json:"authTokenEnabled,omitempty"`
+	CacheNodeType                     *string                         `json:"cacheNodeType,omitempty"`
+	ClusterEnabled                    *bool                           `json:"clusterEnabled,omitempty"`
+	Engine                            *string                         `json:"engine,omitempty"`
+	EngineVersion                     *string                         `json:"engineVersion,omitempty"`
+	GlobalNodeGroups                  []*GlobalNodeGroup              `json:"globalNodeGroups,omitempty"`
+	GlobalReplicationGroupDescription *string                         `json:"globalReplicationGroupDescription,omitempty"`
+	GlobalReplicationGroupID          *string                         `json:"globalReplicationGroupID,omitempty"`
+	Members                           []*GlobalReplicationGroupMember `json:"members,omitempty"`
+	Status                            *string                         `json:"status,omitempty"`
+	TransitEncryptionEnabled          *bool                           `json:"transitEncryptionEnabled,omitempty"`
 }
 
 // The configuration details of the Kinesis Data Firehose destination.

@@ -1,0 +1,248 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.2
+  name: globalreplicationgroups.elasticache.services.k8s.aws
+spec:
+  group: elasticache.services.k8s.aws
+  names:
+    kind: GlobalReplicationGroup
+    listKind: GlobalReplicationGroupList
+    plural: globalreplicationgroups
+    singular: globalreplicationgroup
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: GlobalReplicationGroup is the Schema for the GlobalReplicationGroups
+          API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              GlobalReplicationGroupSpec defines the desired state of GlobalReplicationGroup.
+
+              Consists of a primary cluster that accepts writes and an associated secondary
+              cluster that resides in a different Amazon region. The secondary cluster
+              accepts only reads. The primary cluster automatically replicates updates
+              to the secondary cluster.
+
+                - The GlobalReplicationGroupIdSuffix represents the name of the Global
+                  datastore, which is what you use to associate a secondary cluster.
+            properties:
+              globalReplicationGroupDescription:
+                description: Provides details of the Global datastore
+                type: string
+              globalReplicationGroupIDSuffix:
+                description: |-
+                  The suffix name of a Global datastore. Amazon ElastiCache automatically applies
+                  a prefix to the Global datastore ID when it is created. Each Amazon Region
+                  has its own prefix. For instance, a Global datastore ID created in the US-West-1
+                  region will begin with "dsdfu" along with the suffix name you provide. The
+                  suffix, combined with the auto-generated prefix, guarantees uniqueness of
+                  the Global datastore name across multiple regions.
+
+                  For a full list of Amazon Regions and their respective Global datastore iD
+                  prefixes, see Using the Amazon CLI with Global datastores (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Redis-Global-Datastores-CLI.html).
+                type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
+              primaryReplicationGroupID:
+                description: |-
+                  The name of the primary cluster that accepts writes and will replicate updates
+                  to the secondary cluster.
+                type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
+              primaryReplicationGroupRef:
+                description: "AWSResourceReferenceWrapper provides a wrapper around
+                  *AWSResourceReference\ntype to provide more user friendly syntax
+                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
+                  \ name: my-api"
+                properties:
+                  from:
+                    description: |-
+                      AWSResourceReference provides all the values necessary to reference another
+                      k8s resource for finding the identifier(Id/ARN/Name)
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    type: object
+                type: object
+            required:
+            - globalReplicationGroupIDSuffix
+            type: object
+          status:
+            description: GlobalReplicationGroupStatus defines the observed state of
+              GlobalReplicationGroup
+            properties:
+              ackResourceMetadata:
+                description: |-
+                  All CRs managed by ACK have a common `Status.ACKResourceMetadata` member
+                  that is used to contain resource sync state, account ownership,
+                  constructed ARN for the resource
+                properties:
+                  arn:
+                    description: |-
+                      ARN is the Amazon Resource Name for the resource. This is a
+                      globally-unique identifier and is set only by the ACK service controller
+                      once the controller has orchestrated the creation of the resource OR
+                      when it has verified that an "adopted" resource (a resource where the
+                      ARN annotation was set by the Kubernetes user on the CR) exists and
+                      matches the supplied CR's Spec field values.
+                      https://github.com/aws/aws-controllers-k8s/issues/270
+                    type: string
+                  ownerAccountID:
+                    description: |-
+                      OwnerAccountID is the AWS Account ID of the account that owns the
+                      backend AWS service API resource.
+                    type: string
+                  region:
+                    description: Region is the AWS region in which the resource exists
+                      or will exist.
+                    type: string
+                required:
+                - ownerAccountID
+                - region
+                type: object
+              atRestEncryptionEnabled:
+                description: |-
+                  A flag that enables encryption at rest when set to true.
+
+                  You cannot modify the value of AtRestEncryptionEnabled after the replication
+                  group is created. To enable encryption at rest on a replication group you
+                  must set AtRestEncryptionEnabled to true when you create the replication
+                  group.
+
+                  Required: Only available when creating a replication group in an Amazon VPC
+                  using Redis OSS version 3.2.6, 4.x or later.
+                type: boolean
+              authTokenEnabled:
+                description: |-
+                  A flag that enables using an AuthToken (password) when issuing Valkey or
+                  Redis OSS commands.
+
+                  Default: false
+                type: boolean
+              cacheNodeType:
+                description: The cache node type of the Global datastore
+                type: string
+              clusterEnabled:
+                description: A flag that indicates whether the Global datastore is
+                  cluster enabled.
+                type: boolean
+              conditions:
+                description: |-
+                  All CRs managed by ACK have a common `Status.Conditions` member that
+                  contains a collection of `ackv1alpha1.Condition` objects that describe
+                  the various terminal states of the CR and its backend AWS service API
+                  resource
+                items:
+                  description: |-
+                    Condition is the common struct used by all CRDs managed by ACK service
+                    controllers to indicate terminal states  of the CR and its backend AWS
+                    service API resource
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type is the type of the Condition
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              engine:
+                description: The ElastiCache engine. For Valkey or Redis OSS only.
+                type: string
+              engineVersion:
+                description: The ElastiCache engine version.
+                type: string
+              globalNodeGroups:
+                description: Indicates the slot configuration and global identifier
+                  for each slice group.
+                items:
+                  description: Indicates the slot configuration and global identifier
+                    for a slice group.
+                  properties:
+                    globalNodeGroupID:
+                      type: string
+                    slots:
+                      type: string
+                  type: object
+                type: array
+              globalReplicationGroupID:
+                description: The name of the Global datastore
+                type: string
+              members:
+                description: The replication groups that comprise the Global datastore.
+                items:
+                  description: |-
+                    A member of a Global datastore. It contains the Replication Group Id, the
+                    Amazon region and the role of the replication group.
+                  properties:
+                    automaticFailover:
+                      type: string
+                    replicationGroupID:
+                      type: string
+                    replicationGroupRegion:
+                      type: string
+                    role:
+                      type: string
+                    status:
+                      type: string
+                  type: object
+                type: array
+              status:
+                description: The status of the Global datastore
+                type: string
+              transitEncryptionEnabled:
+                description: |-
+                  A flag that enables in-transit encryption when set to true.
+
+                  Required: Only available when creating a replication group in an Amazon VPC
+                  using Redis OSS version 3.2.6, 4.x or later.
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
