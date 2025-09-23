@@ -171,7 +171,7 @@ class TestReplicationGroup:
     def test_rg_cmd_fromsnapshot(self, rg_cmd_fromsnapshot):
         (reference, _) = rg_cmd_fromsnapshot
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
     def test_rg_invalid_primary(self, make_rg_name, make_replication_group, rg_deletion_waiter):
         input_dict = {
@@ -196,7 +196,7 @@ class TestReplicationGroup:
     def test_rg_update(self, rg_update_input, rg_update):
         (reference, _) = rg_update
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # desired initial state
         cr = k8s.get_resource(reference)
@@ -246,7 +246,7 @@ class TestReplicationGroup:
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # Assert new state
         resource = k8s.get_resource(reference)
@@ -266,7 +266,7 @@ class TestReplicationGroup:
         LONG_WAIT_SECS = 180
         sleep(LONG_WAIT_SECS)
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assert new tags
         assert_spec_tags(rg_id, new_tags)
@@ -275,7 +275,7 @@ class TestReplicationGroup:
     def test_rg_fault_tolerance(self, rg_fault_tolerance):
         (reference, _) = rg_fault_tolerance
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assert initial state
         resource = k8s.get_resource(reference)
@@ -300,7 +300,7 @@ class TestReplicationGroup:
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assert new state
         resource = k8s.get_resource(reference)
@@ -313,7 +313,7 @@ class TestReplicationGroup:
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assert roles
         resource = k8s.get_resource(reference)
@@ -343,7 +343,7 @@ class TestReplicationGroup:
             "replicationgroup_create_delete", input_dict, input_dict["RG_ID"])
 
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assertions after initial creation
         resource = k8s.get_resource(reference)

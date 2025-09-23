@@ -64,7 +64,7 @@ def serverless_cache_for_snapshot(elasticache_client):
     
     # Wait for serverless cache to be available
     assert k8s.wait_on_condition(
-        ref, "ACK.ResourceSynced", "True", wait_periods=90
+        ref, "Ready", "True", wait_periods=90
     )
     
     yield ref, cr
@@ -112,7 +112,7 @@ class TestServerlessCacheSnapshot:
         (ref, _) = simple_serverless_cache_snapshot
         
         assert k8s.wait_on_condition(
-            ref, "ACK.ResourceSynced", "True", wait_periods=120
+            ref, "Ready", "True", wait_periods=120
         )
         
         tag_updates = {
