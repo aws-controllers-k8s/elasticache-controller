@@ -20,7 +20,7 @@ import logging
 from time import sleep
 
 from acktest.resources import random_suffix_name
-from acktest.k8s import resource as k8s
+from acktest.k8s import resource as k8s, condition
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.util import retrieve_cache_cluster, retrieve_replication_group, assert_recoverable_condition_set, retrieve_replication_group_tags
@@ -183,7 +183,7 @@ class TestReplicationGroup:
 
         sleep(DEFAULT_WAIT_SECS)
         resource = k8s.get_resource(reference)
-        assert_recoverable_condition_set(resource)
+        condition.assert_recoverable(reference)
 
         # Cleanup
         k8s.delete_custom_resource(reference)
