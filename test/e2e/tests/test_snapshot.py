@@ -82,4 +82,4 @@ class TestSnapshot:
     # test create of snapshot while providing KMS key
     def test_snapshot_kms(self, snapshot_kms):
         (reference, _) = snapshot_kms
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=15)
+        assert k8s.wait_on_condition(reference, "Ready", "True", wait_periods=15)

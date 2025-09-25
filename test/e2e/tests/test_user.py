@@ -115,7 +115,7 @@ class TestUser:
         (reference, resource) = user_nopass
         assert k8s.get_resource_exists(reference)
 
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
+        assert k8s.wait_on_condition(reference, "Ready", "True", wait_periods=5)
         resource = k8s.get_resource(reference)
         assert resource["status"]["lastRequestedAccessString"] == user_nopass_input["ACCESS_STRING"]
 
@@ -124,7 +124,7 @@ class TestUser:
         _ = k8s.patch_custom_resource(reference, user_patch)
         sleep(DEFAULT_WAIT_SECS)
 
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
+        assert k8s.wait_on_condition(reference, "Ready", "True", wait_periods=5)
         resource = k8s.get_resource(reference)
         assert resource["status"]["lastRequestedAccessString"] == new_access_string
 
@@ -133,7 +133,7 @@ class TestUser:
         (reference, resource) = user_password
         assert k8s.get_resource_exists(reference)
 
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
+        assert k8s.wait_on_condition(reference, "Ready", "True", wait_periods=5)
         resource = k8s.get_resource(reference)
         assert resource["status"]["authentication"] is not None
         assert resource["status"]["authentication"]["type_"] == "password"
