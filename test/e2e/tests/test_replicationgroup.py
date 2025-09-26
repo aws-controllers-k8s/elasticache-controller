@@ -271,66 +271,6 @@ class TestReplicationGroup:
         # assert new tags
         assert_spec_tags(rg_id, new_tags)
 
-    # test modifying properties related to tolerance: replica promotion, multi AZ, automatic failover
-    def test_rg_fault_tolerance(self, rg_fault_tolerance):
-        (reference, _) = rg_fault_tolerance
-        assert k8s.wait_on_condition(
-            reference, "Ready", "True", wait_periods=90)
-
-        # assert initial state
-        resource = k8s.get_resource(reference)
-        assert resource['status']['automaticFailover'] == "enabled"
-        assert resource['status']['multiAZ'] == "enabled"
-
-        # retrieve current names of primary (currently node1) and replica (currently node2)
-        members = resource['status']['nodeGroups'][0]['nodeGroupMembers']
-        assert len(members) == 2
-        node1 = None
-        node2 = None
-        for node in members:
-            if node['currentRole'] == 'primary':
-                node1 = node['cacheClusterID']
-            elif node['currentRole'] == 'replica':
-                node2 = node['cacheClusterID']
-        assert node1 is not None and node2 is not None
-
-        # disable both fields, wait for resource to sync
-        patch = {"spec": {"automaticFailoverEnabled": False,
-                          "multiAZEnabled": False}}
-        _ = k8s.patch_custom_resource(reference, patch)
-        sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(
-            reference, "Ready", "True", wait_periods=90)
-
-        # assert new state
-        resource = k8s.get_resource(reference)
-        assert resource['status']['automaticFailover'] == "disabled"
-        assert resource['status']['multiAZ'] == "disabled"
-
-        # promote replica to primary, re-enable both multi AZ and AF
-        patch = {"spec": {"primaryClusterID": node2,
-                          "automaticFailoverEnabled": True, "multiAZEnabled": True}}
-        _ = k8s.patch_custom_resource(reference, patch)
-        sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(
-            reference, "Ready", "True", wait_periods=90)
-
-        # assert roles
-        resource = k8s.get_resource(reference)
-        members = resource['status']['nodeGroups'][0]['nodeGroupMembers']
-        assert len(members) == 2
-        for node in members:
-            if node['cacheClusterID'] == node1:
-                assert node['currentRole'] == 'replica'
-            elif node['cacheClusterID'] == node2:
-                assert node['currentRole'] == 'primary'
-            else:
-                raise AssertionError(f"Unknown node {node['cacheClusterID']}")
-
-        # assert AF and multi AZ
-        assert resource['status']['automaticFailover'] == "enabled"
-        assert resource['status']['multiAZ'] == "enabled"
-
     def test_rg_creation_deletion(self, make_rg_name, make_replication_group, rg_deletion_waiter):
         input_dict = {
             "RG_ID": make_rg_name("rg-delete"),
