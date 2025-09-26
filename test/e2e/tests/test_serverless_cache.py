@@ -58,9 +58,9 @@ def get_and_assert_status(ref: k8s.CustomResourceReference, expected_status: str
     assert cr['status']['status'] == expected_status
 
     if expected_synced:
-        condition.assert_synced(ref)
+        condition.assert_ready(ref)
     else:
-        condition.assert_not_synced(ref)
+        condition.assert_not_ready(ref)
 
 
 @pytest.fixture(scope="module")
@@ -129,7 +129,7 @@ class TestServerlessCache:
         (ref, _) = simple_serverless_cache
         
         assert k8s.wait_on_condition(
-            ref, "ACK.ResourceSynced", "True", wait_periods=90
+            ref, "Ready", "True", wait_periods=90
         )
         get_and_assert_status(ref, "available", True)
         
@@ -162,7 +162,7 @@ class TestServerlessCache:
         
         # Wait for update to be synced
         assert k8s.wait_on_condition(
-            ref, "ACK.ResourceSynced", "True", wait_periods=90
+            ref, "Ready", "True", wait_periods=90
         )
         
         # Verify the update was applied
@@ -178,7 +178,7 @@ class TestServerlessCache:
         
         # Wait for the serverless cache to be created and become available
         assert k8s.wait_on_condition(
-            ref, "ACK.ResourceSynced", "True", wait_periods=90
+            ref, "Ready", "True", wait_periods=90
         )
         get_and_assert_status(ref, "available", True)
         
@@ -206,7 +206,7 @@ class TestServerlessCache:
         
         # Wait for upgrade to be synced
         assert k8s.wait_on_condition(
-            ref, "ACK.ResourceSynced", "True", wait_periods=90
+            ref, "Ready", "True", wait_periods=90
         )
         
         # Wait for it to be available again after upgrade
