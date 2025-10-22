@@ -17,6 +17,9 @@ The ACK service controller for Amazon ElastiCache supports the following Amazon 
 - [x] User
 - [x] Snapshot Group
 - [x] Cache Parameter Group
+- [x] Serverless Cache
+- [x] Serverless Cache Snapshot
+- [x] Cache Cluster
 
 ## Contributing
 
