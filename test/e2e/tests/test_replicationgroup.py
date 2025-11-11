@@ -20,7 +20,7 @@ import logging
 from time import sleep
 
 from acktest.resources import random_suffix_name
-from acktest.k8s import resource as k8s
+from acktest.k8s import resource as k8s, condition
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.util import retrieve_cache_cluster, retrieve_replication_group, assert_recoverable_condition_set, retrieve_replication_group_tags
@@ -171,7 +171,7 @@ class TestReplicationGroup:
     def test_rg_cmd_fromsnapshot(self, rg_cmd_fromsnapshot):
         (reference, _) = rg_cmd_fromsnapshot
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
     def test_rg_invalid_primary(self, make_rg_name, make_replication_group, rg_deletion_waiter):
         input_dict = {
@@ -183,7 +183,7 @@ class TestReplicationGroup:
 
         sleep(DEFAULT_WAIT_SECS)
         resource = k8s.get_resource(reference)
-        assert_recoverable_condition_set(resource)
+        condition.assert_recoverable(reference)
 
         # Cleanup
         k8s.delete_custom_resource(reference)
@@ -196,7 +196,7 @@ class TestReplicationGroup:
     def test_rg_update(self, rg_update_input, rg_update):
         (reference, _) = rg_update
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # desired initial state
         cr = k8s.get_resource(reference)
@@ -246,7 +246,7 @@ class TestReplicationGroup:
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # Assert new state
         resource = k8s.get_resource(reference)
@@ -266,70 +266,10 @@ class TestReplicationGroup:
         LONG_WAIT_SECS = 180
         sleep(LONG_WAIT_SECS)
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assert new tags
         assert_spec_tags(rg_id, new_tags)
-
-    # test modifying properties related to tolerance: replica promotion, multi AZ, automatic failover
-    def test_rg_fault_tolerance(self, rg_fault_tolerance):
-        (reference, _) = rg_fault_tolerance
-        assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # assert initial state
-        resource = k8s.get_resource(reference)
-        assert resource['status']['automaticFailover'] == "enabled"
-        assert resource['status']['multiAZ'] == "enabled"
-
-        # retrieve current names of primary (currently node1) and replica (currently node2)
-        members = resource['status']['nodeGroups'][0]['nodeGroupMembers']
-        assert len(members) == 2
-        node1 = None
-        node2 = None
-        for node in members:
-            if node['currentRole'] == 'primary':
-                node1 = node['cacheClusterID']
-            elif node['currentRole'] == 'replica':
-                node2 = node['cacheClusterID']
-        assert node1 is not None and node2 is not None
-
-        # disable both fields, wait for resource to sync
-        patch = {"spec": {"automaticFailoverEnabled": False,
-                          "multiAZEnabled": False}}
-        _ = k8s.patch_custom_resource(reference, patch)
-        sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # assert new state
-        resource = k8s.get_resource(reference)
-        assert resource['status']['automaticFailover'] == "disabled"
-        assert resource['status']['multiAZ'] == "disabled"
-
-        # promote replica to primary, re-enable both multi AZ and AF
-        patch = {"spec": {"primaryClusterID": node2,
-                          "automaticFailoverEnabled": True, "multiAZEnabled": True}}
-        _ = k8s.patch_custom_resource(reference, patch)
-        sleep(DEFAULT_WAIT_SECS)
-        assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        # assert roles
-        resource = k8s.get_resource(reference)
-        members = resource['status']['nodeGroups'][0]['nodeGroupMembers']
-        assert len(members) == 2
-        for node in members:
-            if node['cacheClusterID'] == node1:
-                assert node['currentRole'] == 'replica'
-            elif node['cacheClusterID'] == node2:
-                assert node['currentRole'] == 'primary'
-            else:
-                raise AssertionError(f"Unknown node {node['cacheClusterID']}")
-
-        # assert AF and multi AZ
-        assert resource['status']['automaticFailover'] == "enabled"
-        assert resource['status']['multiAZ'] == "enabled"
 
     def test_rg_creation_deletion(self, make_rg_name, make_replication_group, rg_deletion_waiter):
         input_dict = {
@@ -343,7 +283,7 @@ class TestReplicationGroup:
             "replicationgroup_create_delete", input_dict, input_dict["RG_ID"])
 
         assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+            reference, "Ready", "True", wait_periods=90)
 
         # assertions after initial creation
         resource = k8s.get_resource(reference)

@@ -66,7 +66,7 @@ def user_group_create(get_user_group_yaml):
 class TestUserGroup:
     def test_user_group_create_update(self, user_group_create, get_user_group_yaml, bootstrap_resources):
         (reference, resource) = user_group_create
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=15)
+        assert k8s.wait_on_condition(reference, "Ready", "True", wait_periods=15)
 
         # Update the usergroup to include one more user
         updated_user_group = get_user_group_yaml(reference.name)
@@ -74,7 +74,7 @@ class TestUserGroup:
 
         k8s.patch_custom_resource(reference, updated_user_group)
 
-        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=15)
+        assert k8s.wait_on_condition(reference, "Ready", "True", wait_periods=15)
         resource = k8s.get_resource(reference)
         assert len(resource["spec"]["userIDs"]) == 2
         assert resource["status"]["status"] == "active"
