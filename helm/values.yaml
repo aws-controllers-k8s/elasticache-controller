@@ -4,7 +4,7 @@
 
 image:
   repository: public.ecr.aws/aws-controllers-k8s/elasticache-controller
-  tag: 1.2.3
+  tag: 1.2.4
   pullPolicy: IfNotPresent
   pullSecrets: []
 
@@ -190,3 +190,5 @@ featureGates:
   ReadOnlyResources: true
   # Enable ResourceAdoption feature/annotation. 
   ResourceAdoption: true
+  # Enable IAMRoleSelector, a multirole feature, replacing CARM. See https://github.com/aws-controllers-k8s/community/pull/2628
+  IAMRoleSelector: false
