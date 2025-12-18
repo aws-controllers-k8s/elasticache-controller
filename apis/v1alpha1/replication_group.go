@@ -34,9 +34,10 @@ type ReplicationGroupSpec struct {
 	// group.
 	//
 	// Required: Only available when creating a replication group in an Amazon VPC
-	// using Redis OSS version 3.2.6, 4.x or later.
+	// using Valkey 7.2 and later, Redis OSS version 3.2.6, or Redis OSS 4.x and
+	// later.
 	//
-	// Default: false
+	// Default: true when using Valkey, false when using Redis OSS
 	AtRestEncryptionEnabled *bool `json:"atRestEncryptionEnabled,omitempty"`
 	// Reserved parameter. The password used to access a password protected server.
 	//
@@ -151,7 +152,7 @@ type ReplicationGroupSpec struct {
 	// +kubebuilder:validation:Required
 	Description *string `json:"description"`
 	// The name of the cache engine to be used for the clusters in this replication
-	// group. The value must be set to Redis.
+	// group. The value must be set to valkey or redis.
 	Engine *string `json:"engine,omitempty"`
 	// The version number of the cache engine to be used for the clusters in this
 	// replication group. To view the supported cache engine versions, use the DescribeCacheEngineVersions
@@ -166,7 +167,7 @@ type ReplicationGroupSpec struct {
 	EngineVersion *string `json:"engineVersion,omitempty"`
 	// The network type you choose when creating a replication group, either ipv4
 	// | ipv6. IPv6 is supported for workloads using Valkey 7.2 and above, Redis
-	// OSS engine version 6.2 and above or Memcached engine version 1.6.6 and above
+	// OSS engine version 6.2 to 7.1 or Memcached engine version 1.6.6 and above
 	// on all instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
 	IPDiscovery *string `json:"ipDiscovery,omitempty"`
 	// The ID of the KMS key used to encrypt the disk in the cluster.
@@ -177,7 +178,7 @@ type ReplicationGroupSpec struct {
 	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html).
 	MultiAZEnabled *bool `json:"multiAZEnabled,omitempty"`
 	// Must be either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads
-	// using Valkey 7.2 and above, Redis OSS engine version 6.2 and above or Memcached
+	// using Valkey 7.2 and above, Redis OSS engine version 6.2 to 7.1 and Memcached
 	// engine version 1.6.6 and above on all instances built on the Nitro system
 	// (http://aws.amazon.com/ec2/nitro/).
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"

@@ -30,7 +30,7 @@ type UserSpec struct {
 	// Regex Pattern: `\S`
 	// +kubebuilder:validation:Required
 	AccessString *string `json:"accessString"`
-	// The current supported value is Redis.
+	// The options are valkey or redis.
 	//
 	// Regex Pattern: `^[a-zA-Z]*$`
 	// +kubebuilder:validation:Required

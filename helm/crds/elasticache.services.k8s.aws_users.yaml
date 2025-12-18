@@ -46,7 +46,7 @@ spec:
                 type: string
               engine:
                 description: |-
-                  The current supported value is Redis.
+                  The options are valkey or redis.
 
                   Regex Pattern: `^[a-zA-Z]*$`
                 type: string

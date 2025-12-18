@@ -646,6 +646,13 @@ type ReshardingStatus struct {
 	SlotMigration *SlotMigration `json:"slotMigration,omitempty"`
 }
 
+// Configuration settings for horizontal or vertical scaling operations on Memcached
+// clusters.
+type ScaleConfig struct {
+	ScaleIntervalMinutes *int64 `json:"scaleIntervalMinutes,omitempty"`
+	ScalePercentage      *int64 `json:"scalePercentage,omitempty"`
+}
+
 // Represents a single cache security group and its status.
 type SecurityGroupMembership struct {
 	SecurityGroupID *string `json:"securityGroupID,omitempty"`

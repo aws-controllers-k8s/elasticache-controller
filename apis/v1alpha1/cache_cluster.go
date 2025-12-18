@@ -156,13 +156,13 @@ type CacheClusterSpec struct {
 	EngineVersion *string `json:"engineVersion,omitempty"`
 	// The network type you choose when modifying a cluster, either ipv4 | ipv6.
 	// IPv6 is supported for workloads using Valkey 7.2 and above, Redis OSS engine
-	// version 6.2 and above or Memcached engine version 1.6.6 and above on all
-	// instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
+	// version 6.2 to 7.1 and Memcached engine version 1.6.6 and above on all instances
+	// built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
 	IPDiscovery *string `json:"ipDiscovery,omitempty"`
 	// Specifies the destination, format and type of the logs.
 	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `json:"logDeliveryConfigurations,omitempty"`
 	// Must be either ipv4 | ipv6 | dual_stack. IPv6 is supported for workloads
-	// using Valkey 7.2 and above, Redis OSS engine version 6.2 and above or Memcached
+	// using Valkey 7.2 and above, Redis OSS engine version 6.2 to 7.1 and Memcached
 	// engine version 1.6.6 and above on all instances built on the Nitro system
 	// (http://aws.amazon.com/ec2/nitro/).
 	NetworkType *string `json:"networkType,omitempty"`
