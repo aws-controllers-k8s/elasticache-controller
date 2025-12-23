@@ -451,6 +451,7 @@ ignore:
     - CreateReplicationGroupInput.AutoMinorVersionUpgrade
     - CreateReplicationGroupInput.NumCacheClusters
     - CacheCluster.LogDeliveryConfigurations
+    - CacheCluster.PendingModifiedValues.ScaleConfig
     - PendingModifiedValues.LogDeliveryConfigurations
     - CreateUserInput.AuthenticationMode
     - ModifyUserInput.AuthenticationMode
