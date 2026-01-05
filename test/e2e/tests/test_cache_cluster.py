@@ -21,10 +21,11 @@ from time import sleep
 import pytest
 
 from acktest.resources import random_suffix_name
-from acktest.k8s import resource as k8s
+from acktest.k8s import resource as k8s, condition
 from acktest.k8s import condition
 from acktest import tags as tagutil
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
+from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.replacement_values import REPLACEMENT_VALUES
 
 RESOURCE_PLURAL = "cacheclusters"
@@ -78,6 +79,10 @@ def get_and_assert_status(ref: k8s.CustomResourceReference, expected_status: str
 @pytest.fixture(scope="module")
 def elasticache_client():
     return boto3.client('elasticache')
+
+@pytest.fixture(scope="module")
+def bootstrap_resources():
+    return get_bootstrap_resources()
 
 
 @pytest.fixture
@@ -210,3 +215,49 @@ class TestCacheCluster:
 
         k8s.delete_custom_resource(ref)
         wait_until_deleted(elasticache_client, cache_cluster_id)
+
+    def test_update_security_group_ids(self, elasticache_client, bootstrap_resources, simple_cache_cluster):
+        (ref, cr) = simple_cache_cluster
+        security_group_1 = bootstrap_resources.SecurityGroup1
+
+        cache_cluster_id = cr["spec"]["cacheClusterID"]
+        assert "securityGroupIDs" not in cr["spec"]
+
+        logging.info("waiting for cluster to become available")
+        wait_for_cache_cluster_available(elasticache_client, cache_cluster_id)
+
+        aws_res = elasticache_client.describe_cache_clusters(CacheClusterId=cache_cluster_id)
+        assert len(aws_res['CacheClusters']) == 1
+        cache_cluster = aws_res['CacheClusters'][0]
+        assert 'SecurityGroups' not in cache_cluster or len(cache_cluster['SecurityGroups']) == 0
+
+        updates = {
+            "spec": {
+                "securityGroupIDs": [security_group_1]
+            }
+        }
+
+        k8s.patch_custom_resource(ref, updates)
+        sleep(MODIFY_WAIT_AFTER_SECONDS)
+
+        wait_for_cache_cluster_available(elasticache_client, cache_cluster_id)
+        assert k8s.wait_on_condition(ref, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True", wait_periods=10)
+
+        cr = k8s.get_resource(ref)
+        assert cr is not None
+        assert 'spec' in cr
+        assert 'securityGroupIDs' in cr['spec']
+        assert len(cr['spec']['securityGroupIDs']) == 1
+        assert cr['spec']['securityGroupIDs'][0] == security_group_1
+
+        aws_res = elasticache_client.describe_cache_clusters(CacheClusterId=cache_cluster_id)
+        assert len(aws_res['CacheClusters']) == 1
+        cache_cluster = aws_res['CacheClusters'][0]
+        assert len(cache_cluster['SecurityGroups']) == 1
+        assert cache_cluster['SecurityGroups'][0]['SecurityGroupId'] == security_group_1
+
+
+
+
+
+

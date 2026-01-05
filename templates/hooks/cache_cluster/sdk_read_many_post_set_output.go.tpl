@@ -9,6 +9,18 @@
 			ko.Spec.TransitEncryptionEnabled = pendingModifications.TransitEncryptionEnabled
 		}
 	}
+	
+	if len(ko.Status.SecurityGroups) > 0 {
+		sgIDs := make([]*string, len(ko.Status.SecurityGroups))
+		for i, sg := range ko.Status.SecurityGroups {
+			id := *sg.SecurityGroupID
+			sgIDs[i] = &id
+		}
+		ko.Spec.SecurityGroupIDs = sgIDs
+	} else {
+		ko.Spec.SecurityGroupIDs = nil
+	}
+
 	if isAvailable(r) {
 		ackcondition.SetSynced(&resource{ko}, corev1.ConditionTrue, nil, nil)
 	} else {
