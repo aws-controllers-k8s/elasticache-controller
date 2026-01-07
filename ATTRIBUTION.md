@@ -2397,6 +2397,10 @@ License Identifier: Apache-2.0
 Subdependencies:
 * `github.com/aws/smithy-go`
 
+#### github.com/aws/smithy-go
+
+License Identifier: Apache-2.0
+
 ### github.com/aws/aws-sdk-go-v2/service/elasticache
 
 License Identifier: Apache-2.0
