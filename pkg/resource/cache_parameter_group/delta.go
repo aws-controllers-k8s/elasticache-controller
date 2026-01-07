@@ -17,16 +17,15 @@ package cache_parameter_group
 
 import (
 	"bytes"
-	"reflect"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 // Hack to avoid import errors during build...
 var (
 	_ = &bytes.Buffer{}
-	_ = &reflect.Method{}
 	_ = &acktags.Tags{}
 )
 
@@ -67,7 +66,7 @@ func newResourceDelta(
 	if len(a.ko.Spec.ParameterNameValues) != len(b.ko.Spec.ParameterNameValues) {
 		delta.Add("Spec.ParameterNameValues", a.ko.Spec.ParameterNameValues, b.ko.Spec.ParameterNameValues)
 	} else if len(a.ko.Spec.ParameterNameValues) > 0 {
-		if !reflect.DeepEqual(a.ko.Spec.ParameterNameValues, b.ko.Spec.ParameterNameValues) {
+		if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.ParameterNameValues, b.ko.Spec.ParameterNameValues) {
 			delta.Add("Spec.ParameterNameValues", a.ko.Spec.ParameterNameValues, b.ko.Spec.ParameterNameValues)
 		}
 	}

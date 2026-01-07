@@ -17,16 +17,15 @@ package cache_cluster
 
 import (
 	"bytes"
-	"reflect"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 // Hack to avoid import errors during build...
 var (
 	_ = &bytes.Buffer{}
-	_ = &reflect.Method{}
 	_ = &acktags.Tags{}
 )
 
@@ -85,7 +84,7 @@ func newResourceDelta(
 			delta.Add("Spec.CacheParameterGroupName", a.ko.Spec.CacheParameterGroupName, b.ko.Spec.CacheParameterGroupName)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef) {
 		delta.Add("Spec.CacheParameterGroupRef", a.ko.Spec.CacheParameterGroupRef, b.ko.Spec.CacheParameterGroupRef)
 	}
 	if len(a.ko.Spec.CacheSecurityGroupNames) != len(b.ko.Spec.CacheSecurityGroupNames) {
@@ -102,7 +101,7 @@ func newResourceDelta(
 			delta.Add("Spec.CacheSubnetGroupName", a.ko.Spec.CacheSubnetGroupName, b.ko.Spec.CacheSubnetGroupName)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef) {
 		delta.Add("Spec.CacheSubnetGroupRef", a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.Engine, b.ko.Spec.Engine) {
@@ -129,7 +128,7 @@ func newResourceDelta(
 	if len(a.ko.Spec.LogDeliveryConfigurations) != len(b.ko.Spec.LogDeliveryConfigurations) {
 		delta.Add("Spec.LogDeliveryConfigurations", a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations)
 	} else if len(a.ko.Spec.LogDeliveryConfigurations) > 0 {
-		if !reflect.DeepEqual(a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations) {
+		if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations) {
 			delta.Add("Spec.LogDeliveryConfigurations", a.ko.Spec.LogDeliveryConfigurations, b.ko.Spec.LogDeliveryConfigurations)
 		}
 	}
@@ -147,7 +146,7 @@ func newResourceDelta(
 			delta.Add("Spec.NotificationTopicARN", a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.NotificationTopicRef, b.ko.Spec.NotificationTopicRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.NotificationTopicRef, b.ko.Spec.NotificationTopicRef) {
 		delta.Add("Spec.NotificationTopicRef", a.ko.Spec.NotificationTopicRef, b.ko.Spec.NotificationTopicRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.NumCacheNodes, b.ko.Spec.NumCacheNodes) {
@@ -206,7 +205,7 @@ func newResourceDelta(
 			delta.Add("Spec.ReplicationGroupID", a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.ReplicationGroupRef, b.ko.Spec.ReplicationGroupRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.ReplicationGroupRef, b.ko.Spec.ReplicationGroupRef) {
 		delta.Add("Spec.ReplicationGroupRef", a.ko.Spec.ReplicationGroupRef, b.ko.Spec.ReplicationGroupRef)
 	}
 	if len(a.ko.Spec.SecurityGroupIDs) != len(b.ko.Spec.SecurityGroupIDs) {
@@ -216,7 +215,7 @@ func newResourceDelta(
 			delta.Add("Spec.SecurityGroupIDs", a.ko.Spec.SecurityGroupIDs, b.ko.Spec.SecurityGroupIDs)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs) {
 		delta.Add("Spec.SecurityGroupRefs", a.ko.Spec.SecurityGroupRefs, b.ko.Spec.SecurityGroupRefs)
 	}
 	if len(a.ko.Spec.SnapshotARNs) != len(b.ko.Spec.SnapshotARNs) {
@@ -233,7 +232,7 @@ func newResourceDelta(
 			delta.Add("Spec.SnapshotName", a.ko.Spec.SnapshotName, b.ko.Spec.SnapshotName)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.SnapshotRef, b.ko.Spec.SnapshotRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.SnapshotRef, b.ko.Spec.SnapshotRef) {
 		delta.Add("Spec.SnapshotRef", a.ko.Spec.SnapshotRef, b.ko.Spec.SnapshotRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.SnapshotRetentionLimit, b.ko.Spec.SnapshotRetentionLimit) {

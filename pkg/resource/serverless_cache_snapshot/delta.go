@@ -17,16 +17,15 @@ package serverless_cache_snapshot
 
 import (
 	"bytes"
-	"reflect"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 // Hack to avoid import errors during build...
 var (
 	_ = &bytes.Buffer{}
-	_ = &reflect.Method{}
 	_ = &acktags.Tags{}
 )
 
@@ -50,7 +49,7 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef) {
 		delta.Add("Spec.KMSKeyRef", a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.ServerlessCacheName, b.ko.Spec.ServerlessCacheName) {
@@ -60,7 +59,7 @@ func newResourceDelta(
 			delta.Add("Spec.ServerlessCacheName", a.ko.Spec.ServerlessCacheName, b.ko.Spec.ServerlessCacheName)
 		}
 	}
-	if !reflect.DeepEqual(a.ko.Spec.ServerlessCacheRef, b.ko.Spec.ServerlessCacheRef) {
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.ServerlessCacheRef, b.ko.Spec.ServerlessCacheRef) {
 		delta.Add("Spec.ServerlessCacheRef", a.ko.Spec.ServerlessCacheRef, b.ko.Spec.ServerlessCacheRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.ServerlessCacheSnapshotName, b.ko.Spec.ServerlessCacheSnapshotName) {
