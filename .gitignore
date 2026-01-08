@@ -2,6 +2,7 @@
 *.swp
 *~
 .idea
+.vscode
 go.local.sum
 coverage.out
 /docs/site
