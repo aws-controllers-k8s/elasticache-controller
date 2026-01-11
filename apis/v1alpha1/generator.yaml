@@ -297,8 +297,11 @@ resources:
         - DefaultUserRequired
         - UserGroupQuotaExceededFault
         - TagQuotaPerResourceExceeded
-    update_operation:
-      custom_method_name: customUpdateUserGroup
+    hooks:
+      sdk_update_post_build_request:
+        template_path: hooks/user_group/sdk_update_post_build_request.go.tpl
+      sdk_update_pre_build_request:
+        template_path: hooks/user_group/sdk_update_pre_build_request.go.tpl
   ServerlessCache:
     update_operation:
       custom_method_name: customUpdateServerlessCache
@@ -425,6 +428,8 @@ operations:
     set_output_custom_method_name: CustomModifyUserSetOutput
   CreateUserGroup:
     set_output_custom_method_name: CustomCreateUserGroupSetOutput
+  ModifyUserGroup:
+    set_output_custom_method_name: CustomModifyUserGroupSetOutput
   DescribeUserGroups:
     set_output_custom_method_name: CustomDescribeUserGroupsSetOutput
   CreateCacheCluster:
