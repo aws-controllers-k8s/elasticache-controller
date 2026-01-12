@@ -16,166 +16,41 @@ package user_group
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
-	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
-	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
-	corev1 "k8s.io/api/core/v1"
 )
 
-// Implements custom logic for UpdateUserGroup
-func (rm *resourceManager) customUpdateUserGroup(
-	ctx context.Context,
-	desired *resource,
-	latest *resource,
-	delta *ackcompare.Delta,
-) (*resource, error) {
+const (
+	statusActive = "active"
+)
 
-	// Check for the user group status
-	if latest.ko.Status.Status == nil || *latest.ko.Status.Status != "active" {
-		return nil, requeue.NeededAfter(
-			errors.New("user group can not be modified, it is not in 'active' state"),
-			requeue.DefaultRequeueAfterDuration)
-	}
+func hasStatus(ko *svcapitypes.UserGroup, status string) bool {
+	return ko.Status.Status != nil && *ko.Status.Status == status
+}
 
-	for _, diff := range delta.Differences {
-		if diff.Path.Contains("UserIDs") {
-			existingUserIdsMap := createMapForUserIds(diff.B.([]*string))
-			requiredUserIdsMap := createMapForUserIds(diff.A.([]*string))
+func isActive(ko *svcapitypes.UserGroup) bool {
+	return hasStatus(ko, statusActive)
+}
 
-			// If a user ID is not required to be deleted or added set its value as false
-			for userId, _ := range existingUserIdsMap {
-				if _, ok := requiredUserIdsMap[userId]; ok {
-					requiredUserIdsMap[userId] = false
-					existingUserIdsMap[userId] = false
-				}
-			}
-
-			input, err := rm.newUpdateRequestPayload(ctx, desired)
-
-			if err != nil {
-				return nil, err
-			}
-
-			// User Ids to add
-			{
-				var userIdsToAdd []string
-
-				for userId, include := range requiredUserIdsMap {
-					if include {
-						userIdsToAdd = append(userIdsToAdd, userId)
-					}
-				}
-
-				input.UserIdsToAdd = userIdsToAdd
-			}
-
-			// User Ids to remove
-			{
-				var userIdsToRemove []string
-
-				for userId, include := range existingUserIdsMap {
-					if include {
-						userIdsToRemove = append(userIdsToRemove, userId)
-					}
-				}
-
-				input.UserIdsToRemove = userIdsToRemove
-			}
-
-			resp, respErr := rm.sdkapi.ModifyUserGroup(ctx, input)
-			rm.metrics.RecordAPICall("UPDATE", "ModifyUserGroup", respErr)
-			if respErr != nil {
-				return nil, respErr
-			}
-			// Merge in the information we read from the API call above to the copy of
-			// the original Kubernetes object we passed to the function
-			ko := desired.ko.DeepCopy()
-
-			if ko.Status.ACKResourceMetadata == nil {
-				ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
-			}
-			if resp.ARN != nil {
-				arn := ackv1alpha1.AWSResourceName(*resp.ARN)
-				ko.Status.ACKResourceMetadata.ARN = &arn
-			}
-			if resp.PendingChanges != nil {
-				f2 := &svcapitypes.UserGroupPendingChanges{}
-				if resp.PendingChanges.UserIdsToAdd != nil {
-					f2f0 := []*string{}
-					for _, f2f0iter := range resp.PendingChanges.UserIdsToAdd {
-						f2f0 = append(f2f0, &f2f0iter)
-					}
-					f2.UserIDsToAdd = f2f0
-				}
-				if resp.PendingChanges.UserIdsToRemove != nil {
-					f2f1 := []*string{}
-					for _, f2f1iter := range resp.PendingChanges.UserIdsToRemove {
-						f2f1 = append(f2f1, &f2f1iter)
-					}
-					f2.UserIDsToRemove = f2f1
-				}
-				ko.Status.PendingChanges = f2
-			} else {
-				ko.Status.PendingChanges = nil
-			}
-			if resp.ReplicationGroups != nil {
-				f3 := []*string{}
-				for _, f3iter := range resp.ReplicationGroups {
-					f3 = append(f3, &f3iter)
-				}
-				ko.Status.ReplicationGroups = f3
-			} else {
-				ko.Status.ReplicationGroups = nil
-			}
-			if resp.Status != nil {
-				ko.Status.Status = resp.Status
-			} else {
-				ko.Status.Status = nil
-			}
-
-			rm.setStatusDefaults(ko)
-			rm.customSetOutput(
-				stringSliceToPointers(resp.UserIds),
-				resp.Engine,
-				resp.Status,
-				ko)
-			return &resource{ko}, nil
+func (rm *resourceManager) updateModifyUserGroupPayload(input *svcsdk.ModifyUserGroupInput, desired, latest *resource, delta *ackcompare.Delta) {
+	if delta.DifferentAt("Spec.UserIDs") {
+		userIdsToAdd, userIdsToRemove := getUserIdsDifferences(
+			desired.ko.Spec.UserIDs,
+			latest.ko.Spec.UserIDs,
+		)
+		if len(userIdsToAdd) > 0 {
+			input.UserIdsToAdd = userIdsToAdd
+		}
+		if len(userIdsToRemove) > 0 {
+			input.UserIdsToRemove = userIdsToRemove
 		}
 	}
-
-	rm.customSetOutput(desired.ko.Spec.UserIDs, desired.ko.Spec.Engine,
-		latest.ko.Status.Status, latest.ko)
-	return &resource{latest.ko}, nil
-}
-
-// createMapForUserIds converts list of user ids to map of user ids and boolean value
-// true as value
-func createMapForUserIds(userIds []*string) map[string]bool {
-	userIdsMap := make(map[string]bool)
-
-	for _, userId := range userIds {
-		userIdsMap[*userId] = true
-	}
-
-	return userIdsMap
-}
-
-// newUpdateRequestPayload returns an SDK-specific struct for the HTTP request
-// payload of the Update API call for the resource
-func (rm *resourceManager) newUpdateRequestPayload(
-	ctx context.Context,
-	r *resource,
-) (*svcsdk.ModifyUserGroupInput, error) {
-	res := &svcsdk.ModifyUserGroupInput{}
-
-	if r.ko.Spec.UserGroupID != nil {
-		res.UserGroupId = r.ko.Spec.UserGroupID
-	}
-
-	return res, nil
 }
 
 func (rm *resourceManager) CustomDescribeUserGroupsSetOutput(
@@ -184,74 +59,78 @@ func (rm *resourceManager) CustomDescribeUserGroupsSetOutput(
 	resp *svcsdk.DescribeUserGroupsOutput,
 	ko *svcapitypes.UserGroup,
 ) (*svcapitypes.UserGroup, error) {
-	elem := resp.UserGroups[0]
-	rm.customSetOutput(
-		stringSliceToPointers(elem.UserIds),
-		elem.Engine,
-		elem.Status,
-		ko)
+	rm.patchUserGroupPendingChanges(ko)
 	return ko, nil
 }
 
-func (rm *resourceManager) CustomCreateUserGroupSetOutput(
+func (rm *resourceManager) CustomModifyUserGroupSetOutput(
 	ctx context.Context,
 	r *resource,
-	resp *svcsdk.CreateUserGroupOutput,
+	resp *svcsdk.ModifyUserGroupOutput,
 	ko *svcapitypes.UserGroup,
 ) (*svcapitypes.UserGroup, error) {
-	rm.customSetOutput(
-		stringSliceToPointers(resp.UserIds),
-		resp.Engine,
-		resp.Status,
-		ko)
+	rm.patchUserGroupPendingChanges(ko)
 	return ko, nil
 }
 
-func (rm *resourceManager) customSetOutput(
-	userIds []*string,
-	engine *string,
-	status *string,
+func (rm *resourceManager) patchUserGroupPendingChanges(
 	ko *svcapitypes.UserGroup,
-) {
-	if userIds != nil {
-		ko.Spec.UserIDs = userIds
-	}
+) (*svcapitypes.UserGroup, error) {
 
-	if engine != nil {
-		ko.Spec.Engine = engine
-	}
-
-	syncConditionStatus := corev1.ConditionUnknown
-	if status != nil {
-		if *status == "active" {
-			syncConditionStatus = corev1.ConditionTrue
-		} else {
-			syncConditionStatus = corev1.ConditionFalse
+	if pendingChanges := ko.Status.PendingChanges; pendingChanges != nil {
+		if pendingChanges.UserIDsToAdd != nil {
+			// append the IDs being added to the existing spec list
+			ko.Spec.UserIDs = append(ko.Spec.UserIDs, pendingChanges.UserIDsToAdd...)
+		}
+		if pendingChanges.UserIDsToRemove != nil {
+			// remove the IDs being removed from the existing spec list
+			updatedUserIDs := []*string{}
+			toRemove := map[string]struct{}{}
+			for _, id := range pendingChanges.UserIDsToRemove {
+				toRemove[aws.ToString(id)] = struct{}{}
+			}
+			for _, id := range ko.Spec.UserIDs {
+				if _, found := toRemove[aws.ToString(id)]; !found {
+					updatedUserIDs = append(updatedUserIDs, id)
+				}
+			}
+			ko.Spec.UserIDs = updatedUserIDs
 		}
 	}
-	var resourceSyncedCondition *ackv1alpha1.Condition = nil
-	for _, condition := range ko.Status.Conditions {
-		if condition.Type == ackv1alpha1.ConditionTypeResourceSynced {
-			resourceSyncedCondition = condition
-			break
-		}
-	}
-	if resourceSyncedCondition == nil {
-		resourceSyncedCondition = &ackv1alpha1.Condition{
-			Type:   ackv1alpha1.ConditionTypeResourceSynced,
-			Status: syncConditionStatus,
-		}
-		ko.Status.Conditions = append(ko.Status.Conditions, resourceSyncedCondition)
-	} else {
-		resourceSyncedCondition.Status = syncConditionStatus
-	}
+	return ko, nil
 }
 
-func stringSliceToPointers(slice []string) []*string {
-	ptrs := make([]*string, len(slice))
-	for i, s := range slice {
-		s := s // Create new variable to avoid referencing loop variable
-		ptrs[i] = &s
+func requeueWaitUntilCanModify(r *resource) *ackrequeue.RequeueNeededAfter {
+	if r.ko.Status.Status == nil {
+		return nil
 	}
-	return ptrs
+	status := *r.ko.Status.Status
+	msg := fmt.Sprintf(
+		"User group in '%s' state, cannot be modified until '%s'.",
+		status, statusActive,
+	)
+	return ackrequeue.NeededAfter(
+		errors.New(msg),
+		ackrequeue.DefaultRequeueAfterDuration,
+	)
+}
+
+func getUserIdsDifferences(userIdsDesired []*string, userIdsLatest []*string) ([]string, []string) {
+	userIdsToAdd := []string{}
+	userIdsToRemove := []string{}
+	desired := aws.ToStringSlice(userIdsDesired)
+	latest := aws.ToStringSlice(userIdsLatest)
+
+	for _, userId := range userIdsDesired {
+		if !slices.Contains(latest, *userId) {
+			userIdsToAdd = append(userIdsToAdd, *userId)
+		}
+	}
+	for _, userId := range userIdsLatest {
+		if !slices.Contains(desired, *userId) {
+			userIdsToRemove = append(userIdsToRemove, *userId)
+		}
+	}
+	return userIdsToAdd, userIdsToRemove
+
 }
