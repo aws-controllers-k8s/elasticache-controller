@@ -259,11 +259,6 @@ func (rm *resourceManager) sdkCreate(
 	}
 
 	rm.setStatusDefaults(ko)
-	// custom set output from response
-	ko, err = rm.CustomCreateUserGroupSetOutput(ctx, desired, resp, ko)
-	if err != nil {
-		return nil, err
-	}
 	return &resource{ko}, nil
 }
 
@@ -309,8 +304,108 @@ func (rm *resourceManager) sdkUpdate(
 	desired *resource,
 	latest *resource,
 	delta *ackcompare.Delta,
-) (*resource, error) {
-	return rm.customUpdateUserGroup(ctx, desired, latest, delta)
+) (updated *resource, err error) {
+	rlog := ackrtlog.FromContext(ctx)
+	exit := rlog.Trace("rm.sdkUpdate")
+	defer func() {
+		exit(err)
+	}()
+	if !isActive(latest.ko) {
+		return nil, requeueWaitUntilCanModify(latest)
+	}
+	input, err := rm.newUpdateRequestPayload(ctx, desired, delta)
+	if err != nil {
+		return nil, err
+	}
+	rm.updateModifyUserGroupPayload(input, desired, latest, delta)
+
+	var resp *svcsdk.ModifyUserGroupOutput
+	_ = resp
+	resp, err = rm.sdkapi.ModifyUserGroup(ctx, input)
+	rm.metrics.RecordAPICall("UPDATE", "ModifyUserGroup", err)
+	if err != nil {
+		return nil, err
+	}
+	// Merge in the information we read from the API call above to the copy of
+	// the original Kubernetes object we passed to the function
+	ko := desired.ko.DeepCopy()
+
+	if ko.Status.ACKResourceMetadata == nil {
+		ko.Status.ACKResourceMetadata = &ackv1alpha1.ResourceMetadata{}
+	}
+	if resp.ARN != nil {
+		arn := ackv1alpha1.AWSResourceName(*resp.ARN)
+		ko.Status.ACKResourceMetadata.ARN = &arn
+	}
+	if resp.Engine != nil {
+		ko.Spec.Engine = resp.Engine
+	} else {
+		ko.Spec.Engine = nil
+	}
+	if resp.MinimumEngineVersion != nil {
+		ko.Status.MinimumEngineVersion = resp.MinimumEngineVersion
+	} else {
+		ko.Status.MinimumEngineVersion = nil
+	}
+	if resp.PendingChanges != nil {
+		f3 := &svcapitypes.UserGroupPendingChanges{}
+		if resp.PendingChanges.UserIdsToAdd != nil {
+			f3.UserIDsToAdd = aws.StringSlice(resp.PendingChanges.UserIdsToAdd)
+		}
+		if resp.PendingChanges.UserIdsToRemove != nil {
+			f3.UserIDsToRemove = aws.StringSlice(resp.PendingChanges.UserIdsToRemove)
+		}
+		ko.Status.PendingChanges = f3
+	} else {
+		ko.Status.PendingChanges = nil
+	}
+	if resp.ReplicationGroups != nil {
+		ko.Status.ReplicationGroups = aws.StringSlice(resp.ReplicationGroups)
+	} else {
+		ko.Status.ReplicationGroups = nil
+	}
+	if resp.Status != nil {
+		ko.Status.Status = resp.Status
+	} else {
+		ko.Status.Status = nil
+	}
+	if resp.UserGroupId != nil {
+		ko.Spec.UserGroupID = resp.UserGroupId
+	} else {
+		ko.Spec.UserGroupID = nil
+	}
+	if resp.UserIds != nil {
+		ko.Spec.UserIDs = aws.StringSlice(resp.UserIds)
+	} else {
+		ko.Spec.UserIDs = nil
+	}
+
+	rm.setStatusDefaults(ko)
+	// custom set output from response
+	ko, err = rm.CustomModifyUserGroupSetOutput(ctx, desired, resp, ko)
+	if err != nil {
+		return nil, err
+	}
+	return &resource{ko}, nil
+}
+
+// newUpdateRequestPayload returns an SDK-specific struct for the HTTP request
+// payload of the Update API call for the resource
+func (rm *resourceManager) newUpdateRequestPayload(
+	ctx context.Context,
+	r *resource,
+	delta *ackcompare.Delta,
+) (*svcsdk.ModifyUserGroupInput, error) {
+	res := &svcsdk.ModifyUserGroupInput{}
+
+	if r.ko.Spec.Engine != nil {
+		res.Engine = r.ko.Spec.Engine
+	}
+	if r.ko.Spec.UserGroupID != nil {
+		res.UserGroupId = r.ko.Spec.UserGroupID
+	}
+
+	return res, nil
 }
 
 // sdkDelete deletes the supplied resource in the backend AWS service API
