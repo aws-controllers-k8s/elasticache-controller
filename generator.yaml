@@ -118,6 +118,28 @@ resources:
     hooks:
       sdk_read_many_post_set_output:
         template_path: hooks/cache_subnet_group/sdk_read_many_post_set_output.go.tpl
+  GlobalReplicationGroup:
+    fields:
+      GlobalReplicationGroupId:
+        is_primary_key: true
+      GlobalReplicationGroupIdSuffix:
+        is_immutable: true
+      PrimaryReplicationGroupId:
+        is_immutable: true
+        references:
+          resource: ReplicationGroup
+          path: Spec.ReplicationGroupID
+    exceptions:
+      errors:
+        404:
+          code: GlobalReplicationGroupNotFoundFault
+      terminal_codes:
+        - GlobalReplicationGroupAlreadyExistsFault
+        - InvalidParameterValueException
+        - InvalidGlobalReplicationGroupStateFault
+        - ServiceLinkedRoleNotFoundFault
+    tags:
+      ignore: true
   ReplicationGroup:
     exceptions:
       terminal_codes:
@@ -441,9 +463,12 @@ operations:
     set_output_custom_method_name: customModifyCacheClusterSetOutput
     override_values:
       ApplyImmediately: aws.Bool(true)
+  ModifyGlobalReplicationGroup:
+    override_values:
+      ApplyImmediately: aws.Bool(true)
 ignore:
   resource_names:
-    - GlobalReplicationGroup
+    - ServerlessCacheSnapshot
     - CacheSecurityGroup
   field_paths:
     - DescribeSnapshotsInput.CacheClusterId
