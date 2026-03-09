@@ -321,10 +321,6 @@ resources:
           service_name: ec2
           resource: Subnet
           path: Status.SubnetID
-      UserGroupIDs:
-        references:
-          resource: UserGroup
-          path: Spec.UserGroupID
     synced:
       when:
       - path: Status.Status
