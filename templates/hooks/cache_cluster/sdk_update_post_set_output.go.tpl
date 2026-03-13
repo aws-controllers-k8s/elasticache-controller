@@ -9,3 +9,6 @@
 			ko.Spec.TransitEncryptionEnabled = pendingModifications.TransitEncryptionEnabled
 		}
 	}
+
+	ackcondition.SetSynced(&resource{ko}, corev1.ConditionFalse, nil, nil)
+
