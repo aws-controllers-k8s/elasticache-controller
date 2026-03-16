@@ -2692,6 +2692,11 @@ func (in *ReplicationGroupPendingModifiedValues) DeepCopyInto(out *ReplicationGr
 		*out = new(string)
 		**out = **in
 	}
+	if in.ClusterMode != nil {
+		in, out := &in.ClusterMode, &out.ClusterMode
+		*out = new(string)
+		**out = **in
+	}
 	if in.LogDeliveryConfigurations != nil {
 		in, out := &in.LogDeliveryConfigurations, &out.LogDeliveryConfigurations
 		*out = make([]*PendingLogDeliveryConfiguration, len(*in))
@@ -2783,6 +2788,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		in, out := &in.CacheSubnetGroupRef, &out.CacheSubnetGroupRef
 		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ClusterMode != nil {
+		in, out := &in.ClusterMode, &out.ClusterMode
+		*out = new(string)
+		**out = **in
 	}
 	if in.DataTieringEnabled != nil {
 		in, out := &in.DataTieringEnabled, &out.DataTieringEnabled
@@ -3190,6 +3200,11 @@ func (in *ReplicationGroup_SDK) DeepCopyInto(out *ReplicationGroup_SDK) {
 	if in.ClusterEnabled != nil {
 		in, out := &in.ClusterEnabled, &out.ClusterEnabled
 		*out = new(bool)
+		**out = **in
+	}
+	if in.ClusterMode != nil {
+		in, out := &in.ClusterMode, &out.ClusterMode
+		*out = new(string)
 		**out = **in
 	}
 	if in.ConfigurationEndpoint != nil {

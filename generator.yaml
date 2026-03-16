@@ -148,6 +148,9 @@ resources:
         compare:
           is_ignored: true
       CacheParameterGroupName:
+        late_initialize: {
+          skip_incomplete_check: {}
+        }
         references:
           resource: CacheParameterGroup
           path: Spec.CacheParameterGroupName
@@ -155,6 +158,9 @@ resources:
         references:
           resource: CacheSubnetGroup
           path: Spec.CacheSubnetGroupName
+      ClusterMode:
+        late_initialize:
+          skip_incomplete_check: {}
       SecurityGroupIDs:
         references:
           resource: SecurityGroup
@@ -472,10 +478,10 @@ ignore:
     - CreateReplicationGroupOutput.ReplicationGroup.TransitEncryptionMode
     - CreateReplicationGroupInput.TransitEncryptionMode
     - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionMode
-    - CreateReplicationGroupOutput.ReplicationGroup.ClusterMode
-    - CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
-    - CreateReplicationGroupInput.ClusterMode
-    - ModifyReplicationGroupOutput.ReplicationGroup.ClusterMode
-    - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
+    #- CreateReplicationGroupOutput.ReplicationGroup.ClusterMode
+    #- CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
+    #- CreateReplicationGroupInput.ClusterMode
+    #- ModifyReplicationGroupOutput.ReplicationGroup.ClusterMode
+    #- ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
     - Subnet.SupportedNetworkTypes
     - CreateReplicationGroupInput.ServerlessCacheSnapshotName
