@@ -585,6 +585,15 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 		return rm.updateShardConfiguration(ctx, desired, latest)
 	}
 
+	// ClusterMode changes must be applied after all other modifications
+	// (scaling, shard config, replica count) have completed, because
+	// compatible mode blocks those operations. We also isolate ClusterMode
+	// into its own API call since it cannot be combined with most other
+	// parameters.
+	if delta.DifferentAt("Spec.ClusterMode") && desired.ko.Spec.ClusterMode != nil {
+		return rm.modifyClusterMode(ctx, desired, delta)
+	}
+
 	return rm.modifyReplicationGroup(ctx, desired, latest, delta)
 }
 
@@ -636,6 +645,36 @@ func (rm *resourceManager) modifyReplicationGroup(
 
 	// no updates done
 	return nil, nil
+}
+
+// modifyClusterMode sends an isolated ModifyReplicationGroup API call
+// containing only ClusterMode (and optionally CacheParameterGroupName).
+// ClusterMode changes cannot be combined with most other parameters.
+func (rm *resourceManager) modifyClusterMode(
+	ctx context.Context,
+	desired *resource,
+	delta *ackcompare.Delta,
+) (*resource, error) {
+	input := &svcsdk.ModifyReplicationGroupInput{}
+	input.ApplyImmediately = aws.Bool(true)
+	if desired.ko.Spec.ReplicationGroupID != nil {
+		input.ReplicationGroupId = desired.ko.Spec.ReplicationGroupID
+	}
+	input.ClusterMode = svcsdktypes.ClusterMode(*desired.ko.Spec.ClusterMode)
+
+	// CacheParameterGroupName is allowed alongside ClusterMode
+	if delta.DifferentAt("Spec.CacheParameterGroupName") && desired.ko.Spec.CacheParameterGroupName != nil {
+		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
+	}
+
+	resp, respErr := rm.sdkapi.ModifyReplicationGroup(ctx, input)
+	rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
+	if respErr != nil {
+		rm.log.V(1).Info("Error during ModifyReplicationGroup (ClusterMode)", "error", respErr)
+		return nil, respErr
+	}
+
+	return rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
 }
 
 // replicaConfigurationsDifference returns
