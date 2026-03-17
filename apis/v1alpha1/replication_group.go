@@ -144,6 +144,15 @@ type ReplicationGroupSpec struct {
 	// see Subnets and Subnet Groups (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SubnetGroups.html).
 	CacheSubnetGroupName *string                                  `json:"cacheSubnetGroupName,omitempty"`
 	CacheSubnetGroupRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheSubnetGroupRef,omitempty"`
+	// Enabled or Disabled. To modify cluster mode from Disabled to Enabled, you
+	// must first set the cluster mode to Compatible. Compatible mode allows your
+	// Valkey or Redis OSS clients to connect using both cluster mode enabled and
+	// cluster mode disabled. After you migrate all Valkey or Redis OSS clients
+	// to use cluster mode enabled, you can then complete cluster mode configuration
+	// and set the cluster mode to Enabled.
+	//
+	// Cluster mode configuration can only be changed from cluster mode disabled to cluster mode enabled. Reverting this configuration is not possible.
+	ClusterMode *string `json:"clusterMode,omitempty"`
 	// Enables data tiering. Data tiering is only supported for replication groups
 	// using the r6gd node type. This parameter must be set to true when using r6gd
 	// nodes. For more information, see Data tiering (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/data-tiering.html).

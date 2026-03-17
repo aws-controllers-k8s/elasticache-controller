@@ -537,15 +537,26 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	}
 
 	// Order of operations when diffs map to multiple updates APIs:
-	// 1. When automaticFailoverEnabled differs:
+	// 1. ClusterMode must be transitioned before shard/replica scaling,
+	//    because a CMD cluster cannot have multiple shards. The cluster
+	//    must reach CME before scaling operations are valid.
+	// 2. When automaticFailoverEnabled differs:
 	//		if automaticFailoverEnabled == false; do nothing in this custom logic, let the modify execute first.
 	// 		else if automaticFailoverEnabled == true then following logic should execute first.
-	// 2. When multiAZ differs
+	// 3. When multiAZ differs
 	// 		if multiAZ = true  then below is fine.
 	// 		else if multiAZ = false ; do nothing in custom logic, let the modify execute.
-	// 3. updateReplicaCount() is invoked Before updateShardConfiguration()
+	// 4. updateReplicaCount() is invoked Before updateShardConfiguration()
 	//		because both accept availability zones, however the number of
 	//		values depend on replica count.
+
+	// ClusterMode changes are prioritized above scaling operations because
+	// shard scaling requires cluster mode enabled. We also isolate ClusterMode
+	// into its own API call since it cannot be combined with most other parameters.
+	if delta.DifferentAt("Spec.ClusterMode") && desired.ko.Spec.ClusterMode != nil {
+		return rm.modifyClusterMode(ctx, desired, delta)
+	}
+
 	if desired.ko.Spec.AutomaticFailoverEnabled != nil && *desired.ko.Spec.AutomaticFailoverEnabled == false {
 		latestAutomaticFailoverEnabled := latest.ko.Status.AutomaticFailover != nil && *latest.ko.Status.AutomaticFailover == "enabled"
 		if latestAutomaticFailoverEnabled != *desired.ko.Spec.AutomaticFailoverEnabled {
@@ -636,6 +647,36 @@ func (rm *resourceManager) modifyReplicationGroup(
 
 	// no updates done
 	return nil, nil
+}
+
+// modifyClusterMode sends an isolated ModifyReplicationGroup API call
+// containing only ClusterMode (and optionally CacheParameterGroupName).
+// ClusterMode changes cannot be combined with most other parameters.
+func (rm *resourceManager) modifyClusterMode(
+	ctx context.Context,
+	desired *resource,
+	delta *ackcompare.Delta,
+) (*resource, error) {
+	input := &svcsdk.ModifyReplicationGroupInput{}
+	input.ApplyImmediately = aws.Bool(true)
+	if desired.ko.Spec.ReplicationGroupID != nil {
+		input.ReplicationGroupId = desired.ko.Spec.ReplicationGroupID
+	}
+	input.ClusterMode = svcsdktypes.ClusterMode(*desired.ko.Spec.ClusterMode)
+
+	// CacheParameterGroupName is allowed alongside ClusterMode
+	if delta.DifferentAt("Spec.CacheParameterGroupName") && desired.ko.Spec.CacheParameterGroupName != nil {
+		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
+	}
+
+	resp, respErr := rm.sdkapi.ModifyReplicationGroup(ctx, input)
+	rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
+	if respErr != nil {
+		rm.log.V(1).Info("Error during ModifyReplicationGroup (ClusterMode)", "error", respErr)
+		return nil, respErr
+	}
+
+	return rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
 }
 
 // replicaConfigurationsDifference returns
@@ -1385,6 +1426,13 @@ func modifyDelta(
 	if delta.DifferentAt("Spec.PreferredMaintenanceWindow") {
 		if desired.ko.Spec.PreferredMaintenanceWindow == nil && latest.ko.Spec.PreferredMaintenanceWindow != nil {
 			common.RemoveFromDelta(delta, "Spec.PreferredMaintenanceWindow")
+		}
+	}
+
+	// if the user did not specify a CacheParameterGroupName, let AWS manage it
+	if delta.DifferentAt("Spec.CacheParameterGroupName") {
+		if desired.ko.Spec.CacheParameterGroupName == nil && latest.ko.Spec.CacheParameterGroupName != nil {
+			common.RemoveFromDelta(delta, "Spec.CacheParameterGroupName")
 		}
 	}
 

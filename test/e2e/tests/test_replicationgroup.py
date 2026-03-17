@@ -20,7 +20,7 @@ import logging
 from time import sleep
 
 from acktest.resources import random_suffix_name
-from acktest.k8s import resource as k8s
+from acktest.k8s import resource as k8s, condition
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.util import retrieve_cache_cluster, retrieve_replication_group, assert_recoverable_condition_set, retrieve_replication_group_tags
@@ -164,6 +164,42 @@ def rg_fault_tolerance(rg_fault_tolerance_input, make_replication_group, rg_dele
     # throws exception if wait fails
     rg_deletion_waiter.wait(
         ReplicationGroupId=rg_fault_tolerance_input['RG_ID'])
+
+
+@pytest.fixture(scope="module")
+def rg_cluster_mode_to_enabled_input(make_rg_name):
+    return {
+        "RG_ID": make_rg_name("rg-cm-enabled"),
+    }
+
+
+@pytest.fixture(scope="module")
+def rg_cluster_mode_to_enabled(rg_cluster_mode_to_enabled_input, make_replication_group, rg_deletion_waiter):
+    (reference, resource) = make_replication_group(
+        "replicationgroup_cluster_mode", rg_cluster_mode_to_enabled_input, rg_cluster_mode_to_enabled_input['RG_ID'])
+    yield reference, resource
+    k8s.delete_custom_resource(reference)
+    sleep(DEFAULT_WAIT_SECS)
+    rg_deletion_waiter.wait(
+        ReplicationGroupId=rg_cluster_mode_to_enabled_input['RG_ID'])
+
+
+@pytest.fixture(scope="module")
+def rg_cluster_mode_revert_input(make_rg_name):
+    return {
+        "RG_ID": make_rg_name("rg-cm-revert"),
+    }
+
+
+@pytest.fixture(scope="module")
+def rg_cluster_mode_revert(rg_cluster_mode_revert_input, make_replication_group, rg_deletion_waiter):
+    (reference, resource) = make_replication_group(
+        "replicationgroup_cluster_mode", rg_cluster_mode_revert_input, rg_cluster_mode_revert_input['RG_ID'])
+    yield reference, resource
+    k8s.delete_custom_resource(reference)
+    sleep(DEFAULT_WAIT_SECS)
+    rg_deletion_waiter.wait(
+        ReplicationGroupId=rg_cluster_mode_revert_input['RG_ID'])
 
 
 @service_marker
@@ -357,3 +393,83 @@ class TestReplicationGroup:
         assert resource['metadata']['deletionTimestamp'] is not None
 
         rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+
+    def test_rg_cluster_mode_disabled_to_enabled(self, rg_cluster_mode_to_enabled_input, rg_cluster_mode_to_enabled, rg_deletion_waiter):
+        """Test ClusterMode transition: disabled -> compatible -> enabled"""
+        (reference, _) = rg_cluster_mode_to_enabled
+        rg_id = rg_cluster_mode_to_enabled_input['RG_ID']
+
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=180)
+
+        # assert initial state is disabled
+        resource = k8s.get_resource(reference)
+        assert resource['spec']['clusterMode'] == "disabled"
+        rg = retrieve_replication_group(rg_id)
+        assert rg['ClusterMode'] == "disabled"
+
+        # transition to compatible
+        patch = {"spec": {"clusterMode": "compatible"}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=180)
+
+
+        # assert compatible state
+        resource = k8s.get_resource(reference)
+        assert resource['spec']['clusterMode'] == "compatible"
+        rg = retrieve_replication_group(rg_id)
+        assert rg['ClusterMode'] == "compatible"
+
+        # transition to enabled
+        patch = {"spec": {"clusterMode": "enabled"}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=180)
+
+        # assert enabled state
+        resource = k8s.get_resource(reference)
+        assert resource['spec']['clusterMode'] == "enabled"
+        rg = retrieve_replication_group(rg_id)
+        assert rg['ClusterMode'] == "enabled"
+
+    def test_rg_cluster_mode_compatible_to_disabled(self, rg_cluster_mode_revert_input, rg_cluster_mode_revert, rg_deletion_waiter):
+        """Test ClusterMode transition: disabled -> compatible -> disabled (revert)"""
+        (reference, _) = rg_cluster_mode_revert
+        rg_id = rg_cluster_mode_revert_input['RG_ID']
+
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+        # assert initial state is disabled
+        resource = k8s.get_resource(reference)
+        assert resource['spec']['clusterMode'] == "disabled"
+        rg = retrieve_replication_group(rg_id)
+        assert rg['ClusterMode'] == "disabled"
+
+        # transition to compatible
+        patch = {"spec": {"clusterMode": "compatible"}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=180)
+
+        # assert compatible state
+        resource = k8s.get_resource(reference)
+        assert resource['spec']['clusterMode'] == "compatible"
+        rg = retrieve_replication_group(rg_id)
+        assert rg['ClusterMode'] == "compatible"
+
+        # revert to disabled
+        patch = {"spec": {"clusterMode": "disabled"}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=180)
+
+        # assert disabled state
+        resource = k8s.get_resource(reference)
+        assert resource['spec']['clusterMode'] == "disabled"
+        rg = retrieve_replication_group(rg_id)
+        assert rg['ClusterMode'] == "disabled"

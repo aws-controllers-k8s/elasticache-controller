@@ -90,6 +90,13 @@ func newResourceDelta(
 	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef) {
 		delta.Add("Spec.CacheSubnetGroupRef", a.ko.Spec.CacheSubnetGroupRef, b.ko.Spec.CacheSubnetGroupRef)
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.ClusterMode, b.ko.Spec.ClusterMode) {
+		delta.Add("Spec.ClusterMode", a.ko.Spec.ClusterMode, b.ko.Spec.ClusterMode)
+	} else if a.ko.Spec.ClusterMode != nil && b.ko.Spec.ClusterMode != nil {
+		if *a.ko.Spec.ClusterMode != *b.ko.Spec.ClusterMode {
+			delta.Add("Spec.ClusterMode", a.ko.Spec.ClusterMode, b.ko.Spec.ClusterMode)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled) {
 		delta.Add("Spec.DataTieringEnabled", a.ko.Spec.DataTieringEnabled, b.ko.Spec.DataTieringEnabled)
 	} else if a.ko.Spec.DataTieringEnabled != nil && b.ko.Spec.DataTieringEnabled != nil {

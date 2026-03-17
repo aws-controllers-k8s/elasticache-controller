@@ -1,0 +1,14 @@
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  automaticFailoverEnabled: true
+  cacheNodeType: cache.t3.micro
+  clusterMode: disabled
+  engine: redis
+  engineVersion: "7.1"
+  numNodeGroups: 1
+  replicasPerNodeGroup: 1
+  description: cluster mode transition test
+  replicationGroupID: $RG_ID

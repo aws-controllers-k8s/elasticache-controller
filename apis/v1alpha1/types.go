@@ -557,6 +557,7 @@ type RegionalConfiguration struct {
 type ReplicationGroupPendingModifiedValues struct {
 	AuthTokenStatus           *string                            `json:"authTokenStatus,omitempty"`
 	AutomaticFailoverStatus   *string                            `json:"automaticFailoverStatus,omitempty"`
+	ClusterMode               *string                            `json:"clusterMode,omitempty"`
 	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `json:"logDeliveryConfigurations,omitempty"`
 	PrimaryClusterID          *string                            `json:"primaryClusterID,omitempty"`
 	// The status of an online resharding operation.
@@ -576,6 +577,7 @@ type ReplicationGroup_SDK struct {
 	AutomaticFailover         *string      `json:"automaticFailover,omitempty"`
 	CacheNodeType             *string      `json:"cacheNodeType,omitempty"`
 	ClusterEnabled            *bool        `json:"clusterEnabled,omitempty"`
+	ClusterMode               *string      `json:"clusterMode,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node. This value is read-only.
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`

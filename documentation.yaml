@@ -1,0 +1,6 @@
+resources:
+  ReplicationGroup:
+    fields:
+      ClusterMode:
+        append: |
+          Cluster mode configuration can only be changed from cluster mode disabled to cluster mode enabled. Reverting this configuration is not possible.
