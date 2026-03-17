@@ -50,7 +50,7 @@ var (
 // +kubebuilder:rbac:groups=elasticache.services.k8s.aws,resources=replicationgroups,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=elasticache.services.k8s.aws,resources=replicationgroups/status,verbs=get;update;patch
 
-var lateInitializeFieldNames = []string{"CacheParameterGroupName", "ClusterMode"}
+var lateInitializeFieldNames = []string{"ClusterMode"}
 
 // resourceManager is responsible for providing a consistent way to perform
 // CRUD operations in a backend AWS service API for Book custom resources.
@@ -259,9 +259,6 @@ func (rm *resourceManager) lateInitializeFromReadOneOutput(
 ) acktypes.AWSResource {
 	observedKo := rm.concreteResource(observed).ko.DeepCopy()
 	latestKo := rm.concreteResource(latest).ko.DeepCopy()
-	if observedKo.Spec.CacheParameterGroupName != nil && latestKo.Spec.CacheParameterGroupName == nil {
-		latestKo.Spec.CacheParameterGroupName = observedKo.Spec.CacheParameterGroupName
-	}
 	if observedKo.Spec.ClusterMode != nil && latestKo.Spec.ClusterMode == nil {
 		latestKo.Spec.ClusterMode = observedKo.Spec.ClusterMode
 	}

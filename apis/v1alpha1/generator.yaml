@@ -148,9 +148,6 @@ resources:
         compare:
           is_ignored: true
       CacheParameterGroupName:
-        late_initialize: {
-          skip_incomplete_check: {}
-        }
         references:
           resource: CacheParameterGroup
           path: Spec.CacheParameterGroupName
