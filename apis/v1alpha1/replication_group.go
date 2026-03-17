@@ -150,6 +150,8 @@ type ReplicationGroupSpec struct {
 	// cluster mode disabled. After you migrate all Valkey or Redis OSS clients
 	// to use cluster mode enabled, you can then complete cluster mode configuration
 	// and set the cluster mode to Enabled.
+	//
+	// Cluster mode configuration can only be changed from cluster mode disabled to cluster mode enabled. Reverting this configuration is not possible.
 	ClusterMode *string `json:"clusterMode,omitempty"`
 	// Enables data tiering. Data tiering is only supported for replication groups
 	// using the r6gd node type. This parameter must be set to true when using r6gd
