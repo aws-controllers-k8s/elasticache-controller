@@ -107,6 +107,32 @@ def user_password(user_password_input, elasticache_client):
     assert_user_deletion(user_password_input['USER_ID'])
 
 
+@pytest.fixture(scope="module")
+def user_iam_input():
+    return {
+        "USER_ID": random_suffix_name("user-iam", 32),
+        "ACCESS_STRING": "on ~app::* -@all +@read"
+    }
+
+
+@pytest.fixture(scope="module")
+def user_iam(user_iam_input, elasticache_client):
+
+    # inject parameters into yaml; create User in cluster
+    user = load_elasticache_resource("user_iam", additional_replacements=user_iam_input)
+    reference = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL, user_iam_input["USER_ID"], namespace="default")
+    _ = k8s.create_custom_resource(reference, user)
+    resource = k8s.wait_resource_consumed_by_controller(reference)
+    assert resource is not None
+    yield (reference, resource)
+
+    # teardown: delete in k8s, assert user does not exist in AWS
+    k8s.delete_custom_resource(reference)
+    sleep(DEFAULT_WAIT_SECS)
+    assert_user_deletion(user_iam_input['USER_ID'])
+
+
 @service_marker
 class TestUser:
 
@@ -127,6 +153,17 @@ class TestUser:
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
         resource = k8s.get_resource(reference)
         assert resource["status"]["lastRequestedAccessString"] == new_access_string
+
+    # test creation with IAM authentication mode (valkey engine)
+    def test_user_iam(self, user_iam, user_iam_input):
+        (reference, resource) = user_iam
+        assert k8s.get_resource_exists(reference)
+
+        assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
+        resource = k8s.get_resource(reference)
+        assert resource["status"]["lastRequestedAccessString"] == user_iam_input["ACCESS_STRING"]
+        assert resource["status"]["authentication"] is not None
+        assert resource["status"]["authentication"]["type_"] == "iam"
 
     # test creation with Passwords specified (as k8s secrets)
     def test_user_password(self, user_password, user_password_input):
