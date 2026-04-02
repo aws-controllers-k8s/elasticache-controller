@@ -457,8 +457,6 @@ ignore:
     - CacheCluster.LogDeliveryConfigurations
     - CacheCluster.PendingModifiedValues.ScaleConfig
     - PendingModifiedValues.LogDeliveryConfigurations
-    - CreateUserInput.AuthenticationMode
-    - ModifyUserInput.AuthenticationMode
     - CreateCacheSubnetGroupOutput.CacheSubnetGroup.SupportedNetworkTypes
     - CreateCacheSubnetGroupOutput.CacheSubnetGroup.Subnets.SupportedNetworkTypes
     - ModifyCacheSubnetGroupOutput.CacheSubnetGroup.Subnets.SupportedNetworkTypes

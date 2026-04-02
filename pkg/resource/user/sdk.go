@@ -287,6 +287,13 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.AccessString != nil {
 		res.AccessString = r.ko.Spec.AccessString
 	}
+	if r.ko.Spec.AuthenticationMode != nil {
+		authMode := &svcsdktypes.AuthenticationMode{}
+		if r.ko.Spec.AuthenticationMode.Type != nil {
+			authMode.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
+		}
+		res.AuthenticationMode = authMode
+	}
 	if r.ko.Spec.Engine != nil {
 		res.Engine = r.ko.Spec.Engine
 	}
