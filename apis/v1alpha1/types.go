@@ -36,7 +36,9 @@ type Authentication struct {
 
 // Specifies the authentication mode to use.
 type AuthenticationMode struct {
-	Passwords []*string `json:"passwords,omitempty"`
+	// Specifies the authentication type. Possible options are IAM authentication,
+	// password and no password.
+	Type *string `json:"type,omitempty"`
 }
 
 // Describes an Availability Zone in which the cluster is launched.
