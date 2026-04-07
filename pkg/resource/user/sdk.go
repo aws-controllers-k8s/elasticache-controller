@@ -155,6 +155,14 @@ func (rm *resourceManager) sdkFind(
 
 	rm.setStatusDefaults(ko)
 	rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})
+	if len(resp.Users) > 0 && resp.Users[0].Authentication != nil {
+		if ko.Spec.AuthenticationMode == nil {
+			ko.Spec.AuthenticationMode = &svcapitypes.AuthenticationMode{}
+		}
+		authType := string(resp.Users[0].Authentication.Type)
+		ko.Spec.AuthenticationMode.Type = &authType
+	}
+
 	return &resource{ko}, nil
 }
 
@@ -273,6 +281,11 @@ func (rm *resourceManager) sdkCreate(
 		return nil, err
 	}
 	rm.setSyncedCondition(resp.Status, &resource{ko})
+	if resp.Authentication != nil && ko.Spec.AuthenticationMode != nil {
+		authType := string(resp.Authentication.Type)
+		ko.Spec.AuthenticationMode.Type = &authType
+	}
+
 	return &resource{ko}, nil
 }
 
@@ -290,7 +303,21 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.AuthenticationMode != nil {
 		f1 := &svcsdktypes.AuthenticationMode{}
 		if r.ko.Spec.AuthenticationMode.Passwords != nil {
-			f1.Passwords = aws.ToStringSlice(r.ko.Spec.AuthenticationMode.Passwords)
+			f1f0 := []string{}
+			for _, f1f0iter := range r.ko.Spec.AuthenticationMode.Passwords {
+				var f1f0elem string
+				if f1f0iter != nil {
+					tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f1f0iter)
+					if err != nil {
+						return nil, ackrequeue.Needed(err)
+					}
+					if tmpSecret != "" {
+						f1f0elem = tmpSecret
+					}
+				}
+				f1f0 = append(f1f0, f1f0elem)
+			}
+			f1.Passwords = f1f0
 		}
 		if r.ko.Spec.AuthenticationMode.Type != nil {
 			f1.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
@@ -365,7 +392,9 @@ func (rm *resourceManager) sdkUpdate(
 	if err != nil {
 		return nil, err
 	}
-	rm.populateUpdatePayload(input, desired, delta)
+	if err = rm.populateUpdatePayload(ctx, input, desired, delta); err != nil {
+		return nil, err
+	}
 
 	var resp *svcsdk.ModifyUserOutput
 	_ = resp
@@ -441,6 +470,11 @@ func (rm *resourceManager) sdkUpdate(
 		return nil, err
 	}
 	rm.setSyncedCondition(resp.Status, &resource{ko})
+	if resp.Authentication != nil && ko.Spec.AuthenticationMode != nil {
+		authType := string(resp.Authentication.Type)
+		ko.Spec.AuthenticationMode.Type = &authType
+	}
+
 	return &resource{ko}, nil
 }
 
@@ -456,7 +490,21 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	if r.ko.Spec.AuthenticationMode != nil {
 		f1 := &svcsdktypes.AuthenticationMode{}
 		if r.ko.Spec.AuthenticationMode.Passwords != nil {
-			f1.Passwords = aws.ToStringSlice(r.ko.Spec.AuthenticationMode.Passwords)
+			f1f0 := []string{}
+			for _, f1f0iter := range r.ko.Spec.AuthenticationMode.Passwords {
+				var f1f0elem string
+				if f1f0iter != nil {
+					tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f1f0iter)
+					if err != nil {
+						return nil, ackrequeue.Needed(err)
+					}
+					if tmpSecret != "" {
+						f1f0elem = tmpSecret
+					}
+				}
+				f1f0 = append(f1f0, f1f0elem)
+			}
+			f1.Passwords = f1f0
 		}
 		if r.ko.Spec.AuthenticationMode.Type != nil {
 			f1.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)

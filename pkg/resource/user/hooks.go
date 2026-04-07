@@ -88,10 +88,11 @@ func (rm *resourceManager) CustomModifyUser(
 // Spec field in desired.Spec to the payload (i.e. what we do when building most inputs), unless there is
 // actually a difference in the Spec field between desired and latest
 func (rm *resourceManager) populateUpdatePayload(
+	ctx context.Context,
 	input *svcsdk.ModifyUserInput,
 	r *resource,
 	delta *ackcompare.Delta,
-) {
+) error {
 	if delta.DifferentAt("Spec.AccessString") && r.ko.Spec.AccessString != nil {
 		input.AccessString = r.ko.Spec.AccessString
 	}
@@ -101,6 +102,21 @@ func (rm *resourceManager) populateUpdatePayload(
 		if r.ko.Spec.AuthenticationMode.Type != nil {
 			authMode.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
 		}
+		if r.ko.Spec.AuthenticationMode.Passwords != nil {
+			passwords := []string{}
+			for _, pwRef := range r.ko.Spec.AuthenticationMode.Passwords {
+				if pwRef != nil {
+					tmpSecret, err := rm.rr.SecretValueFromReference(ctx, pwRef)
+					if err != nil {
+						return err
+					}
+					if tmpSecret != "" {
+						passwords = append(passwords, tmpSecret)
+					}
+				}
+			}
+			authMode.Passwords = passwords
+		}
 		input.AuthenticationMode = authMode
 	}
 
@@ -108,8 +124,7 @@ func (rm *resourceManager) populateUpdatePayload(
 		input.NoPasswordRequired = r.ko.Spec.NoPasswordRequired
 	}
 
-	//TODO: add update for passwords field once we have framework-level support
-
+	return nil
 }
 
 /*

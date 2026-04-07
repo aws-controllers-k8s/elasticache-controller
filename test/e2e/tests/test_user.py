@@ -164,6 +164,7 @@ class TestUser:
         assert resource["status"]["lastRequestedAccessString"] == user_iam_input["ACCESS_STRING"]
         assert resource["status"]["authentication"] is not None
         assert resource["status"]["authentication"]["type_"] == "iam"
+        assert resource["spec"]["authenticationMode"]["type"] == "iam"
 
     # test creation with Passwords specified (as k8s secrets)
     def test_user_password(self, user_password, user_password_input):

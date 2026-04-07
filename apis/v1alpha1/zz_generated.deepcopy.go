@@ -54,11 +54,11 @@ func (in *AuthenticationMode) DeepCopyInto(out *AuthenticationMode) {
 	*out = *in
 	if in.Passwords != nil {
 		in, out := &in.Passwords, &out.Passwords
-		*out = make([]*string, len(*in))
+		*out = make([]*corev1alpha1.SecretKeyReference, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
 				in, out := &(*in)[i], &(*out)[i]
-				*out = new(string)
+				*out = new(corev1alpha1.SecretKeyReference)
 				**out = **in
 			}
 		}
