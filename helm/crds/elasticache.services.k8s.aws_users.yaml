@@ -45,15 +45,13 @@ spec:
                   Regex Pattern: `\S`
                 type: string
               authenticationMode:
-                description: |-
-                  Specifies the authentication mode to use. Includes the authentication type
-                  (e.g. iam, no-password-required, password). Passwords should be provided
-                  via the spec.passwords field using SecretKeyReference.
+                description: Specifies how to authenticate the user.
                 properties:
-                  type:
-                    description: |-
-                      Specifies the authentication type. Possible options are IAM authentication,
-                      password and no password.
+                  passwords:
+                    items:
+                      type: string
+                    type: array
+                  type_:
                     type: string
                 type: object
               engine:

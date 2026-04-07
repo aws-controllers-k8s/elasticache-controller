@@ -44,6 +44,16 @@ spec:
 
                   Regex Pattern: `\S`
                 type: string
+              authenticationMode:
+                description: Specifies how to authenticate the user.
+                properties:
+                  passwords:
+                    items:
+                      type: string
+                    type: array
+                  type_:
+                    type: string
+                type: object
               engine:
                 description: |-
                   The options are valkey or redis.

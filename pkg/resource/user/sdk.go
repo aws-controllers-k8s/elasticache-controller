@@ -288,11 +288,14 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.AccessString = r.ko.Spec.AccessString
 	}
 	if r.ko.Spec.AuthenticationMode != nil {
-		authMode := &svcsdktypes.AuthenticationMode{}
-		if r.ko.Spec.AuthenticationMode.Type != nil {
-			authMode.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
+		f1 := &svcsdktypes.AuthenticationMode{}
+		if r.ko.Spec.AuthenticationMode.Passwords != nil {
+			f1.Passwords = aws.ToStringSlice(r.ko.Spec.AuthenticationMode.Passwords)
 		}
-		res.AuthenticationMode = authMode
+		if r.ko.Spec.AuthenticationMode.Type != nil {
+			f1.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
+		}
+		res.AuthenticationMode = f1
 	}
 	if r.ko.Spec.Engine != nil {
 		res.Engine = r.ko.Spec.Engine
@@ -301,35 +304,35 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.NoPasswordRequired = r.ko.Spec.NoPasswordRequired
 	}
 	if r.ko.Spec.Passwords != nil {
-		f3 := []string{}
-		for _, f3iter := range r.ko.Spec.Passwords {
-			var f3elem string
-			if f3iter != nil {
-				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f3iter)
+		f4 := []string{}
+		for _, f4iter := range r.ko.Spec.Passwords {
+			var f4elem string
+			if f4iter != nil {
+				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f4iter)
 				if err != nil {
 					return nil, ackrequeue.Needed(err)
 				}
 				if tmpSecret != "" {
-					f3elem = tmpSecret
+					f4elem = tmpSecret
 				}
 			}
-			f3 = append(f3, f3elem)
+			f4 = append(f4, f4elem)
 		}
-		res.Passwords = f3
+		res.Passwords = f4
 	}
 	if r.ko.Spec.Tags != nil {
-		f4 := []svcsdktypes.Tag{}
-		for _, f4iter := range r.ko.Spec.Tags {
-			f4elem := &svcsdktypes.Tag{}
-			if f4iter.Key != nil {
-				f4elem.Key = f4iter.Key
+		f5 := []svcsdktypes.Tag{}
+		for _, f5iter := range r.ko.Spec.Tags {
+			f5elem := &svcsdktypes.Tag{}
+			if f5iter.Key != nil {
+				f5elem.Key = f5iter.Key
 			}
-			if f4iter.Value != nil {
-				f4elem.Value = f4iter.Value
+			if f5iter.Value != nil {
+				f5elem.Value = f5iter.Value
 			}
-			f4 = append(f4, *f4elem)
+			f5 = append(f5, *f5elem)
 		}
-		res.Tags = f4
+		res.Tags = f5
 	}
 	if r.ko.Spec.UserID != nil {
 		res.UserId = r.ko.Spec.UserID
@@ -450,6 +453,16 @@ func (rm *resourceManager) newUpdateRequestPayload(
 ) (*svcsdk.ModifyUserInput, error) {
 	res := &svcsdk.ModifyUserInput{}
 
+	if r.ko.Spec.AuthenticationMode != nil {
+		f1 := &svcsdktypes.AuthenticationMode{}
+		if r.ko.Spec.AuthenticationMode.Passwords != nil {
+			f1.Passwords = aws.ToStringSlice(r.ko.Spec.AuthenticationMode.Passwords)
+		}
+		if r.ko.Spec.AuthenticationMode.Type != nil {
+			f1.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
+		}
+		res.AuthenticationMode = f1
+	}
 	if r.ko.Spec.Engine != nil {
 		res.Engine = r.ko.Spec.Engine
 	}
