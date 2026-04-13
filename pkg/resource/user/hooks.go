@@ -17,7 +17,6 @@ import (
 	"context"
 
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
-	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
@@ -95,29 +94,6 @@ func (rm *resourceManager) populateUpdatePayload(
 ) error {
 	if delta.DifferentAt("Spec.AccessString") && r.ko.Spec.AccessString != nil {
 		input.AccessString = r.ko.Spec.AccessString
-	}
-
-	if delta.DifferentAt("Spec.AuthenticationMode") && r.ko.Spec.AuthenticationMode != nil {
-		authMode := &svcsdktypes.AuthenticationMode{}
-		if r.ko.Spec.AuthenticationMode.Type != nil {
-			authMode.Type = svcsdktypes.InputAuthenticationType(*r.ko.Spec.AuthenticationMode.Type)
-		}
-		if r.ko.Spec.AuthenticationMode.Passwords != nil {
-			passwords := []string{}
-			for _, pwRef := range r.ko.Spec.AuthenticationMode.Passwords {
-				if pwRef != nil {
-					tmpSecret, err := rm.rr.SecretValueFromReference(ctx, pwRef)
-					if err != nil {
-						return err
-					}
-					if tmpSecret != "" {
-						passwords = append(passwords, tmpSecret)
-					}
-				}
-			}
-			authMode.Passwords = passwords
-		}
-		input.AuthenticationMode = authMode
 	}
 
 	if delta.DifferentAt("Spec.NoPasswordRequired") && r.ko.Spec.NoPasswordRequired != nil {

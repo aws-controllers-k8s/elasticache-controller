@@ -154,13 +154,15 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	rm.setStatusDefaults(ko)
-	rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})
-	if len(resp.Users) > 0 && resp.Users[0].Authentication != nil {
-		if ko.Spec.AuthenticationMode == nil {
-			ko.Spec.AuthenticationMode = &svcapitypes.AuthenticationMode{}
+	if len(resp.Users) > 0 {
+		rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})
+		if resp.Users[0].Authentication != nil {
+			if ko.Spec.AuthenticationMode == nil {
+				ko.Spec.AuthenticationMode = &svcapitypes.AuthenticationMode{}
+			}
+			authType := string(resp.Users[0].Authentication.Type)
+			ko.Spec.AuthenticationMode.Type = &authType
 		}
-		authType := string(resp.Users[0].Authentication.Type)
-		ko.Spec.AuthenticationMode.Type = &authType
 	}
 
 	return &resource{ko}, nil

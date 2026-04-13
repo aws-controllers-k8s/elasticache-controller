@@ -137,13 +137,19 @@ def user_iam(user_iam_input, elasticache_client):
 class TestUser:
 
     # CRUD test for User; "create" and "delete" operations implicit in "user" fixture
-    def test_user_nopass(self, user_nopass, user_nopass_input):
+    def test_user_nopass(self, user_nopass, user_nopass_input, elasticache_client):
         (reference, resource) = user_nopass
         assert k8s.get_resource_exists(reference)
 
         assert k8s.wait_on_condition(reference, "ACK.ResourceSynced", "True", wait_periods=5)
         resource = k8s.get_resource(reference)
         assert resource["status"]["lastRequestedAccessString"] == user_nopass_input["ACCESS_STRING"]
+
+        # Verify against AWS
+        resp = elasticache_client.describe_users(UserId=user_nopass_input["USER_ID"])
+        assert len(resp["Users"]) == 1
+        aws_user = resp["Users"][0]
+        assert aws_user["Authentication"]["Type"] == "no-password"
 
         new_access_string = "on ~app::* -@all +@read +@write"
         user_patch = {"spec": {"accessString": new_access_string}}
@@ -155,7 +161,7 @@ class TestUser:
         assert resource["status"]["lastRequestedAccessString"] == new_access_string
 
     # test creation with IAM authentication mode (valkey engine)
-    def test_user_iam(self, user_iam, user_iam_input):
+    def test_user_iam(self, user_iam, user_iam_input, elasticache_client):
         (reference, resource) = user_iam
         assert k8s.get_resource_exists(reference)
 
@@ -166,8 +172,14 @@ class TestUser:
         assert resource["status"]["authentication"]["type_"] == "iam"
         assert resource["spec"]["authenticationMode"]["type"] == "iam"
 
+        # Verify against AWS
+        resp = elasticache_client.describe_users(UserId=user_iam_input["USER_ID"])
+        assert len(resp["Users"]) == 1
+        aws_user = resp["Users"][0]
+        assert aws_user["Authentication"]["Type"] == "iam"
+
     # test creation with Passwords specified (as k8s secrets)
-    def test_user_password(self, user_password, user_password_input):
+    def test_user_password(self, user_password, user_password_input, elasticache_client):
         (reference, resource) = user_password
         assert k8s.get_resource_exists(reference)
 
@@ -176,3 +188,10 @@ class TestUser:
         assert resource["status"]["authentication"] is not None
         assert resource["status"]["authentication"]["type_"] == "password"
         assert resource["status"]["authentication"]["passwordCount"] == 2
+
+        # Verify against AWS
+        resp = elasticache_client.describe_users(UserId=user_password_input["USER_ID"])
+        assert len(resp["Users"]) == 1
+        aws_user = resp["Users"][0]
+        assert aws_user["Authentication"]["Type"] == "password"
+        assert aws_user["Authentication"]["PasswordCount"] == 2
