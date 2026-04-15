@@ -36,7 +36,8 @@ type Authentication struct {
 
 // Specifies the authentication mode to use.
 type AuthenticationMode struct {
-	Passwords []*string `json:"passwords,omitempty"`
+	Passwords []*ackv1alpha1.SecretKeyReference `json:"passwords,omitempty"`
+	Type      *string                           `json:"type,omitempty"`
 }
 
 // Describes an Availability Zone in which the cluster is launched.

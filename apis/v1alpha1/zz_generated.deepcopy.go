@@ -54,14 +54,19 @@ func (in *AuthenticationMode) DeepCopyInto(out *AuthenticationMode) {
 	*out = *in
 	if in.Passwords != nil {
 		in, out := &in.Passwords, &out.Passwords
-		*out = make([]*string, len(*in))
+		*out = make([]*corev1alpha1.SecretKeyReference, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
 				in, out := &(*in)[i], &(*out)[i]
-				*out = new(string)
+				*out = new(corev1alpha1.SecretKeyReference)
 				**out = **in
 			}
 		}
+	}
+	if in.Type != nil {
+		in, out := &in.Type, &out.Type
+		*out = new(string)
+		**out = **in
 	}
 }
 
@@ -5254,6 +5259,11 @@ func (in *UserSpec) DeepCopyInto(out *UserSpec) {
 		in, out := &in.AccessString, &out.AccessString
 		*out = new(string)
 		**out = **in
+	}
+	if in.AuthenticationMode != nil {
+		in, out := &in.AuthenticationMode, &out.AuthenticationMode
+		*out = new(AuthenticationMode)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Engine != nil {
 		in, out := &in.Engine, &out.Engine

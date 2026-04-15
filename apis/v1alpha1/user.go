@@ -30,6 +30,8 @@ type UserSpec struct {
 	// Regex Pattern: `\S`
 	// +kubebuilder:validation:Required
 	AccessString *string `json:"accessString"`
+	// Specifies how to authenticate the user.
+	AuthenticationMode *AuthenticationMode `json:"authenticationMode,omitempty"`
 	// The options are valkey or redis.
 	//
 	// Regex Pattern: `^[a-zA-Z]*$`

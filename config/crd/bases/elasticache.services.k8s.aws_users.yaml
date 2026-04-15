@@ -44,6 +44,34 @@ spec:
 
                   Regex Pattern: `\S`
                 type: string
+              authenticationMode:
+                description: Specifies how to authenticate the user.
+                properties:
+                  passwords:
+                    items:
+                      description: |-
+                        SecretKeyReference combines a k8s corev1.SecretReference with a
+                        specific key within the referred-to Secret
+                      properties:
+                        key:
+                          description: Key is the key within the secret
+                          type: string
+                        name:
+                          description: name is unique within a namespace to reference
+                            a secret resource.
+                          type: string
+                        namespace:
+                          description: namespace defines the space within which the
+                            secret name must be unique.
+                          type: string
+                      required:
+                      - key
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    type: array
+                  type:
+                    type: string
+                type: object
               engine:
                 description: |-
                   The options are valkey or redis.
