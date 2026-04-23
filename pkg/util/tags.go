@@ -61,6 +61,25 @@ func GetTags(
 	return tags, nil
 }
 
+// ConvertToOrderedACKTags converts a list of Tag objects to a map of key/value pairs
+// and a slice of keys in the order they appeared in the original list
+func ConvertToOrderedACKTags(
+	tags []*svcapitypes.Tag,
+) (acktags.Tags, []string) {
+	if len(tags) == 0 {
+		return acktags.Tags{}, []string{}
+	}
+	res := acktags.Tags{}
+	order := []string{}
+	for _, t := range tags {
+		if t.Key != nil && t.Value != nil {
+			res[*t.Key] = *t.Value
+			order = append(order, *t.Key)
+		}
+	}
+	return res, order
+}
+
 // SyncTags keeps the resource's tags in sync
 //
 // NOTE(jaypipes): Elasticache's Tagging APIs differ from other AWS APIs in the
