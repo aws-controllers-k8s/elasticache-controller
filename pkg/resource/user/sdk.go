@@ -156,10 +156,7 @@ func (rm *resourceManager) sdkFind(
 	rm.setStatusDefaults(ko)
 	if len(resp.Users) > 0 {
 		rm.setSyncedCondition(resp.Users[0].Status, &resource{ko})
-		if resp.Users[0].Authentication != nil {
-			if ko.Spec.AuthenticationMode == nil {
-				ko.Spec.AuthenticationMode = &svcapitypes.AuthenticationMode{}
-			}
+		if resp.Users[0].Authentication != nil && ko.Spec.AuthenticationMode != nil {
 			authType := string(resp.Users[0].Authentication.Type)
 			ko.Spec.AuthenticationMode.Type = &authType
 		}
@@ -567,6 +564,9 @@ func (rm *resourceManager) setStatusDefaults(
 	}
 	if ko.Status.ACKResourceMetadata.Region == nil {
 		ko.Status.ACKResourceMetadata.Region = &rm.awsRegion
+	}
+	if ko.Status.ACKResourceMetadata.Partition == nil {
+		ko.Status.ACKResourceMetadata.Partition = &rm.awsPartition
 	}
 	if ko.Status.ACKResourceMetadata.OwnerAccountID == nil {
 		ko.Status.ACKResourceMetadata.OwnerAccountID = &rm.awsAccountID
