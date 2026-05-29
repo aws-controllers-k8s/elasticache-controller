@@ -1,0 +1,10 @@
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: CacheCluster
+metadata:
+  name: $CACHE_CLUSTER_ID
+spec:
+  cacheClusterID: $CACHE_CLUSTER_ID
+  cacheNodeType: cache.t3.micro
+  numCacheNodes: 2
+  engine: Memcached
+  autoMinorVersionUpgrade: false
