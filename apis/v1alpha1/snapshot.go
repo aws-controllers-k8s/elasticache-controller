@@ -37,7 +37,8 @@ type SnapshotSpec struct {
 	// from this replication group.
 	ReplicationGroupID  *string                                  `json:"replicationGroupID,omitempty"`
 	ReplicationGroupRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"replicationGroupRef,omitempty"`
-	// A name for the snapshot being created.
+	// A name for the snapshot being created. This value is stored as a lowercase
+	// string.
 	// +kubebuilder:validation:Required
 	SnapshotName *string `json:"snapshotName"`
 	// The name of an existing snapshot from which to make a copy.

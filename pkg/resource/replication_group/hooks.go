@@ -1,4 +1,5 @@
 // Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Copyright © 2026 Apple Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -1406,6 +1407,31 @@ func modifyDelta(
 
 	if updateRequired, current := primaryClusterIDRequiresUpdate(desired, latest); updateRequired {
 		delta.Add("Spec.PrimaryClusterID", desired.ko.Spec.PrimaryClusterID, *current)
+	}
+
+	// Durability is excluded from auto-generated delta comparison (compare:
+	// is_ignored: true in generator.yaml). AWS's Durability field does NOT
+	// get resolved server-side: if a cluster is created with "default", the
+	// field continues to read back literally as "default" indefinitely --
+	// only Status.EffectiveDurability reflects the resolved sync/async/disabled
+	// state. Without this custom handling, the auto-generated comparison would
+	// permanently block drift detection once "default" is set (d != l would
+	// never fire, since l stays "default" forever).
+	//
+	// We therefore re-add ANY difference to the delta -- including transitions
+	// to/from "default" -- so ModifyReplicationGroup is actually called.
+	// Whether durability is enabled or disabled is fixed at cluster creation
+	// and AWS does not support changing that afterward; such requests are
+	// rejected by the service itself (InvalidParameterCombination or
+	// InvalidParameterValue, both already in terminal_codes below) rather than
+	// validated client-side here.
+	// nil latest means the cluster predates the Durability feature (effectively
+	// disabled).
+	if ackcompare.HasNilDifference(desired.ko.Spec.Durability, latest.ko.Spec.Durability) {
+		delta.Add("Spec.Durability", desired.ko.Spec.Durability, latest.ko.Spec.Durability)
+	} else if desired.ko.Spec.Durability != nil && latest.ko.Spec.Durability != nil &&
+		*desired.ko.Spec.Durability != *latest.ko.Spec.Durability {
+		delta.Add("Spec.Durability", desired.ko.Spec.Durability, latest.ko.Spec.Durability)
 	}
 }
 

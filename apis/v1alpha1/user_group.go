@@ -34,7 +34,7 @@ type UserGroupSpec struct {
 	// tag key must be accompanied by a tag value, although null is accepted. Available
 	// for Valkey and Redis OSS only.
 	Tags []*Tag `json:"tags,omitempty"`
-	// The ID of the user group.
+	// The ID of the user group. This value is stored as a lowercase string.
 	// +kubebuilder:validation:Required
 	UserGroupID *string `json:"userGroupID"`
 	// The list of user IDs that belong to the user group.

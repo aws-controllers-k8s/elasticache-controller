@@ -214,6 +214,11 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Status.Status = nil
 		}
+		if elem.StorageEncryptionType != "" {
+			ko.Status.StorageEncryptionType = aws.String(string(elem.StorageEncryptionType))
+		} else {
+			ko.Status.StorageEncryptionType = nil
+		}
 		if elem.SubnetIds != nil {
 			ko.Spec.SubnetIDs = aws.StringSlice(elem.SubnetIds)
 		} else {
@@ -417,6 +422,11 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.Status = resp.ServerlessCache.Status
 	} else {
 		ko.Status.Status = nil
+	}
+	if resp.ServerlessCache.StorageEncryptionType != "" {
+		ko.Status.StorageEncryptionType = aws.String(string(resp.ServerlessCache.StorageEncryptionType))
+	} else {
+		ko.Status.StorageEncryptionType = nil
 	}
 	if resp.ServerlessCache.SubnetIds != nil {
 		ko.Spec.SubnetIDs = aws.StringSlice(resp.ServerlessCache.SubnetIds)

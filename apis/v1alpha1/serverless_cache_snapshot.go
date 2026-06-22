@@ -38,7 +38,7 @@ type ServerlessCacheSnapshotSpec struct {
 	ServerlessCacheRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"serverlessCacheRef,omitempty"`
 	// The name for the snapshot being created. Must be unique for the customer
 	// account. Available for Valkey, Redis OSS and Serverless Memcached only. Must
-	// be between 1 and 255 characters.
+	// be between 1 and 255 characters. This value is stored as a lowercase string.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	// +kubebuilder:validation:Required
 	ServerlessCacheSnapshotName *string `json:"serverlessCacheSnapshotName"`

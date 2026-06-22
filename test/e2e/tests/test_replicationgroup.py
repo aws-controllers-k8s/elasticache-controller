@@ -1,4 +1,5 @@
 # Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+# Copyright © 2026 Apple Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You may
 # not use this file except in compliance with the License. A copy of the
@@ -330,6 +331,114 @@ class TestReplicationGroup:
         # assert AF and multi AZ
         assert resource['status']['automaticFailover'] == "enabled"
         assert resource['status']['multiAZ'] == "enabled"
+
+
+    def test_rg_durability_update(self, make_rg_name, make_replication_group, rg_deletion_waiter):
+        """Create with async durability, verify read-back and effectiveDurability, then update to sync."""
+        rg_id = make_rg_name("rg-durability")
+        input_dict = {"RG_ID": rg_id, "DURABILITY": "async"}
+
+        (reference, _) = make_replication_group(
+            "replicationgroup_durability", input_dict, rg_id)
+
+        try:
+            assert k8s.wait_on_condition(
+                reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+            resource = k8s.get_resource(reference)
+            assert resource['spec']['durability'] == "async"
+            assert resource['status'].get('effectiveDurability') == "async"
+            rg = retrieve_replication_group(rg_id)
+            assert rg['Durability'] == "async"
+
+            patch = {"spec": {"durability": "sync"}}
+            _ = k8s.patch_custom_resource(reference, patch)
+            sleep(DEFAULT_WAIT_SECS)
+            assert k8s.wait_on_condition(
+                reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+            resource = k8s.get_resource(reference)
+            assert resource['spec']['durability'] == "sync"
+            assert resource['status'].get('effectiveDurability') == "sync"
+            rg = retrieve_replication_group(rg_id)
+            assert rg['Durability'] == "sync"
+        finally:
+            k8s.delete_custom_resource(reference)
+            sleep(DEFAULT_WAIT_SECS)
+            rg_deletion_waiter.wait(ReplicationGroupId=rg_id)
+
+    def test_rg_durability_disabled_guard(self, make_rg_name, make_replication_group, rg_deletion_waiter):
+        """Verify that patching durability to 'disabled' is rejected by AWS as a terminal
+        error (InvalidParameterCombination/InvalidParameterValue -- both in terminal_codes),
+        rather than retried forever. Durability enabled/disabled state is fixed at creation
+        and AWS does not support changing it; this is enforced by the service itself."""
+        rg_id = make_rg_name("rg-durability-guard")
+        input_dict = {"RG_ID": rg_id, "DURABILITY": "async"}
+
+        (reference, _) = make_replication_group(
+            "replicationgroup_durability", input_dict, rg_id)
+
+        try:
+            assert k8s.wait_on_condition(
+                reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+            resource = k8s.get_resource(reference)
+            assert resource['spec']['durability'] == "async"
+
+            # Attempt to patch to disabled — must be rejected with a terminal condition
+            patch = {"spec": {"durability": "disabled"}}
+            _ = k8s.patch_custom_resource(reference, patch)
+            assert k8s.wait_on_condition(
+                reference, "ACK.Terminal", "True", wait_periods=30)
+
+            resource = k8s.get_resource(reference)
+            conditions = resource.get('status', {}).get('conditions', [])
+            terminal = next(
+                (c for c in conditions if c['type'] == 'ACK.Terminal'), None)
+            assert terminal is not None, "Expected ACK.Terminal condition for async->disabled transition"
+            assert terminal['status'] == 'True'
+        finally:
+            k8s.delete_custom_resource(reference)
+            sleep(DEFAULT_WAIT_SECS)
+            rg_deletion_waiter.wait(ReplicationGroupId=rg_id)
+
+    def test_rg_durability_default_guard(self, make_rg_name, make_replication_group, rg_deletion_waiter):
+        """Verify that patching durability away from 'default' is rejected by AWS as a
+        terminal error, rather than being silently ignored. AWS's Durability field is not
+        resolved server-side -- a cluster created with "default" reads back "default"
+        indefinitely (only status.effectiveDurability resolves), so this transition must be
+        detected and sent to AWS, which rejects enabling durability post-creation itself."""
+        rg_id = make_rg_name("rg-durability-default-guard")
+        input_dict = {"RG_ID": rg_id, "DURABILITY": "default"}
+
+        (reference, _) = make_replication_group(
+            "replicationgroup_durability", input_dict, rg_id)
+
+        try:
+            assert k8s.wait_on_condition(
+                reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+            resource = k8s.get_resource(reference)
+            assert resource['spec']['durability'] == "default"
+            assert resource['status'].get('effectiveDurability') == "disabled"
+
+            # Attempt to patch away from default — must be rejected with a terminal
+            # condition, not silently ignored.
+            patch = {"spec": {"durability": "sync"}}
+            _ = k8s.patch_custom_resource(reference, patch)
+            assert k8s.wait_on_condition(
+                reference, "ACK.Terminal", "True", wait_periods=30)
+
+            resource = k8s.get_resource(reference)
+            conditions = resource.get('status', {}).get('conditions', [])
+            terminal = next(
+                (c for c in conditions if c['type'] == 'ACK.Terminal'), None)
+            assert terminal is not None, "Expected ACK.Terminal condition for default->sync transition"
+            assert terminal['status'] == 'True'
+        finally:
+            k8s.delete_custom_resource(reference)
+            sleep(DEFAULT_WAIT_SECS)
+            rg_deletion_waiter.wait(ReplicationGroupId=rg_id)
 
     def test_rg_creation_deletion(self, make_rg_name, make_replication_group, rg_deletion_waiter):
         input_dict = {

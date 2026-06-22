@@ -154,10 +154,9 @@ spec:
                 type: array
               snapshotRetentionLimit:
                 description: |-
-                  The number of snapshots that will be retained for the serverless cache that
-                  is being created. As new snapshots beyond this limit are added, the oldest
-                  snapshots will be deleted on a rolling basis. Available for Valkey, Redis
-                  OSS and Serverless Memcached only.
+                  The number of days for which ElastiCache retains automatic snapshots before
+                  deleting them. Available for Valkey, Redis OSS and Serverless Memcached only.
+                  The maximum value allowed is 35 days.
                 format: int64
                 type: integer
               subnetIDs:
@@ -320,6 +319,13 @@ spec:
                 description: |-
                   The current status of the serverless cache. The allowed values are CREATING,
                   AVAILABLE, DELETING, CREATE-FAILED and MODIFYING.
+                type: string
+              storageEncryptionType:
+                description: |-
+                  Indicates the type of encryption for data stored at rest in the serverless
+                  cache. Serverless caches are always encrypted at rest. The value is sse-elasticache
+                  if an ElastiCache service-managed key is used, or sse-kms if a customer-managed
+                  KMS key is used.
                 type: string
             type: object
         type: object

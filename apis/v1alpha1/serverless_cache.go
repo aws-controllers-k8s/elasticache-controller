@@ -59,10 +59,9 @@ type ServerlessCacheSpec struct {
 	// The ARN(s) of the snapshot that the new serverless cache will be created
 	// from. Available for Valkey, Redis OSS and Serverless Memcached only.
 	SnapshotARNsToRestore []*string `json:"snapshotARNsToRestore,omitempty"`
-	// The number of snapshots that will be retained for the serverless cache that
-	// is being created. As new snapshots beyond this limit are added, the oldest
-	// snapshots will be deleted on a rolling basis. Available for Valkey, Redis
-	// OSS and Serverless Memcached only.
+	// The number of days for which ElastiCache retains automatic snapshots before
+	// deleting them. Available for Valkey, Redis OSS and Serverless Memcached only.
+	// The maximum value allowed is 35 days.
 	SnapshotRetentionLimit *int64 `json:"snapshotRetentionLimit,omitempty"`
 	// A list of the identifiers of the subnets where the VPC endpoint for the serverless
 	// cache will be deployed. All the subnetIds must belong to the same VPC.
@@ -104,6 +103,12 @@ type ServerlessCacheStatus struct {
 	// AVAILABLE, DELETING, CREATE-FAILED and MODIFYING.
 	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`
+	// Indicates the type of encryption for data stored at rest in the serverless
+	// cache. Serverless caches are always encrypted at rest. The value is sse-elasticache
+	// if an ElastiCache service-managed key is used, or sse-kms if a customer-managed
+	// KMS key is used.
+	// +kubebuilder:validation:Optional
+	StorageEncryptionType *string `json:"storageEncryptionType,omitempty"`
 }
 
 // ServerlessCache is the Schema for the ServerlessCaches API
