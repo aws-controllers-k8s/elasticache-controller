@@ -30,10 +30,13 @@ type SnapshotSpec struct {
 	// cluster.
 	CacheClusterID *string `json:"cacheClusterID,omitempty"`
 	// The ID of the KMS key used to encrypt the snapshot.
-	KMSKeyID *string `json:"kmsKeyID,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	KMSKeyID  *string                                  `json:"kmsKeyID,omitempty"`
+	KMSKeyRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"kmsKeyRef,omitempty"`
 	// The identifier of an existing replication group. The snapshot is created
 	// from this replication group.
-	ReplicationGroupID *string `json:"replicationGroupID,omitempty"`
+	ReplicationGroupID  *string                                  `json:"replicationGroupID,omitempty"`
+	ReplicationGroupRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"replicationGroupRef,omitempty"`
 	// A name for the snapshot being created.
 	// +kubebuilder:validation:Required
 	SnapshotName *string `json:"snapshotName"`

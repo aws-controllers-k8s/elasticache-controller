@@ -160,6 +160,12 @@ resources:
           resource: SecurityGroup
           service_name: ec2
           path: Status.ID
+      KMSKeyID:
+        is_immutable: true
+        references:
+          resource: Key
+          service_name: kms
+          path: Status.ACKResourceMetadata.ARN
       Events:
         is_read_only: true
         from:
@@ -218,6 +224,16 @@ resources:
         - SnapshotQuotaExceededFault
         - SnapshotFeatureNotSupportedFault
     fields:
+      KMSKeyID:
+        is_immutable: true
+        references:
+          resource: Key
+          service_name: kms
+          path: Status.ACKResourceMetadata.ARN
+      ReplicationGroupID:
+        references:
+          resource: ReplicationGroup
+          path: Spec.ReplicationGroupID
       SourceSnapshotName:
         from:
           operation: CopySnapshot

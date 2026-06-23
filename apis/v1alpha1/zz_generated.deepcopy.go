@@ -2819,6 +2819,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.KMSKeyRef != nil {
+		in, out := &in.KMSKeyRef, &out.KMSKeyRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.LogDeliveryConfigurations != nil {
 		in, out := &in.LogDeliveryConfigurations, &out.LogDeliveryConfigurations
 		*out = make([]*LogDeliveryConfigurationRequest, len(*in))
@@ -4330,10 +4335,20 @@ func (in *SnapshotSpec) DeepCopyInto(out *SnapshotSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.KMSKeyRef != nil {
+		in, out := &in.KMSKeyRef, &out.KMSKeyRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.ReplicationGroupID != nil {
 		in, out := &in.ReplicationGroupID, &out.ReplicationGroupID
 		*out = new(string)
 		**out = **in
+	}
+	if in.ReplicationGroupRef != nil {
+		in, out := &in.ReplicationGroupRef, &out.ReplicationGroupRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.SnapshotName != nil {
 		in, out := &in.SnapshotName, &out.SnapshotName

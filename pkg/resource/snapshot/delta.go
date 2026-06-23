@@ -20,6 +20,7 @@ import (
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 // Hack to avoid import errors during build...
@@ -55,12 +56,18 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef) {
+		delta.Add("Spec.KMSKeyRef", a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID) {
 		delta.Add("Spec.ReplicationGroupID", a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID)
 	} else if a.ko.Spec.ReplicationGroupID != nil && b.ko.Spec.ReplicationGroupID != nil {
 		if *a.ko.Spec.ReplicationGroupID != *b.ko.Spec.ReplicationGroupID {
 			delta.Add("Spec.ReplicationGroupID", a.ko.Spec.ReplicationGroupID, b.ko.Spec.ReplicationGroupID)
 		}
+	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.ReplicationGroupRef, b.ko.Spec.ReplicationGroupRef) {
+		delta.Add("Spec.ReplicationGroupRef", a.ko.Spec.ReplicationGroupRef, b.ko.Spec.ReplicationGroupRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.SnapshotName, b.ko.Spec.SnapshotName) {
 		delta.Add("Spec.SnapshotName", a.ko.Spec.SnapshotName, b.ko.Spec.SnapshotName)
