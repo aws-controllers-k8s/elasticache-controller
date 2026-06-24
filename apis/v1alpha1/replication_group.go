@@ -171,7 +171,9 @@ type ReplicationGroupSpec struct {
 	// on all instances built on the Nitro system (http://aws.amazon.com/ec2/nitro/).
 	IPDiscovery *string `json:"ipDiscovery,omitempty"`
 	// The ID of the KMS key used to encrypt the disk in the cluster.
-	KMSKeyID *string `json:"kmsKeyID,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	KMSKeyID  *string                                  `json:"kmsKeyID,omitempty"`
+	KMSKeyRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"kmsKeyRef,omitempty"`
 	// Specifies the destination, format and type of the logs.
 	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `json:"logDeliveryConfigurations,omitempty"`
 	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
