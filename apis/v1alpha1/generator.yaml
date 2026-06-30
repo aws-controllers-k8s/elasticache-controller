@@ -32,6 +32,10 @@ resources:
           path: Status.ID
       AuthToken:
         is_secret: true
+      Engine:
+        set:
+          - method: Create
+            ignore: from
       PreferredAvailabilityZone:
         late_initialize: {}
       PreferredAvailabilityZones:

@@ -611,11 +611,6 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.ConfigurationEndpoint = nil
 	}
-	if resp.CacheCluster.Engine != nil {
-		ko.Spec.Engine = resp.CacheCluster.Engine
-	} else {
-		ko.Spec.Engine = nil
-	}
 	if resp.CacheCluster.EngineVersion != nil {
 		ko.Spec.EngineVersion = resp.CacheCluster.EngineVersion
 	} else {

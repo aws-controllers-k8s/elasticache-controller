@@ -125,6 +125,38 @@ def simple_cache_cluster(elasticache_client):
         pass
 
 
+@pytest.fixture
+def engine_case_cache_cluster(elasticache_client):
+    cache_cluster_id = random_suffix_name("engine-case-cc", 32)
+
+    replacements = REPLACEMENT_VALUES.copy()
+    replacements["CACHE_CLUSTER_ID"] = cache_cluster_id
+
+    resource_data = load_elasticache_resource(
+        "cache_cluster_engine_case",
+        additional_replacements=replacements,
+    )
+
+    ref = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL,
+        cache_cluster_id, namespace="default",
+    )
+    k8s.create_custom_resource(ref, resource_data)
+    cr = k8s.wait_resource_consumed_by_controller(ref, wait_periods=15, period_length=20)
+
+    assert cr is not None
+    assert k8s.get_resource_exists(ref)
+
+    yield (ref, cr)
+
+    try:
+        _, deleted = k8s.delete_custom_resource(ref, 3, 10)
+        assert deleted
+        wait_until_deleted(elasticache_client, cache_cluster_id)
+    except:
+        pass
+
+
 @service_marker
 @pytest.mark.canary
 class TestCacheCluster:
@@ -256,8 +288,22 @@ class TestCacheCluster:
         assert len(cache_cluster['SecurityGroups']) == 1
         assert cache_cluster['SecurityGroups'][0]['SecurityGroupId'] == security_group_1
 
+    def test_engine_case_insensitive_no_drift(self, elasticache_client, engine_case_cache_cluster):
+        (ref, cr) = engine_case_cache_cluster
 
+        cache_cluster_id = cr["spec"]["cacheClusterID"]
+        assert cr["spec"]["engine"] == "Memcached"
 
+        wait_for_cache_cluster_available(elasticache_client, cache_cluster_id)
+        sleep(CHECK_STATUS_WAIT_SECONDS)
 
+        condition.assert_synced(ref)
+
+        cr = k8s.get_resource(ref)
+        assert cr["spec"]["engine"] == "Memcached"
+
+        aws_res = elasticache_client.describe_cache_clusters(CacheClusterId=cache_cluster_id)
+        assert len(aws_res["CacheClusters"]) == 1
+        assert aws_res["CacheClusters"][0]["Engine"] == "memcached"
 
 

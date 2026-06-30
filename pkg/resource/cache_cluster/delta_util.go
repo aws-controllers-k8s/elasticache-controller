@@ -16,6 +16,7 @@ package cache_cluster
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 
@@ -33,6 +34,11 @@ func modifyDelta(
 		util.EngineVersionsMatch(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
 		common.RemoveFromDelta(delta, "Spec.EngineVersion")
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
+	}
+
+	if delta.DifferentAt("Spec.Engine") && desired.ko.Spec.Engine != nil && latest.ko.Spec.Engine != nil &&
+		strings.EqualFold(*desired.ko.Spec.Engine, *latest.ko.Spec.Engine) {
+		common.RemoveFromDelta(delta, "Spec.Engine")
 	}
 
 	// if server has given PreferredMaintenanceWindow a default value, no action needs to be taken.
