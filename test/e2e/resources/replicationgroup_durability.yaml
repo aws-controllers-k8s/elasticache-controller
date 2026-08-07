@@ -10,7 +10,7 @@ spec:
   engine: valkey
   engineVersion: "9.0"
   multiAZEnabled: true
-  numNodeGroups: 1
+  numNodeGroups: 2
   replicasPerNodeGroup: 1
   # Durability requires encryption in-transit enabled at creation (at-rest is
   # enabled automatically). See ElastiCache Durability limitations.
