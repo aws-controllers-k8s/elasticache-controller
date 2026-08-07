@@ -503,3 +503,6 @@ ignore:
     - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
     - Subnet.SupportedNetworkTypes
     - CreateReplicationGroupInput.ServerlessCacheSnapshotName
+    - CreateServerlessCacheInput.NetworkType
+    - ServerlessCache.NetworkType
+    - Snapshot.Durability

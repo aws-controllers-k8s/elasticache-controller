@@ -1,0 +1,19 @@
+# Replication group for testing Durability field create and update
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  automaticFailoverEnabled: true
+  cacheNodeType: cache.r7g.large
+  durability: $DURABILITY
+  engine: valkey
+  engineVersion: "9.0"
+  multiAZEnabled: true
+  numNodeGroups: 2
+  replicasPerNodeGroup: 1
+  # Durability requires encryption in-transit enabled at creation (at-rest is
+  # enabled automatically). See ElastiCache Durability limitations.
+  transitEncryptionEnabled: true
+  description: durability test RG
+  replicationGroupID: $RG_ID

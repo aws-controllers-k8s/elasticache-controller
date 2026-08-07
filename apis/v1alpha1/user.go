@@ -45,7 +45,7 @@ type UserSpec struct {
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted.
 	Tags []*Tag `json:"tags,omitempty"`
-	// The ID of the user.
+	// The ID of the user. This value is stored as a lowercase string.
 	//
 	// Regex Pattern: `^[a-zA-Z][a-zA-Z0-9\-]*$`
 	// +kubebuilder:validation:Required
