@@ -1,5 +1,3 @@
-# Copyright © 2026 Apple Inc.
-
 # Replication group for testing Durability field create and update
 apiVersion: elasticache.services.k8s.aws/v1alpha1
 kind: ReplicationGroup
