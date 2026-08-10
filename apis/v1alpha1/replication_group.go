@@ -200,7 +200,8 @@ type ReplicationGroupSpec struct {
 	// (SNS) topic to which notifications are sent.
 	//
 	// The Amazon SNS topic owner must be the same as the cluster owner.
-	NotificationTopicARN *string `json:"notificationTopicARN,omitempty"`
+	NotificationTopicARN *string                                  `json:"notificationTopicARN,omitempty"`
+	NotificationTopicRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"notificationTopicRef,omitempty"`
 	// An optional parameter that specifies the number of node groups (shards) for
 	// this Valkey or Redis OSS (cluster mode enabled) replication group. For Valkey
 	// or Redis OSS (cluster mode disabled) either omit this parameter or set it
@@ -289,7 +290,9 @@ type ReplicationGroupSpec struct {
 	// The name of a snapshot from which to restore data into the new replication
 	// group. The snapshot status changes to restoring while the new replication
 	// group is being created.
-	SnapshotName *string `json:"snapshotName,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	SnapshotName *string                                  `json:"snapshotName,omitempty"`
+	SnapshotRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"snapshotRef,omitempty"`
 	// The number of days for which ElastiCache retains automatic snapshots before
 	// deleting them. For example, if you set SnapshotRetentionLimit to 5, a snapshot
 	// that was taken today is retained for 5 days before being deleted.
@@ -326,7 +329,8 @@ type ReplicationGroupSpec struct {
 	// an AuthToken, and a CacheSubnetGroup.
 	TransitEncryptionEnabled *bool `json:"transitEncryptionEnabled,omitempty"`
 	// The user group to associate with the replication group.
-	UserGroupIDs []*string `json:"userGroupIDs,omitempty"`
+	UserGroupIDs  []*string                                  `json:"userGroupIDs,omitempty"`
+	UserGroupRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"userGroupRefs,omitempty"`
 }
 
 // ReplicationGroupStatus defines the observed state of ReplicationGroup

@@ -42,12 +42,20 @@ import (
 func (rm *resourceManager) ClearResolvedReferences(res acktypes.AWSResource) acktypes.AWSResource {
 	ko := rm.concreteResource(res).ko.DeepCopy()
 
+	if ko.Spec.CacheClusterRef != nil {
+		ko.Spec.CacheClusterID = nil
+	}
+
 	if ko.Spec.KMSKeyRef != nil {
 		ko.Spec.KMSKeyID = nil
 	}
 
 	if ko.Spec.ReplicationGroupRef != nil {
 		ko.Spec.ReplicationGroupID = nil
+	}
+
+	if ko.Spec.SourceSnapshotRef != nil {
+		ko.Spec.SourceSnapshotName = nil
 	}
 
 	return &resource{ko}
@@ -69,6 +77,12 @@ func (rm *resourceManager) ResolveReferences(
 
 	resourceHasReferences := false
 	err := validateReferenceFields(ko)
+	if fieldHasReferences, err := rm.resolveReferenceForCacheClusterID(ctx, apiReader, ko); err != nil {
+		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
+	} else {
+		resourceHasReferences = resourceHasReferences || fieldHasReferences
+	}
+
 	if fieldHasReferences, err := rm.resolveReferenceForKMSKeyID(ctx, apiReader, ko); err != nil {
 		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
 	} else {
@@ -81,6 +95,12 @@ func (rm *resourceManager) ResolveReferences(
 		resourceHasReferences = resourceHasReferences || fieldHasReferences
 	}
 
+	if fieldHasReferences, err := rm.resolveReferenceForSourceSnapshotName(ctx, apiReader, ko); err != nil {
+		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
+	} else {
+		resourceHasReferences = resourceHasReferences || fieldHasReferences
+	}
+
 	return &resource{ko}, resourceHasReferences, err
 }
 
@@ -88,12 +108,111 @@ func (rm *resourceManager) ResolveReferences(
 // identifier field.
 func validateReferenceFields(ko *svcapitypes.Snapshot) error {
 
+	if ko.Spec.CacheClusterRef != nil && ko.Spec.CacheClusterID != nil {
+		return ackerr.ResourceReferenceAndIDNotSupportedFor("CacheClusterID", "CacheClusterRef")
+	}
+
 	if ko.Spec.KMSKeyRef != nil && ko.Spec.KMSKeyID != nil {
 		return ackerr.ResourceReferenceAndIDNotSupportedFor("KMSKeyID", "KMSKeyRef")
 	}
 
 	if ko.Spec.ReplicationGroupRef != nil && ko.Spec.ReplicationGroupID != nil {
 		return ackerr.ResourceReferenceAndIDNotSupportedFor("ReplicationGroupID", "ReplicationGroupRef")
+	}
+
+	if ko.Spec.SourceSnapshotRef != nil && ko.Spec.SourceSnapshotName != nil {
+		return ackerr.ResourceReferenceAndIDNotSupportedFor("SourceSnapshotName", "SourceSnapshotRef")
+	}
+	return nil
+}
+
+// resolveReferenceForCacheClusterID reads the resource referenced
+// from CacheClusterRef field and sets the CacheClusterID
+// from referenced resource. Returns a boolean indicating whether a reference
+// contains references, or an error
+func (rm *resourceManager) resolveReferenceForCacheClusterID(
+	ctx context.Context,
+	apiReader client.Reader,
+	ko *svcapitypes.Snapshot,
+) (hasReferences bool, err error) {
+	if ko.Spec.CacheClusterRef != nil && ko.Spec.CacheClusterRef.From != nil {
+		hasReferences = true
+		arr := ko.Spec.CacheClusterRef.From
+		if arr.Name == nil || *arr.Name == "" {
+			return hasReferences, fmt.Errorf("provided resource reference is nil or empty: CacheClusterRef")
+		}
+		namespace, err := ackrt.ResolveCrossNamespaceReference(
+			ctx,
+			rm.cfg.EnableCrossNamespace,
+			&ko.Status.Conditions,
+			ackrt.CrossNamespaceRefKindResource,
+			ko.ObjectMeta.GetNamespace(),
+			arr.Namespace,
+			*arr.Name,
+		)
+		if err != nil {
+			return hasReferences, err
+		}
+		obj := &svcapitypes.CacheCluster{}
+		if err := getReferencedResourceState_CacheCluster(ctx, apiReader, obj, *arr.Name, namespace); err != nil {
+			return hasReferences, err
+		}
+		ko.Spec.CacheClusterID = (*string)(obj.Spec.CacheClusterID)
+	}
+
+	return hasReferences, nil
+}
+
+// getReferencedResourceState_CacheCluster looks up whether a referenced resource
+// exists and is in a ACK.ResourceSynced=True state. If the referenced resource does exist and is
+// in a Synced state, returns nil, otherwise returns `ackerr.ResourceReferenceTerminalFor` or
+// `ResourceReferenceNotSyncedFor` depending on if the resource is in a Terminal state.
+func getReferencedResourceState_CacheCluster(
+	ctx context.Context,
+	apiReader client.Reader,
+	obj *svcapitypes.CacheCluster,
+	name string, // the Kubernetes name of the referenced resource
+	namespace string, // the Kubernetes namespace of the referenced resource
+) error {
+	namespacedName := types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}
+	err := apiReader.Get(ctx, namespacedName, obj)
+	if err != nil {
+		return err
+	}
+	var refResourceTerminal bool
+	for _, cond := range obj.Status.Conditions {
+		if cond.Type == ackv1alpha1.ConditionTypeTerminal &&
+			cond.Status == corev1.ConditionTrue {
+			return ackerr.ResourceReferenceTerminalFor(
+				"CacheCluster",
+				namespace, name)
+		}
+	}
+	if refResourceTerminal {
+		return ackerr.ResourceReferenceTerminalFor(
+			"CacheCluster",
+			namespace, name)
+	}
+	var refResourceSynced bool
+	for _, cond := range obj.Status.Conditions {
+		if cond.Type == ackv1alpha1.ConditionTypeResourceSynced &&
+			cond.Status == corev1.ConditionTrue {
+			refResourceSynced = true
+		}
+	}
+	if !refResourceSynced {
+		return ackerr.ResourceReferenceNotSyncedFor(
+			"CacheCluster",
+			namespace, name)
+	}
+	if obj.Spec.CacheClusterID == nil {
+		return ackerr.ResourceReferenceMissingTargetFieldFor(
+			"CacheCluster",
+			namespace, name,
+			"Spec.CacheClusterID")
 	}
 	return nil
 }
@@ -276,6 +395,97 @@ func getReferencedResourceState_ReplicationGroup(
 			"ReplicationGroup",
 			namespace, name,
 			"Spec.ReplicationGroupID")
+	}
+	return nil
+}
+
+// resolveReferenceForSourceSnapshotName reads the resource referenced
+// from SourceSnapshotRef field and sets the SourceSnapshotName
+// from referenced resource. Returns a boolean indicating whether a reference
+// contains references, or an error
+func (rm *resourceManager) resolveReferenceForSourceSnapshotName(
+	ctx context.Context,
+	apiReader client.Reader,
+	ko *svcapitypes.Snapshot,
+) (hasReferences bool, err error) {
+	if ko.Spec.SourceSnapshotRef != nil && ko.Spec.SourceSnapshotRef.From != nil {
+		hasReferences = true
+		arr := ko.Spec.SourceSnapshotRef.From
+		if arr.Name == nil || *arr.Name == "" {
+			return hasReferences, fmt.Errorf("provided resource reference is nil or empty: SourceSnapshotRef")
+		}
+		namespace, err := ackrt.ResolveCrossNamespaceReference(
+			ctx,
+			rm.cfg.EnableCrossNamespace,
+			&ko.Status.Conditions,
+			ackrt.CrossNamespaceRefKindResource,
+			ko.ObjectMeta.GetNamespace(),
+			arr.Namespace,
+			*arr.Name,
+		)
+		if err != nil {
+			return hasReferences, err
+		}
+		obj := &svcapitypes.Snapshot{}
+		if err := getReferencedResourceState_Snapshot(ctx, apiReader, obj, *arr.Name, namespace); err != nil {
+			return hasReferences, err
+		}
+		ko.Spec.SourceSnapshotName = (*string)(obj.Spec.SnapshotName)
+	}
+
+	return hasReferences, nil
+}
+
+// getReferencedResourceState_Snapshot looks up whether a referenced resource
+// exists and is in a ACK.ResourceSynced=True state. If the referenced resource does exist and is
+// in a Synced state, returns nil, otherwise returns `ackerr.ResourceReferenceTerminalFor` or
+// `ResourceReferenceNotSyncedFor` depending on if the resource is in a Terminal state.
+func getReferencedResourceState_Snapshot(
+	ctx context.Context,
+	apiReader client.Reader,
+	obj *svcapitypes.Snapshot,
+	name string, // the Kubernetes name of the referenced resource
+	namespace string, // the Kubernetes namespace of the referenced resource
+) error {
+	namespacedName := types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}
+	err := apiReader.Get(ctx, namespacedName, obj)
+	if err != nil {
+		return err
+	}
+	var refResourceTerminal bool
+	for _, cond := range obj.Status.Conditions {
+		if cond.Type == ackv1alpha1.ConditionTypeTerminal &&
+			cond.Status == corev1.ConditionTrue {
+			return ackerr.ResourceReferenceTerminalFor(
+				"Snapshot",
+				namespace, name)
+		}
+	}
+	if refResourceTerminal {
+		return ackerr.ResourceReferenceTerminalFor(
+			"Snapshot",
+			namespace, name)
+	}
+	var refResourceSynced bool
+	for _, cond := range obj.Status.Conditions {
+		if cond.Type == ackv1alpha1.ConditionTypeResourceSynced &&
+			cond.Status == corev1.ConditionTrue {
+			refResourceSynced = true
+		}
+	}
+	if !refResourceSynced {
+		return ackerr.ResourceReferenceNotSyncedFor(
+			"Snapshot",
+			namespace, name)
+	}
+	if obj.Spec.SnapshotName == nil {
+		return ackerr.ResourceReferenceMissingTargetFieldFor(
+			"Snapshot",
+			namespace, name,
+			"Spec.SnapshotName")
 	}
 	return nil
 }

@@ -42,7 +42,9 @@ type ServerlessCacheSpec struct {
 	Engine *string `json:"engine"`
 	// ARN of the customer managed key for encrypting the data at rest. If no KMS
 	// key is provided, a default service key is used.
-	KMSKeyID *string `json:"kmsKeyID,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	KMSKeyID  *string                                  `json:"kmsKeyID,omitempty"`
+	KMSKeyRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"kmsKeyRef,omitempty"`
 	// The version of the cache engine that will be used to create the serverless
 	// cache.
 	MajorEngineVersion *string `json:"majorEngineVersion,omitempty"`
@@ -73,7 +75,8 @@ type ServerlessCacheSpec struct {
 	Tags []*Tag `json:"tags,omitempty"`
 	// The identifier of the UserGroup to be associated with the serverless cache.
 	// Available for Valkey and Redis OSS only. Default is NULL.
-	UserGroupID *string `json:"userGroupID,omitempty"`
+	UserGroupID  *string                                  `json:"userGroupID,omitempty"`
+	UserGroupRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"userGroupRef,omitempty"`
 }
 
 // ServerlessCacheStatus defines the observed state of ServerlessCache
