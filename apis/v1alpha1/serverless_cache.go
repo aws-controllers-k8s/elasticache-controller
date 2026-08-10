@@ -60,8 +60,7 @@ type ServerlessCacheSpec struct {
 	ServerlessCacheName *string `json:"serverlessCacheName"`
 	// The ARN(s) of the snapshot that the new serverless cache will be created
 	// from. Available for Valkey, Redis OSS and Serverless Memcached only.
-	SnapshotARNsToRestore     []*string                                  `json:"snapshotARNsToRestore,omitempty"`
-	SnapshotARNsToRestoreRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"snapshotARNsToRestoreRefs,omitempty"`
+	SnapshotARNsToRestore []*string `json:"snapshotARNsToRestore,omitempty"`
 	// The number of snapshots that will be retained for the serverless cache that
 	// is being created. As new snapshots beyond this limit are added, the oldest
 	// snapshots will be deleted on a rolling basis. Available for Valkey, Redis

@@ -151,9 +151,6 @@ func newResourceDelta(
 			delta.Add("Spec.SnapshotARNsToRestore", a.ko.Spec.SnapshotARNsToRestore, b.ko.Spec.SnapshotARNsToRestore)
 		}
 	}
-	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.SnapshotARNsToRestoreRefs, b.ko.Spec.SnapshotARNsToRestoreRefs) {
-		delta.Add("Spec.SnapshotARNsToRestoreRefs", a.ko.Spec.SnapshotARNsToRestoreRefs, b.ko.Spec.SnapshotARNsToRestoreRefs)
-	}
 	if ackcompare.HasNilDifference(a.ko.Spec.SnapshotRetentionLimit, b.ko.Spec.SnapshotRetentionLimit) {
 		delta.Add("Spec.SnapshotRetentionLimit", a.ko.Spec.SnapshotRetentionLimit, b.ko.Spec.SnapshotRetentionLimit)
 	} else if a.ko.Spec.SnapshotRetentionLimit != nil && b.ko.Spec.SnapshotRetentionLimit != nil {

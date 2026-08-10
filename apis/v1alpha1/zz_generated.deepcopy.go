@@ -3991,17 +3991,6 @@ func (in *ServerlessCacheSpec) DeepCopyInto(out *ServerlessCacheSpec) {
 			}
 		}
 	}
-	if in.SnapshotARNsToRestoreRefs != nil {
-		in, out := &in.SnapshotARNsToRestoreRefs, &out.SnapshotARNsToRestoreRefs
-		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
-				(*in).DeepCopyInto(*out)
-			}
-		}
-	}
 	if in.SnapshotRetentionLimit != nil {
 		in, out := &in.SnapshotRetentionLimit, &out.SnapshotRetentionLimit
 		*out = new(int64)

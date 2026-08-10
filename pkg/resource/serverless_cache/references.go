@@ -57,10 +57,6 @@ func (rm *resourceManager) ClearResolvedReferences(res acktypes.AWSResource) ack
 		ko.Spec.SecurityGroupIDs = nil
 	}
 
-	if len(ko.Spec.SnapshotARNsToRestoreRefs) > 0 {
-		ko.Spec.SnapshotARNsToRestore = nil
-	}
-
 	if len(ko.Spec.SubnetRefs) > 0 {
 		ko.Spec.SubnetIDs = nil
 	}
@@ -100,12 +96,6 @@ func (rm *resourceManager) ResolveReferences(
 		resourceHasReferences = resourceHasReferences || fieldHasReferences
 	}
 
-	if fieldHasReferences, err := rm.resolveReferenceForSnapshotARNsToRestore(ctx, apiReader, ko); err != nil {
-		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
-	} else {
-		resourceHasReferences = resourceHasReferences || fieldHasReferences
-	}
-
 	if fieldHasReferences, err := rm.resolveReferenceForSubnetIDs(ctx, apiReader, ko); err != nil {
 		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
 	} else {
@@ -131,10 +121,6 @@ func validateReferenceFields(ko *svcapitypes.ServerlessCache) error {
 
 	if len(ko.Spec.SecurityGroupRefs) > 0 && len(ko.Spec.SecurityGroupIDs) > 0 {
 		return ackerr.ResourceReferenceAndIDNotSupportedFor("SecurityGroupIDs", "SecurityGroupRefs")
-	}
-
-	if len(ko.Spec.SnapshotARNsToRestoreRefs) > 0 && len(ko.Spec.SnapshotARNsToRestore) > 0 {
-		return ackerr.ResourceReferenceAndIDNotSupportedFor("SnapshotARNsToRestore", "SnapshotARNsToRestoreRefs")
 	}
 
 	if len(ko.Spec.SubnetRefs) > 0 && len(ko.Spec.SubnetIDs) > 0 {
@@ -330,102 +316,6 @@ func getReferencedResourceState_SecurityGroup(
 			"SecurityGroup",
 			namespace, name,
 			"Status.ID")
-	}
-	return nil
-}
-
-// resolveReferenceForSnapshotARNsToRestore reads the resource referenced
-// from SnapshotARNsToRestoreRefs field and sets the SnapshotARNsToRestore
-// from referenced resource. Returns a boolean indicating whether a reference
-// contains references, or an error
-func (rm *resourceManager) resolveReferenceForSnapshotARNsToRestore(
-	ctx context.Context,
-	apiReader client.Reader,
-	ko *svcapitypes.ServerlessCache,
-) (hasReferences bool, err error) {
-	for _, f0iter := range ko.Spec.SnapshotARNsToRestoreRefs {
-		if f0iter != nil && f0iter.From != nil {
-			hasReferences = true
-			arr := f0iter.From
-			if arr.Name == nil || *arr.Name == "" {
-				return hasReferences, fmt.Errorf("provided resource reference is nil or empty: SnapshotARNsToRestoreRefs")
-			}
-			namespace, err := ackrt.ResolveCrossNamespaceReference(
-				ctx,
-				rm.cfg.EnableCrossNamespace,
-				&ko.Status.Conditions,
-				ackrt.CrossNamespaceRefKindResource,
-				ko.ObjectMeta.GetNamespace(),
-				arr.Namespace,
-				*arr.Name,
-			)
-			if err != nil {
-				return hasReferences, err
-			}
-			obj := &svcapitypes.ServerlessCacheSnapshot{}
-			if err := getReferencedResourceState_ServerlessCacheSnapshot(ctx, apiReader, obj, *arr.Name, namespace); err != nil {
-				return hasReferences, err
-			}
-			if ko.Spec.SnapshotARNsToRestore == nil {
-				ko.Spec.SnapshotARNsToRestore = make([]*string, 0, 1)
-			}
-			ko.Spec.SnapshotARNsToRestore = append(ko.Spec.SnapshotARNsToRestore, (*string)(obj.Status.ACKResourceMetadata.ARN))
-		}
-	}
-
-	return hasReferences, nil
-}
-
-// getReferencedResourceState_ServerlessCacheSnapshot looks up whether a referenced resource
-// exists and is in a ACK.ResourceSynced=True state. If the referenced resource does exist and is
-// in a Synced state, returns nil, otherwise returns `ackerr.ResourceReferenceTerminalFor` or
-// `ResourceReferenceNotSyncedFor` depending on if the resource is in a Terminal state.
-func getReferencedResourceState_ServerlessCacheSnapshot(
-	ctx context.Context,
-	apiReader client.Reader,
-	obj *svcapitypes.ServerlessCacheSnapshot,
-	name string, // the Kubernetes name of the referenced resource
-	namespace string, // the Kubernetes namespace of the referenced resource
-) error {
-	namespacedName := types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}
-	err := apiReader.Get(ctx, namespacedName, obj)
-	if err != nil {
-		return err
-	}
-	var refResourceTerminal bool
-	for _, cond := range obj.Status.Conditions {
-		if cond.Type == ackv1alpha1.ConditionTypeTerminal &&
-			cond.Status == corev1.ConditionTrue {
-			return ackerr.ResourceReferenceTerminalFor(
-				"ServerlessCacheSnapshot",
-				namespace, name)
-		}
-	}
-	if refResourceTerminal {
-		return ackerr.ResourceReferenceTerminalFor(
-			"ServerlessCacheSnapshot",
-			namespace, name)
-	}
-	var refResourceSynced bool
-	for _, cond := range obj.Status.Conditions {
-		if cond.Type == ackv1alpha1.ConditionTypeResourceSynced &&
-			cond.Status == corev1.ConditionTrue {
-			refResourceSynced = true
-		}
-	}
-	if !refResourceSynced {
-		return ackerr.ResourceReferenceNotSyncedFor(
-			"ServerlessCacheSnapshot",
-			namespace, name)
-	}
-	if obj.Status.ACKResourceMetadata == nil || obj.Status.ACKResourceMetadata.ARN == nil {
-		return ackerr.ResourceReferenceMissingTargetFieldFor(
-			"ServerlessCacheSnapshot",
-			namespace, name,
-			"Status.ACKResourceMetadata.ARN")
 	}
 	return nil
 }

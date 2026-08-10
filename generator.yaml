@@ -383,10 +383,6 @@ resources:
         references:
           resource: UserGroup
           path: Spec.UserGroupID
-      SnapshotARNsToRestore:
-        references:
-          resource: ServerlessCacheSnapshot
-          path: Status.ACKResourceMetadata.ARN
     synced:
       when:
       - path: Status.Status
