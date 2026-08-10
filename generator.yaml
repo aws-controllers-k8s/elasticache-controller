@@ -170,6 +170,20 @@ resources:
           resource: Key
           service_name: kms
           path: Status.ACKResourceMetadata.ARN
+      NotificationTopicARN:
+        references:
+          service_name: sns
+          resource: Topic
+          path: Status.ACKResourceMetadata.ARN
+      UserGroupIDs:
+        references:
+          resource: UserGroup
+          path: Spec.UserGroupID
+      SnapshotName:
+        is_immutable: true
+        references:
+          resource: Snapshot
+          path: Spec.SnapshotName
       Events:
         is_read_only: true
         from:
@@ -238,10 +252,17 @@ resources:
         references:
           resource: ReplicationGroup
           path: Spec.ReplicationGroupID
+      CacheClusterID:
+        references:
+          resource: CacheCluster
+          path: Spec.CacheClusterID
       SourceSnapshotName:
         from:
           operation: CopySnapshot
           path: SourceSnapshotName
+        references:
+          resource: Snapshot
+          path: Spec.SnapshotName
     update_operation:
       custom_method_name: customUpdateSnapshot
   CacheParameterGroup:
@@ -323,6 +344,11 @@ resources:
         - DefaultUserRequired
         - UserGroupQuotaExceededFault
         - TagQuotaPerResourceExceeded
+    fields:
+      UserIDs:
+        references:
+          resource: User
+          path: Spec.UserID
     hooks:
       sdk_update_post_build_request:
         template_path: hooks/user_group/sdk_update_post_build_request.go.tpl
@@ -347,6 +373,20 @@ resources:
           service_name: ec2
           resource: Subnet
           path: Status.SubnetID
+      KMSKeyID:
+        is_immutable: true
+        references:
+          resource: Key
+          service_name: kms
+          path: Status.ACKResourceMetadata.ARN
+      UserGroupID:
+        references:
+          resource: UserGroup
+          path: Spec.UserGroupID
+      SnapshotARNsToRestore:
+        references:
+          resource: ServerlessCacheSnapshot
+          path: Status.ACKResourceMetadata.ARN
     synced:
       when:
       - path: Status.Status

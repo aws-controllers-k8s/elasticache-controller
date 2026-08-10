@@ -49,6 +49,9 @@ func newResourceDelta(
 			delta.Add("Spec.CacheClusterID", a.ko.Spec.CacheClusterID, b.ko.Spec.CacheClusterID)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.CacheClusterRef, b.ko.Spec.CacheClusterRef) {
+		delta.Add("Spec.CacheClusterRef", a.ko.Spec.CacheClusterRef, b.ko.Spec.CacheClusterRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID) {
 		delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 	} else if a.ko.Spec.KMSKeyID != nil && b.ko.Spec.KMSKeyID != nil {
@@ -82,6 +85,9 @@ func newResourceDelta(
 		if *a.ko.Spec.SourceSnapshotName != *b.ko.Spec.SourceSnapshotName {
 			delta.Add("Spec.SourceSnapshotName", a.ko.Spec.SourceSnapshotName, b.ko.Spec.SourceSnapshotName)
 		}
+	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.SourceSnapshotRef, b.ko.Spec.SourceSnapshotRef) {
+		delta.Add("Spec.SourceSnapshotRef", a.ko.Spec.SourceSnapshotRef, b.ko.Spec.SourceSnapshotRef)
 	}
 	desiredACKTags, _ := convertToOrderedACKTags(a.ko.Spec.Tags)
 	latestACKTags, _ := convertToOrderedACKTags(b.ko.Spec.Tags)

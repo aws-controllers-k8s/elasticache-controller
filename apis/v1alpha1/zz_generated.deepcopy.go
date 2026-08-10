@@ -2861,6 +2861,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.NotificationTopicRef != nil {
+		in, out := &in.NotificationTopicRef, &out.NotificationTopicRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.NumNodeGroups != nil {
 		in, out := &in.NumNodeGroups, &out.NumNodeGroups
 		*out = new(int64)
@@ -2940,6 +2945,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.SnapshotRef != nil {
+		in, out := &in.SnapshotRef, &out.SnapshotRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.SnapshotRetentionLimit != nil {
 		in, out := &in.SnapshotRetentionLimit, &out.SnapshotRetentionLimit
 		*out = new(int64)
@@ -2974,6 +2984,17 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 				in, out := &(*in)[i], &(*out)[i]
 				*out = new(string)
 				**out = **in
+			}
+		}
+	}
+	if in.UserGroupRefs != nil {
+		in, out := &in.UserGroupRefs, &out.UserGroupRefs
+		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
@@ -3922,6 +3943,11 @@ func (in *ServerlessCacheSpec) DeepCopyInto(out *ServerlessCacheSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.KMSKeyRef != nil {
+		in, out := &in.KMSKeyRef, &out.KMSKeyRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.MajorEngineVersion != nil {
 		in, out := &in.MajorEngineVersion, &out.MajorEngineVersion
 		*out = new(string)
@@ -3962,6 +3988,17 @@ func (in *ServerlessCacheSpec) DeepCopyInto(out *ServerlessCacheSpec) {
 				in, out := &(*in)[i], &(*out)[i]
 				*out = new(string)
 				**out = **in
+			}
+		}
+	}
+	if in.SnapshotARNsToRestoreRefs != nil {
+		in, out := &in.SnapshotARNsToRestoreRefs, &out.SnapshotARNsToRestoreRefs
+		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
@@ -4007,6 +4044,11 @@ func (in *ServerlessCacheSpec) DeepCopyInto(out *ServerlessCacheSpec) {
 		in, out := &in.UserGroupID, &out.UserGroupID
 		*out = new(string)
 		**out = **in
+	}
+	if in.UserGroupRef != nil {
+		in, out := &in.UserGroupRef, &out.UserGroupRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
 	}
 }
 
@@ -4330,6 +4372,11 @@ func (in *SnapshotSpec) DeepCopyInto(out *SnapshotSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.CacheClusterRef != nil {
+		in, out := &in.CacheClusterRef, &out.CacheClusterRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.KMSKeyID != nil {
 		in, out := &in.KMSKeyID, &out.KMSKeyID
 		*out = new(string)
@@ -4359,6 +4406,11 @@ func (in *SnapshotSpec) DeepCopyInto(out *SnapshotSpec) {
 		in, out := &in.SourceSnapshotName, &out.SourceSnapshotName
 		*out = new(string)
 		**out = **in
+	}
+	if in.SourceSnapshotRef != nil {
+		in, out := &in.SourceSnapshotRef, &out.SourceSnapshotRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Tags != nil {
 		in, out := &in.Tags, &out.Tags
@@ -5048,6 +5100,17 @@ func (in *UserGroupSpec) DeepCopyInto(out *UserGroupSpec) {
 				in, out := &(*in)[i], &(*out)[i]
 				*out = new(string)
 				**out = **in
+			}
+		}
+	}
+	if in.UserRefs != nil {
+		in, out := &in.UserRefs, &out.UserRefs
+		*out = make([]*corev1alpha1.AWSResourceReferenceWrapper, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
