@@ -117,6 +117,9 @@ func newResourceDelta(
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef) {
+		delta.Add("Spec.KMSKeyRef", a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.MajorEngineVersion, b.ko.Spec.MajorEngineVersion) {
 		delta.Add("Spec.MajorEngineVersion", a.ko.Spec.MajorEngineVersion, b.ko.Spec.MajorEngineVersion)
 	} else if a.ko.Spec.MajorEngineVersion != nil && b.ko.Spec.MajorEngineVersion != nil {
@@ -176,6 +179,9 @@ func newResourceDelta(
 		if *a.ko.Spec.UserGroupID != *b.ko.Spec.UserGroupID {
 			delta.Add("Spec.UserGroupID", a.ko.Spec.UserGroupID, b.ko.Spec.UserGroupID)
 		}
+	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.UserGroupRef, b.ko.Spec.UserGroupRef) {
+		delta.Add("Spec.UserGroupRef", a.ko.Spec.UserGroupRef, b.ko.Spec.UserGroupRef)
 	}
 
 	return delta

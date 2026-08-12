@@ -38,7 +38,8 @@ type UserGroupSpec struct {
 	// +kubebuilder:validation:Required
 	UserGroupID *string `json:"userGroupID"`
 	// The list of user IDs that belong to the user group.
-	UserIDs []*string `json:"userIDs,omitempty"`
+	UserIDs  []*string                                  `json:"userIDs,omitempty"`
+	UserRefs []*ackv1alpha1.AWSResourceReferenceWrapper `json:"userRefs,omitempty"`
 }
 
 // UserGroupStatus defines the observed state of UserGroup

@@ -163,6 +163,9 @@ func newResourceDelta(
 			delta.Add("Spec.NotificationTopicARN", a.ko.Spec.NotificationTopicARN, b.ko.Spec.NotificationTopicARN)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.NotificationTopicRef, b.ko.Spec.NotificationTopicRef) {
+		delta.Add("Spec.NotificationTopicRef", a.ko.Spec.NotificationTopicRef, b.ko.Spec.NotificationTopicRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.NumNodeGroups, b.ko.Spec.NumNodeGroups) {
 		delta.Add("Spec.NumNodeGroups", a.ko.Spec.NumNodeGroups, b.ko.Spec.NumNodeGroups)
 	} else if a.ko.Spec.NumNodeGroups != nil && b.ko.Spec.NumNodeGroups != nil {
@@ -229,6 +232,9 @@ func newResourceDelta(
 			delta.Add("Spec.SnapshotName", a.ko.Spec.SnapshotName, b.ko.Spec.SnapshotName)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.SnapshotRef, b.ko.Spec.SnapshotRef) {
+		delta.Add("Spec.SnapshotRef", a.ko.Spec.SnapshotRef, b.ko.Spec.SnapshotRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.SnapshotRetentionLimit, b.ko.Spec.SnapshotRetentionLimit) {
 		delta.Add("Spec.SnapshotRetentionLimit", a.ko.Spec.SnapshotRetentionLimit, b.ko.Spec.SnapshotRetentionLimit)
 	} else if a.ko.Spec.SnapshotRetentionLimit != nil && b.ko.Spec.SnapshotRetentionLimit != nil {
@@ -261,6 +267,9 @@ func newResourceDelta(
 		if !ackcompare.SliceStringPEqual(a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs) {
 			delta.Add("Spec.UserGroupIDs", a.ko.Spec.UserGroupIDs, b.ko.Spec.UserGroupIDs)
 		}
+	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.UserGroupRefs, b.ko.Spec.UserGroupRefs) {
+		delta.Add("Spec.UserGroupRefs", a.ko.Spec.UserGroupRefs, b.ko.Spec.UserGroupRefs)
 	}
 
 	modifyDelta(delta, a, b)

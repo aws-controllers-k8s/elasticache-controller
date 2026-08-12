@@ -28,7 +28,8 @@ type SnapshotSpec struct {
 
 	// The identifier of an existing cluster. The snapshot is created from this
 	// cluster.
-	CacheClusterID *string `json:"cacheClusterID,omitempty"`
+	CacheClusterID  *string                                  `json:"cacheClusterID,omitempty"`
+	CacheClusterRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"cacheClusterRef,omitempty"`
 	// The ID of the KMS key used to encrypt the snapshot.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	KMSKeyID  *string                                  `json:"kmsKeyID,omitempty"`
@@ -42,7 +43,8 @@ type SnapshotSpec struct {
 	// +kubebuilder:validation:Required
 	SnapshotName *string `json:"snapshotName"`
 	// The name of an existing snapshot from which to make a copy.
-	SourceSnapshotName *string `json:"sourceSnapshotName,omitempty"`
+	SourceSnapshotName *string                                  `json:"sourceSnapshotName,omitempty"`
+	SourceSnapshotRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"sourceSnapshotRef,omitempty"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted.
 	Tags []*Tag `json:"tags,omitempty"`
