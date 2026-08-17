@@ -34,6 +34,7 @@ import (
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/util"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 )
@@ -60,6 +61,7 @@ var (
 	condMsgCurrentlyDeleting      string = "replication group currently being deleted."
 	condMsgNoDeleteWhileModifying string = "replication group currently being modified. cannot delete."
 	condMsgTerminalCreateFailed   string = "replication group in create-failed status."
+	condMsgDurabilityModifying    string = "replication group durability update in progress."
 )
 
 const (
@@ -634,7 +636,23 @@ func (rm *resourceManager) modifyReplicationGroup(
 			normalizedRG.Engine = desired.ko.Spec.Engine
 		}
 
-		return rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
+		out, err := rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
+		if err != nil {
+			return nil, err
+		}
+
+		// A durability update is accepted while the replication group stays in the
+		// "available" state, and the durability reported by the API (and thus the spec
+		// populated from it on the read path) is briefly stale after the modify. Left alone
+		// the resource would report ACK.ResourceSynced=True immediately, before the change is
+		// observable. Force the synced condition to false so the resource is not reported
+		// synced until a later reconcile observes the converged durability. Setting the synced
+		// condition to false triggers a requeue of the resource, so no requeue error is needed
+		// here, and ensureConditions preserves a condition already set here.
+		if out != nil && delta.DifferentAt("Spec.Durability") {
+			ackcondition.SetSynced(out, corev1.ConditionFalse, &condMsgDurabilityModifying, nil)
+		}
+		return out, nil
 	}
 
 	// no updates done
