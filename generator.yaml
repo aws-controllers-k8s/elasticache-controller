@@ -152,6 +152,8 @@ resources:
         compare:
           is_ignored: true
       CacheParameterGroupName:
+        late_initialize:
+            skip_incomplete_check: {}
         references:
           resource: CacheParameterGroup
           path: Spec.CacheParameterGroupName
@@ -207,6 +209,8 @@ resources:
       NetworkType:
         is_immutable: true
       Durability:
+        late_initialize:
+              skip_incomplete_check: {}
         set:
           # find-only flow: suppress the stale value only from the write responses,
           # letting the read path (DescribeReplicationGroups) populate Spec.Durability
@@ -226,6 +230,8 @@ resources:
         template_path: hooks/replication_group/sdk_update_pre_build_request.go.tpl
       sdk_update_post_build_request:
         template_path: hooks/replication_group/sdk_update_post_build_request.go.tpl
+      sdk_update_post_set_output:
+        template_path: hooks/replication_group/sdk_update_post_set_output.go.tpl
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"
       sdk_file_end:

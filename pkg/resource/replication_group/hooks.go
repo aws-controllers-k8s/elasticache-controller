@@ -34,7 +34,6 @@ import (
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/util"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
-	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 )
@@ -601,10 +600,8 @@ func (rm *resourceManager) modifyReplicationGroup(
 	delta *ackcompare.Delta,
 ) (*resource, error) {
 	// Avoid making unnecessary DescribeCacheCluster API call if none of the fields handled
-	// by this method are set in spec. Durability is checked against the delta rather than
-	// the spec, since computing its difference does not require the describe call.
-	if desired.ko.Spec.SecurityGroupIDs == nil && desired.ko.Spec.EngineVersion == nil &&
-		!delta.DifferentAt("Spec.Durability") {
+	// by this method are set in spec.
+	if desired.ko.Spec.SecurityGroupIDs == nil && desired.ko.Spec.EngineVersion == nil {
 		// no updates done
 		return nil, nil
 	}
@@ -615,10 +612,9 @@ func (rm *resourceManager) modifyReplicationGroup(
 		return nil, err
 	}
 
-	// SecurityGroupIDs, EngineVersion, Engine, CacheParameterGroupName, Durability
+	// SecurityGroupIDs, EngineVersion, Engine, CacheParameterGroupName
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
-		delta.DifferentAt("Spec.EngineVersion") || delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.CacheParameterGroupName") ||
-		delta.DifferentAt("Spec.Durability") {
+		delta.DifferentAt("Spec.EngineVersion") || delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.CacheParameterGroupName") {
 		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster, delta)
 		resp, respErr := rm.sdkapi.ModifyReplicationGroup(ctx, input)
 		rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
@@ -641,17 +637,6 @@ func (rm *resourceManager) modifyReplicationGroup(
 			return nil, err
 		}
 
-		// A durability update is accepted while the replication group stays in the
-		// "available" state, and the durability reported by the API (and thus the spec
-		// populated from it on the read path) is briefly stale after the modify. Left alone
-		// the resource would report ACK.ResourceSynced=True immediately, before the change is
-		// observable. Force the synced condition to false so the resource is not reported
-		// synced until a later reconcile observes the converged durability. Setting the synced
-		// condition to false triggers a requeue of the resource, so no requeue error is needed
-		// here, and ensureConditions preserves a condition already set here.
-		if out != nil && delta.DifferentAt("Spec.Durability") {
-			ackcondition.SetSynced(out, corev1.ConditionFalse, &condMsgDurabilityModifying, nil)
-		}
 		return out, nil
 	}
 
@@ -1207,13 +1192,6 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 	if delta.DifferentAt("Spec.CacheParameterGroupName") &&
 		desired.ko.Spec.CacheParameterGroupName != nil {
 		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
-	}
-
-	// Spec.Durability is populated from the read path only; the generated delta comparison
-	// (delta.go) drives this update.
-	if delta.DifferentAt("Spec.Durability") &&
-		desired.ko.Spec.Durability != nil {
-		input.Durability = svcsdktypes.Durability(*desired.ko.Spec.Durability)
 	}
 
 	return input

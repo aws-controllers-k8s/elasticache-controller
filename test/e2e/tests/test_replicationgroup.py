@@ -453,10 +453,8 @@ class TestReplicationGroup:
             rg_deletion_waiter.wait(ReplicationGroupId=rg_id)
 
     def test_rg_durability_unset(self, make_rg_name, make_replication_group, rg_deletion_waiter):
-        """Verify that removing durability from the spec is treated as leaving the field
-        unmanaged. AWS offers no way to unset durability, so there is nothing to request:
-        the resource must stay synced rather than repeatedly attempting an empty modify or
-        being rejected as a terminal error."""
+        """Verify that removing durability from the spec does not result in a the resource 
+        being left in a perpetual ACK.ResourceSynced=False state or ACK.Terminal error."""
         rg_id = make_rg_name("rg-durability-unset")
         input_dict = {"RG_ID": rg_id, "DURABILITY": "async"}
 
@@ -475,11 +473,9 @@ class TestReplicationGroup:
             _ = k8s.patch_custom_resource(reference, {"spec": {"durability": None}})
             sleep(DEFAULT_WAIT_SECS)
 
-            resource = k8s.get_resource(reference)
-            assert resource['spec'].get('durability') is None
-
             # Removing the field must not raise a terminal condition, and must not leave the
             # resource permanently out of sync attempting a modify it cannot express.
+            resource = k8s.get_resource(reference)
             conditions = resource.get('status', {}).get('conditions', [])
             terminal = next(
                 (c for c in conditions if c['type'] == 'ACK.Terminal'), None)
