@@ -388,13 +388,9 @@ class TestReplicationGroup:
             rg = retrieve_replication_group(rg_id)
             assert rg['Durability'] == "sync"
 
-            # The Durability delta is computed against the durability the API reports, held
-            # in status.observedDurability, since the response is not used to populate
-            # spec.durability. If it does not track the API, the same delta is re-detected
-            # on every reconcile and ModifyReplicationGroup is re-sent without converging.
-            assert resource['status'].get('observedDurability') == "sync", \
-                "status.observedDurability did not track the API after modify; " \
-                "the resource will never converge"
+            # find-only flow: spec.durability is populated from the read path
+            # (DescribeReplicationGroups) and drives the generated delta comparison. Once
+            # the read converges, desired == observed and no further modify is issued.
 
             # Confirm the resource stays converged rather than flapping back into a
             # modifying state on a later reconcile. Any flap re-transitions the synced
@@ -448,7 +444,6 @@ class TestReplicationGroup:
                 reference, "ACK.ResourceSynced", "True", wait_periods=90)
             resource = k8s.get_resource(reference)
             assert resource['spec']['durability'] == "sync"
-            assert resource['status'].get('observedDurability') == "sync"
             rg = retrieve_replication_group(rg_id)
             assert rg['Durability'] == "sync", \
                 f"out-of-band durability change was not corrected: {rg['Durability']}"

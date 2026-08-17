@@ -157,6 +157,11 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.Description = nil
 		}
+		if elem.Durability != "" {
+			ko.Spec.Durability = aws.String(string(elem.Durability))
+		} else {
+			ko.Spec.Durability = nil
+		}
 		if elem.EffectiveDurability != "" {
 			ko.Status.EffectiveDurability = aws.String(string(elem.EffectiveDurability))
 		} else {
