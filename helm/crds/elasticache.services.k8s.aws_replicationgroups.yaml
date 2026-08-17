@@ -939,6 +939,11 @@ spec:
                       type: string
                   type: object
                 type: array
+              observedDurability:
+                description: |-
+                  The durability setting of the replication group. For more information, see
+                  Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.html).
+                type: string
               pendingModifiedValues:
                 description: |-
                   A group of settings to be applied to the replication group, either immediately

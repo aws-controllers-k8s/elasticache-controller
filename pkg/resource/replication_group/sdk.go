@@ -157,11 +157,6 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.Description = nil
 		}
-		if elem.Durability != "" {
-			ko.Spec.Durability = aws.String(string(elem.Durability))
-		} else {
-			ko.Spec.Durability = nil
-		}
 		if elem.EffectiveDurability != "" {
 			ko.Status.EffectiveDurability = aws.String(string(elem.EffectiveDurability))
 		} else {
@@ -633,11 +628,6 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.Description = resp.ReplicationGroup.Description
 	} else {
 		ko.Spec.Description = nil
-	}
-	if resp.ReplicationGroup.Durability != "" {
-		ko.Spec.Durability = aws.String(string(resp.ReplicationGroup.Durability))
-	} else {
-		ko.Spec.Durability = nil
 	}
 	if resp.ReplicationGroup.EffectiveDurability != "" {
 		ko.Status.EffectiveDurability = aws.String(string(resp.ReplicationGroup.EffectiveDurability))
@@ -1313,11 +1303,6 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.Description = resp.ReplicationGroup.Description
 	} else {
 		ko.Spec.Description = nil
-	}
-	if resp.ReplicationGroup.Durability != "" {
-		ko.Spec.Durability = aws.String(string(resp.ReplicationGroup.Durability))
-	} else {
-		ko.Spec.Durability = nil
 	}
 	if resp.ReplicationGroup.EffectiveDurability != "" {
 		ko.Status.EffectiveDurability = aws.String(string(resp.ReplicationGroup.EffectiveDurability))
@@ -2027,11 +2012,6 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Spec.Description = resp.ReplicationGroup.Description
 	} else {
 		ko.Spec.Description = nil
-	}
-	if resp.ReplicationGroup.Durability != "" {
-		ko.Spec.Durability = aws.String(string(resp.ReplicationGroup.Durability))
-	} else {
-		ko.Spec.Durability = nil
 	}
 	if resp.ReplicationGroup.EffectiveDurability != "" {
 		ko.Status.EffectiveDurability = aws.String(string(resp.ReplicationGroup.EffectiveDurability))

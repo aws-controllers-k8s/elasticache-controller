@@ -430,6 +430,10 @@ type ReplicationGroupStatus struct {
 	// contains an entry for each node group (shard).
 	// +kubebuilder:validation:Optional
 	NodeGroups []*NodeGroup `json:"nodeGroups,omitempty"`
+	// The durability setting of the replication group. For more information, see
+	// Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.html).
+	// +kubebuilder:validation:Optional
+	ObservedDurability *string `json:"observedDurability,omitempty"`
 	// A group of settings to be applied to the replication group, either immediately
 	// or during the next maintenance window.
 	// +kubebuilder:validation:Optional
