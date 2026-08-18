@@ -60,6 +60,7 @@ var (
 	condMsgCurrentlyDeleting      string = "replication group currently being deleted."
 	condMsgNoDeleteWhileModifying string = "replication group currently being modified. cannot delete."
 	condMsgTerminalCreateFailed   string = "replication group in create-failed status."
+	condMsgDurabilityModifying    string = "replication group durability update in progress."
 )
 
 const (
@@ -201,17 +202,6 @@ func (rm *resourceManager) customSetOutput(
 ) {
 	if ko.Status.Conditions == nil {
 		ko.Status.Conditions = []*ackv1alpha1.Condition{}
-	}
-
-	// The API reports the durability it holds for the replication group, unresolved: a group
-	// created with "default" reads back "default", while Status.EffectiveDurability holds the
-	// value the service resolved it to. Spec.Durability is deliberately never populated from
-	// the response, so this is what the durability difference is computed against -- see
-	// durabilityRequiresUpdate.
-	if respRG.Durability != "" {
-		ko.Status.ObservedDurability = aws.String(string(respRG.Durability))
-	} else {
-		ko.Status.ObservedDurability = nil
 	}
 
 	allNodeGroupsAvailable := true
@@ -610,10 +600,8 @@ func (rm *resourceManager) modifyReplicationGroup(
 	delta *ackcompare.Delta,
 ) (*resource, error) {
 	// Avoid making unnecessary DescribeCacheCluster API call if none of the fields handled
-	// by this method are set in spec. Durability is checked against the delta rather than
-	// the spec, since computing its difference does not require the describe call.
-	if desired.ko.Spec.SecurityGroupIDs == nil && desired.ko.Spec.EngineVersion == nil &&
-		!delta.DifferentAt("Spec.Durability") {
+	// by this method are set in spec.
+	if desired.ko.Spec.SecurityGroupIDs == nil && desired.ko.Spec.EngineVersion == nil {
 		// no updates done
 		return nil, nil
 	}
@@ -624,10 +612,9 @@ func (rm *resourceManager) modifyReplicationGroup(
 		return nil, err
 	}
 
-	// SecurityGroupIDs, EngineVersion, Engine, CacheParameterGroupName, Durability
+	// SecurityGroupIDs, EngineVersion, Engine, CacheParameterGroupName
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
-		delta.DifferentAt("Spec.EngineVersion") || delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.CacheParameterGroupName") ||
-		delta.DifferentAt("Spec.Durability") {
+		delta.DifferentAt("Spec.EngineVersion") || delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.CacheParameterGroupName") {
 		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster, delta)
 		resp, respErr := rm.sdkapi.ModifyReplicationGroup(ctx, input)
 		rm.metrics.RecordAPICall("UPDATE", "ModifyReplicationGroup", respErr)
@@ -636,31 +623,21 @@ func (rm *resourceManager) modifyReplicationGroup(
 			return nil, respErr
 		}
 
-		// The ModifyReplicationGroup API returns stale fields Engine and Durability that don't
-		// immediately reflect the requested changes, causing the controller to detect false
-		// differences and trigger terminal conditions. Override these fields with the user's
-		// intended values before passing to the generated setReplicationGroupOutput function.
+		// The ModifyReplicationGroup API returns a stale Engine field that doesn't
+		// immediately reflect the requested change, causing the controller to detect false
+		// differences and trigger terminal conditions. Override it with the user's
+		// intended value before passing to the generated setReplicationGroupOutput function.
 		normalizedRG := *resp.ReplicationGroup
 		if desired.ko.Spec.Engine != nil {
 			normalizedRG.Engine = desired.ko.Spec.Engine
 		}
-		durabilityModified := delta.DifferentAt("Spec.Durability")
-		if durabilityModified {
-			if desired.ko.Spec.Durability != nil {
-				// Without this the durability just accepted by AWS would be reported as the
-				// previous value until the next read, both in status and in the difference
-				// computed on the following reconcile.
-				normalizedRG.Durability = svcsdktypes.Durability(*desired.ko.Spec.Durability)
-			}
-			// The response can still report the replication group as available until the
-			// service picks up the durability change, which would mark the resource synced
-			// before Status.EffectiveDurability reflects it. Reporting the modify that AWS
-			// just accepted keeps the resource synced condition false, so it is requeued
-			// and re-read until the service has converged.
-			normalizedRG.Status = aws.String("modifying")
+
+		out, err := rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
+		if err != nil {
+			return nil, err
 		}
 
-		return rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
+		return out, nil
 	}
 
 	// no updates done
@@ -1217,13 +1194,6 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
 	}
 
-	// the delta for this field is computed against the durability reported by the API in
-	// Status.ObservedDurability -- see durabilityRequiresUpdate
-	if delta.DifferentAt("Spec.Durability") &&
-		desired.ko.Spec.Durability != nil {
-		input.Durability = svcsdktypes.Durability(*desired.ko.Spec.Durability)
-	}
-
 	return input
 }
 
@@ -1431,13 +1401,6 @@ func modifyDelta(
 			unmarshalLastRequestedLDCs(desired))
 	}
 
-	// note that the comparison is done against latest.Status.ObservedDurability, the
-	// durability reported by the API, as opposed to latest.Spec.Durability, which is never set
-	// from the AWS response -- see the Durability field config in generator.yaml
-	if durabilityRequiresUpdate(desired, latest) {
-		delta.Add("Spec.Durability", desired.ko.Spec.Durability, latest.ko.Status.ObservedDurability)
-	}
-
 	if multiAZRequiresUpdate(desired, latest) {
 		delta.Add("Spec.MultiAZEnabled", desired.ko.Spec.MultiAZEnabled, latest.ko.Status.MultiAZ)
 	}
@@ -1471,23 +1434,6 @@ func unmarshalLastRequestedLDCs(desired *resource) []*svcapitypes.LogDeliveryCon
 	}
 
 	return lastRequestedConfigs
-}
-
-// durabilityRequiresUpdate compares the desired durability against the durability the API
-// reports for the replication group, held in Status.ObservedDurability. A nil desired
-// durability means the user is not managing the field: AWS offers no way to "unset"
-// durability, so there is nothing to request and no update is required.
-func durabilityRequiresUpdate(desired *resource, latest *resource) bool {
-	if desired.ko.Spec.Durability == nil {
-		return false
-	}
-
-	// API should return a non-nil value, but if it doesn't then attempt to update
-	if latest.ko.Status.ObservedDurability == nil {
-		return true
-	}
-
-	return *latest.ko.Status.ObservedDurability != *desired.ko.Spec.Durability
 }
 
 // multiAZRequiresUpdate returns true if the latest multi AZ status does not yet match the

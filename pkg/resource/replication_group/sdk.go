@@ -157,6 +157,11 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.Description = nil
 		}
+		if elem.Durability != "" {
+			ko.Spec.Durability = aws.String(string(elem.Durability))
+		} else {
+			ko.Spec.Durability = nil
+		}
 		if elem.EffectiveDurability != "" {
 			ko.Status.EffectiveDurability = aws.String(string(elem.EffectiveDurability))
 		} else {
@@ -1591,6 +1596,14 @@ func (rm *resourceManager) sdkUpdate(
 	ko, err = rm.CustomModifyReplicationGroupSetOutput(ctx, desired, resp, ko)
 	if err != nil {
 		return nil, err
+	}
+	// A durability update is accepted while the replication group stays in the
+	// "available" state, and the durability reported by the API (and thus the spec
+	// populated from it on the read path) is briefly stale after the modify. Left alone
+	// the resource would report ACK.ResourceSynced=True immediately while Status.EffectiveDurability
+	// remained stale.
+	if ko != nil && delta.DifferentAt("Spec.Durability") {
+		ackcondition.SetSynced(&resource{ko}, corev1.ConditionFalse, &condMsgDurabilityModifying, nil)
 	}
 	return &resource{ko}, nil
 }

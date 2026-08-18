@@ -388,13 +388,9 @@ class TestReplicationGroup:
             rg = retrieve_replication_group(rg_id)
             assert rg['Durability'] == "sync"
 
-            # The Durability delta is computed against the durability the API reports, held
-            # in status.observedDurability, since the response is not used to populate
-            # spec.durability. If it does not track the API, the same delta is re-detected
-            # on every reconcile and ModifyReplicationGroup is re-sent without converging.
-            assert resource['status'].get('observedDurability') == "sync", \
-                "status.observedDurability did not track the API after modify; " \
-                "the resource will never converge"
+            # find-only flow: spec.durability is populated from the read path
+            # (DescribeReplicationGroups) and drives the generated delta comparison. Once
+            # the read converges, desired == observed and no further modify is issued.
 
             # Confirm the resource stays converged rather than flapping back into a
             # modifying state on a later reconcile. Any flap re-transitions the synced
@@ -448,7 +444,6 @@ class TestReplicationGroup:
                 reference, "ACK.ResourceSynced", "True", wait_periods=90)
             resource = k8s.get_resource(reference)
             assert resource['spec']['durability'] == "sync"
-            assert resource['status'].get('observedDurability') == "sync"
             rg = retrieve_replication_group(rg_id)
             assert rg['Durability'] == "sync", \
                 f"out-of-band durability change was not corrected: {rg['Durability']}"
@@ -458,10 +453,9 @@ class TestReplicationGroup:
             rg_deletion_waiter.wait(ReplicationGroupId=rg_id)
 
     def test_rg_durability_unset(self, make_rg_name, make_replication_group, rg_deletion_waiter):
-        """Verify that removing durability from the spec is treated as leaving the field
-        unmanaged. AWS offers no way to unset durability, so there is nothing to request:
-        the resource must stay synced rather than repeatedly attempting an empty modify or
-        being rejected as a terminal error."""
+        """Verify that removing durability from the spec leaves the resource healthy. Since
+        the field is late initialized, the durability the API reports is written back into
+        the spec, and the resource must not be left perpetually unsynced or terminal."""
         rg_id = make_rg_name("rg-durability-unset")
         input_dict = {"RG_ID": rg_id, "DURABILITY": "async"}
 
@@ -480,11 +474,17 @@ class TestReplicationGroup:
             _ = k8s.patch_custom_resource(reference, {"spec": {"durability": None}})
             sleep(DEFAULT_WAIT_SECS)
 
+            # Durability is late initialized, so the value the API reports is written back
+            # into the spec rather than the field being left unset. AWS offers no way to
+            # unset durability, so this keeps the resource reflecting what is applied.
             resource = k8s.get_resource(reference)
-            assert resource['spec'].get('durability') is None
+            assert resource['spec'].get('durability') == "async", \
+                "late initialization did not restore the reported durability into the spec"
 
             # Removing the field must not raise a terminal condition, and must not leave the
-            # resource permanently out of sync attempting a modify it cannot express.
+            # resource permanently out of sync attempting a modify it cannot express. Read
+            # the conditions from the resource as it is after the patch, not from the copy
+            # taken before it.
             conditions = resource.get('status', {}).get('conditions', [])
             terminal = next(
                 (c for c in conditions if c['type'] == 'ACK.Terminal'), None)

@@ -104,6 +104,13 @@ func newResourceDelta(
 			delta.Add("Spec.Description", a.ko.Spec.Description, b.ko.Spec.Description)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.Durability, b.ko.Spec.Durability) {
+		delta.Add("Spec.Durability", a.ko.Spec.Durability, b.ko.Spec.Durability)
+	} else if a.ko.Spec.Durability != nil && b.ko.Spec.Durability != nil {
+		if *a.ko.Spec.Durability != *b.ko.Spec.Durability {
+			delta.Add("Spec.Durability", a.ko.Spec.Durability, b.ko.Spec.Durability)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.Engine, b.ko.Spec.Engine) {
 		delta.Add("Spec.Engine", a.ko.Spec.Engine, b.ko.Spec.Engine)
 	} else if a.ko.Spec.Engine != nil && b.ko.Spec.Engine != nil {

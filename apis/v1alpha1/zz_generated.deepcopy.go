@@ -3160,11 +3160,6 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 			}
 		}
 	}
-	if in.ObservedDurability != nil {
-		in, out := &in.ObservedDurability, &out.ObservedDurability
-		*out = new(string)
-		**out = **in
-	}
 	if in.PendingModifiedValues != nil {
 		in, out := &in.PendingModifiedValues, &out.PendingModifiedValues
 		*out = new(ReplicationGroupPendingModifiedValues)
