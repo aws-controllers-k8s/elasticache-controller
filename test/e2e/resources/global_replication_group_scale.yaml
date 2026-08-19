@@ -1,0 +1,10 @@
+# GlobalReplicationGroup for modify/scale tests
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: GlobalReplicationGroup
+metadata:
+  name: $GRG_NAME
+spec:
+  globalReplicationGroupIDSuffix: $GRG_SUFFIX
+  primaryReplicationGroupID: $PRIMARY_RG_ID
+  description: $DESCRIPTION
+  nodeGroupCount: $NODE_GROUP_COUNT
