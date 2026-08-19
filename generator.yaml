@@ -152,6 +152,11 @@ resources:
         compare:
           is_ignored: true
       CacheParameterGroupName:
+        # the service assigns a default parameter group when one is not requested, which
+        # would otherwise be reported as a difference on every reconcile, keeping the custom
+        # modify implementation engaged and preventing the generated update from running
+        late_initialize:
+            skip_incomplete_check: {}
         references:
           resource: CacheParameterGroup
           path: Spec.CacheParameterGroupName
@@ -206,6 +211,17 @@ resources:
           is_ignored: true
       NetworkType:
         is_immutable: true
+      Durability:
+        late_initialize:
+              skip_incomplete_check: {}
+        set:
+          # find-only flow: suppress the stale value only from the write responses,
+          # letting the read path (DescribeReplicationGroups) populate Spec.Durability
+          # so the generated delta comparison works natively.
+          - method: Create
+            ignore: from
+          - method: Update
+            ignore: from
     hooks:
       sdk_read_many_post_set_output:
         template_path: hooks/replication_group/sdk_read_many_post_set_output.go.tpl
@@ -217,6 +233,8 @@ resources:
         template_path: hooks/replication_group/sdk_update_pre_build_request.go.tpl
       sdk_update_post_build_request:
         template_path: hooks/replication_group/sdk_update_post_build_request.go.tpl
+      sdk_update_post_set_output:
+        template_path: hooks/replication_group/sdk_update_post_set_output.go.tpl
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"
       sdk_file_end:
@@ -539,3 +557,6 @@ ignore:
     - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.ClusterMode
     - Subnet.SupportedNetworkTypes
     - CreateReplicationGroupInput.ServerlessCacheSnapshotName
+    - CreateServerlessCacheInput.NetworkType
+    - ServerlessCache.NetworkType
+    - Snapshot.Durability

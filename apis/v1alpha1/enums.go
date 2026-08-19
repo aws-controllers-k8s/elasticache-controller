@@ -89,6 +89,23 @@ const (
 	DestinationType_kinesis_firehose DestinationType = "kinesis-firehose"
 )
 
+type Durability string
+
+const (
+	Durability_async    Durability = "async"
+	Durability_default  Durability = "default"
+	Durability_disabled Durability = "disabled"
+	Durability_sync     Durability = "sync"
+)
+
+type EffectiveDurability string
+
+const (
+	EffectiveDurability_async    EffectiveDurability = "async"
+	EffectiveDurability_disabled EffectiveDurability = "disabled"
+	EffectiveDurability_sync     EffectiveDurability = "sync"
+)
+
 type IPDiscovery string
 
 const (
@@ -218,6 +235,14 @@ const (
 	SourceType_serverless_cache_snapshot SourceType = "serverless-cache-snapshot"
 	SourceType_user                      SourceType = "user"
 	SourceType_user_group                SourceType = "user-group"
+)
+
+type StorageEncryptionType string
+
+const (
+	StorageEncryptionType_none            StorageEncryptionType = "none"
+	StorageEncryptionType_sse_elasticache StorageEncryptionType = "sse-elasticache"
+	StorageEncryptionType_sse_kms         StorageEncryptionType = "sse-kms"
 )
 
 type TransitEncryptionMode string

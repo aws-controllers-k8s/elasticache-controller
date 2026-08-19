@@ -17,14 +17,12 @@ package v1alpha1
 
 import (
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
-	"github.com/aws/aws-sdk-go/aws"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Hack to avoid import errors during build...
 var (
 	_ = &metav1.Time{}
-	_ = &aws.JSONValue{}
 	_ = ackv1alpha1.AWSAccountID("")
 )
 
@@ -582,6 +580,8 @@ type ReplicationGroup_SDK struct {
 	ConfigurationEndpoint *Endpoint `json:"configurationEndpoint,omitempty"`
 	DataTiering           *string   `json:"dataTiering,omitempty"`
 	Description           *string   `json:"description,omitempty"`
+	Durability            *string   `json:"durability,omitempty"`
+	EffectiveDurability   *string   `json:"effectiveDurability,omitempty"`
 	Engine                *string   `json:"engine,omitempty"`
 	// The name of the Global datastore and role of this replication group in the
 	// Global datastore.
@@ -603,6 +603,7 @@ type ReplicationGroup_SDK struct {
 	SnapshotWindow             *string                                `json:"snapshotWindow,omitempty"`
 	SnapshottingClusterID      *string                                `json:"snapshottingClusterID,omitempty"`
 	Status                     *string                                `json:"status,omitempty"`
+	StorageEncryptionType      *string                                `json:"storageEncryptionType,omitempty"`
 	TransitEncryptionEnabled   *bool                                  `json:"transitEncryptionEnabled,omitempty"`
 	UserGroupIDs               []*string                              `json:"userGroupIDs,omitempty"`
 }
@@ -704,6 +705,7 @@ type ServerlessCache_SDK struct {
 	ServerlessCacheName    *string   `json:"serverlessCacheName,omitempty"`
 	SnapshotRetentionLimit *int64    `json:"snapshotRetentionLimit,omitempty"`
 	Status                 *string   `json:"status,omitempty"`
+	StorageEncryptionType  *string   `json:"storageEncryptionType,omitempty"`
 	SubnetIDs              []*string `json:"subnetIDs,omitempty"`
 	UserGroupID            *string   `json:"userGroupID,omitempty"`
 }

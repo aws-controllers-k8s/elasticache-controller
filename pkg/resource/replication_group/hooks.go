@@ -60,6 +60,7 @@ var (
 	condMsgCurrentlyDeleting      string = "replication group currently being deleted."
 	condMsgNoDeleteWhileModifying string = "replication group currently being modified. cannot delete."
 	condMsgTerminalCreateFailed   string = "replication group in create-failed status."
+	condMsgDurabilityModifying    string = "replication group durability update in progress."
 )
 
 const (
@@ -598,8 +599,8 @@ func (rm *resourceManager) modifyReplicationGroup(
 	latest *resource,
 	delta *ackcompare.Delta,
 ) (*resource, error) {
-	// Method currently handles SecurityGroupIDs, EngineVersion
-	// Avoid making unnecessary DescribeCacheCluster API call if both fields are nil in spec.
+	// Avoid making unnecessary DescribeCacheCluster API call if none of the fields handled
+	// by this method are set in spec.
 	if desired.ko.Spec.SecurityGroupIDs == nil && desired.ko.Spec.EngineVersion == nil {
 		// no updates done
 		return nil, nil
@@ -611,7 +612,7 @@ func (rm *resourceManager) modifyReplicationGroup(
 		return nil, err
 	}
 
-	// SecurityGroupIds, EngineVersion
+	// SecurityGroupIDs, EngineVersion, Engine, CacheParameterGroupName
 	if rm.securityGroupIdsDiffer(desired, latest, latestCacheCluster) ||
 		delta.DifferentAt("Spec.EngineVersion") || delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.CacheParameterGroupName") {
 		input := rm.newModifyReplicationGroupRequestPayload(desired, latest, latestCacheCluster, delta)
@@ -622,16 +623,21 @@ func (rm *resourceManager) modifyReplicationGroup(
 			return nil, respErr
 		}
 
-		// The ModifyReplicationGroup API returns stale field Engine that don't
-		// immediately reflect the requested changes, causing the controller to detect false
-		// differences and trigger terminal conditions. Override these fields with the user's
-		// intended values before passing to the generated setReplicationGroupOutput function.
+		// The ModifyReplicationGroup API returns a stale Engine field that doesn't
+		// immediately reflect the requested change, causing the controller to detect false
+		// differences and trigger terminal conditions. Override it with the user's
+		// intended value before passing to the generated setReplicationGroupOutput function.
 		normalizedRG := *resp.ReplicationGroup
 		if desired.ko.Spec.Engine != nil {
 			normalizedRG.Engine = desired.ko.Spec.Engine
 		}
 
-		return rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
+		out, err := rm.setReplicationGroupOutput(ctx, desired, &normalizedRG)
+		if err != nil {
+			return nil, err
+		}
+
+		return out, nil
 	}
 
 	// no updates done

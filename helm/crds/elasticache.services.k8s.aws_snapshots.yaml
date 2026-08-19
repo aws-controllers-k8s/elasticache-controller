@@ -111,7 +111,9 @@ spec:
                     type: object
                 type: object
               snapshotName:
-                description: A name for the snapshot being created.
+                description: |-
+                  A name for the snapshot being created. This value is stored as a lowercase
+                  string.
                 type: string
               sourceSnapshotName:
                 description: The name of an existing snapshot from which to make a

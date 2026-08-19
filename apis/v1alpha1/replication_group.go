@@ -26,16 +26,13 @@ import (
 // group.
 type ReplicationGroupSpec struct {
 
-	// A flag that enables encryption at rest when set to true.
+	// A flag that enables encryption at-rest on the replication group when set
+	// to true. In some cases, encryption at-rest may be enabled even when this
+	// value is false. Use StorageEncryptionType to view the effective encryption
+	// state of a cluster.
 	//
 	// You cannot modify the value of AtRestEncryptionEnabled after the replication
-	// group is created. To enable encryption at rest on a replication group you
-	// must set AtRestEncryptionEnabled to true when you create the replication
-	// group.
-	//
-	// Required: Only available when creating a replication group in an Amazon VPC
-	// using Valkey 7.2 and later, Redis OSS version 3.2.6, or Redis OSS 4.x and
-	// later.
+	// group is created.
 	//
 	// Default: true when using Valkey, false when using Redis OSS
 	AtRestEncryptionEnabled *bool `json:"atRestEncryptionEnabled,omitempty"`
@@ -151,6 +148,12 @@ type ReplicationGroupSpec struct {
 	// A user-created description for the replication group.
 	// +kubebuilder:validation:Required
 	Description *string `json:"description"`
+	// Specifies the durability setting for the replication group. When set to default,
+	// the service determines the effective durability based on the engine version,
+	// cluster mode, and other parameters. The resolved setting is reflected in
+	// the EffectiveDurability property of the replication group. For more information,
+	// see Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.html).
+	Durability *string `json:"durability,omitempty"`
 	// The name of the cache engine to be used for the clusters in this replication
 	// group. The value must be set to valkey or redis.
 	Engine *string `json:"engine,omitempty"`
@@ -394,6 +397,12 @@ type ReplicationGroupStatus struct {
 	// nodes. For more information, see Data tiering (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/data-tiering.html).
 	// +kubebuilder:validation:Optional
 	DataTiering *string `json:"dataTiering,omitempty"`
+	// The effective durability of the replication group. When Durability is set
+	// to default, the service resolves the actual durability based on the engine
+	// version, cluster mode, and other parameters. This field reflects the resolved
+	// value. For more information, see Configuring Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/ConfiguringDurability.html).
+	// +kubebuilder:validation:Optional
+	EffectiveDurability *string `json:"effectiveDurability,omitempty"`
 	// A list of events. Each element in the list contains detailed information
 	// about one event.
 	// +kubebuilder:validation:Optional
@@ -436,6 +445,12 @@ type ReplicationGroupStatus struct {
 	// deleting, create-failed, snapshotting.
 	// +kubebuilder:validation:Optional
 	Status *string `json:"status,omitempty"`
+	// Indicates the type of encryption for data stored at rest in the replication
+	// group. The value is none if at-rest encryption is not enabled, sse-elasticache
+	// if an ElastiCache service-managed key is used, or sse-kms if a customer-managed
+	// KMS key is used.
+	// +kubebuilder:validation:Optional
+	StorageEncryptionType *string `json:"storageEncryptionType,omitempty"`
 }
 
 // ReplicationGroup is the Schema for the ReplicationGroups API

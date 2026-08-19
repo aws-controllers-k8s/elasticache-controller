@@ -32,7 +32,8 @@ type CacheParameterGroupSpec struct {
 	// | redis2.6 | redis2.8 |redis3.2 | redis4.0 | redis5.0 | redis6.x | redis7
 	// +kubebuilder:validation:Required
 	CacheParameterGroupFamily *string `json:"cacheParameterGroupFamily"`
-	// A user-specified name for the cache parameter group.
+	// A user-specified name for the cache parameter group. This value is stored
+	// as a lowercase string.
 	// +kubebuilder:validation:Required
 	CacheParameterGroupName *string `json:"cacheParameterGroupName"`
 	// A user-specified description for the cache parameter group.
