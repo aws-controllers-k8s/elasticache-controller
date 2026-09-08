@@ -37,6 +37,7 @@ type CacheParameterGroupSpec struct {
 	// +kubebuilder:validation:Required
 	CacheParameterGroupName *string `json:"cacheParameterGroupName"`
 	// A user-specified description for the cache parameter group.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	// +kubebuilder:validation:Required
 	Description *string `json:"description"`
 	// An array of parameter names and values for the parameter update. You must

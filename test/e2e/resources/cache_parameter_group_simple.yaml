@@ -1,0 +1,9 @@
+# A simple CacheParameterGroup manifest.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: CacheParameterGroup
+metadata:
+  name: $CACHE_PARAMETER_GROUP_NAME
+spec:
+  cacheParameterGroupName: $CACHE_PARAMETER_GROUP_NAME
+  cacheParameterGroupFamily: redis7
+  description: $CACHE_PARAMETER_GROUP_DESCRIPTION

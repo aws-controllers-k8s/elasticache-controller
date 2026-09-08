@@ -56,13 +56,6 @@ func newResourceDelta(
 			delta.Add("Spec.CacheParameterGroupName", a.ko.Spec.CacheParameterGroupName, b.ko.Spec.CacheParameterGroupName)
 		}
 	}
-	if ackcompare.HasNilDifference(a.ko.Spec.Description, b.ko.Spec.Description) {
-		delta.Add("Spec.Description", a.ko.Spec.Description, b.ko.Spec.Description)
-	} else if a.ko.Spec.Description != nil && b.ko.Spec.Description != nil {
-		if *a.ko.Spec.Description != *b.ko.Spec.Description {
-			delta.Add("Spec.Description", a.ko.Spec.Description, b.ko.Spec.Description)
-		}
-	}
 	if len(a.ko.Spec.ParameterNameValues) != len(b.ko.Spec.ParameterNameValues) {
 		delta.Add("Spec.ParameterNameValues", a.ko.Spec.ParameterNameValues, b.ko.Spec.ParameterNameValues)
 	} else if len(a.ko.Spec.ParameterNameValues) > 0 {

@@ -292,6 +292,12 @@ resources:
         - InvalidParameterCombination
         - InvalidParameterValue
     fields:
+      # ModifyCacheParameterGroup accepts no description, so the field is
+      # create-only; comparing it would drive a no-op update reconcile loop.
+      Description:
+        is_immutable: true
+        compare:
+          is_ignored: true
       ParameterNameValues:
         from:
           operation: ModifyCacheParameterGroup
