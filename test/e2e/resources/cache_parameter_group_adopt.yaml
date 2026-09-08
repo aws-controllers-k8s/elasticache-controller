@@ -1,0 +1,13 @@
+# A CacheParameterGroup that adopts an existing group whose real description
+# differs from the one in this manifest.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: CacheParameterGroup
+metadata:
+  name: $CACHE_PARAMETER_GROUP_NAME
+  annotations:
+    services.k8s.aws/adoption-policy: adopt
+    services.k8s.aws/adoption-fields: '{"cacheParameterGroupName": "$CACHE_PARAMETER_GROUP_NAME"}'
+spec:
+  cacheParameterGroupName: $CACHE_PARAMETER_GROUP_NAME
+  cacheParameterGroupFamily: redis7
+  description: $CACHE_PARAMETER_GROUP_DESCRIPTION

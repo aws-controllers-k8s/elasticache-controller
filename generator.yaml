@@ -294,8 +294,9 @@ resources:
     fields:
       # ModifyCacheParameterGroup accepts no description, so the field is
       # create-only; comparing it would drive a no-op update reconcile loop.
+      # Not is_immutable: a CEL rule would also reject the runtime's own
+      # spec write-back when adopting a description-divergent group.
       Description:
-        is_immutable: true
         compare:
           is_ignored: true
       ParameterNameValues:

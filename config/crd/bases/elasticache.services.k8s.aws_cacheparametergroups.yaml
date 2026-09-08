@@ -60,9 +60,6 @@ spec:
                 description: A user-specified description for the cache parameter
                   group.
                 type: string
-                x-kubernetes-validations:
-                - message: Value is immutable once set
-                  rule: self == oldSelf
               parameterNameValues:
                 description: |-
                   An array of parameter names and values for the parameter update. You must
