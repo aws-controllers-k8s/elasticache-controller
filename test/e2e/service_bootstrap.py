@@ -53,6 +53,33 @@ def create_security_group() -> str:
 
     return sg_response['GroupId']
 
+# The default VPC and its subnets already exist, so these are looked up rather
+# than created and have no matching entry in service_cleanup.
+def get_default_subnets():
+    region = get_region()
+    account_id = get_account_id()
+
+    ec2 = boto3.client("ec2")
+    vpc_response = ec2.describe_vpcs(Filters=[{"Name": "isDefault", "Values": ["true"]}])
+    if len(vpc_response['Vpcs']) == 0:
+        raise ValueError(f"Default VPC not found for account {account_id} in region {region}")
+    default_vpc_id = vpc_response['Vpcs'][0]['VpcId']
+
+    subnet_response = ec2.describe_subnets(Filters=[
+        {"Name": "vpc-id", "Values": [default_vpc_id]},
+        {"Name": "state", "Values": ["available"]},
+    ])
+    subnet_ids = sorted({subnet['SubnetId'] for subnet in subnet_response['Subnets']})
+    if len(subnet_ids) < 2:
+        raise ValueError(
+            f"Default VPC {default_vpc_id} has {len(subnet_ids)} available subnet(s) "
+            f"in region {region}, but the CacheSubnetGroup tests need two"
+        )
+
+    logging.info(f"Using default VPC {default_vpc_id} subnets {subnet_ids[0]}, {subnet_ids[1]}")
+
+    return default_vpc_id, subnet_ids[0], subnet_ids[1]
+
 def create_user_group() -> str:
     ec = boto3.client("elasticache")
 
@@ -154,6 +181,8 @@ def service_bootstrap() -> dict:
     logging.getLogger().setLevel(logging.INFO)
     pre_bootstrap_cleanup()
 
+    default_vpc_id, subnet_1, subnet_2 = get_default_subnets()
+
     return TestBootstrapResources(
         create_sns_topic(),
         create_sns_topic(),
@@ -166,7 +195,10 @@ def service_bootstrap() -> dict:
         create_non_default_user(),
         create_log_group(),
         create_log_group(),
-        create_cpg()
+        create_cpg(),
+        default_vpc_id,
+        subnet_1,
+        subnet_2
     ).__dict__
 
 

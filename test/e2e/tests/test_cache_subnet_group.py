@@ -24,6 +24,7 @@ from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
 from acktest.k8s import condition
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
+from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e.replacement_values import REPLACEMENT_VALUES
 
 RESOURCE_PLURAL = "cachesubnetgroups"
@@ -45,44 +46,18 @@ def elasticache_client():
 
 
 @pytest.fixture(scope="module")
-def default_vpc_subnets():
-    """Two distinct subnets from the account's default VPC.
-
-    Every subnet in a cache subnet group has to belong to one VPC, so both are
-    taken from the same default VPC that the test bootstrap already requires.
-    """
-    ec2 = boto3.client('ec2')
-
-    vpcs = ec2.describe_vpcs(
-        Filters=[{"Name": "isDefault", "Values": ["true"]}],
-    )["Vpcs"]
-    assert len(vpcs) > 0, "no default VPC found, which CacheSubnetGroup tests need"
-    vpc_id = vpcs[0]["VpcId"]
-
-    subnets = ec2.describe_subnets(
-        Filters=[
-            {"Name": "vpc-id", "Values": [vpc_id]},
-            {"Name": "state", "Values": ["available"]},
-        ],
-    )["Subnets"]
-    subnet_ids = sorted({s["SubnetId"] for s in subnets})
-    assert len(subnet_ids) >= 2, (
-        f"default VPC {vpc_id} has {len(subnet_ids)} available subnet(s), "
-        "but the update case needs two"
-    )
-
-    return (vpc_id, subnet_ids[:2])
+def bootstrap_resources():
+    return get_bootstrap_resources()
 
 
 @pytest.fixture
-def simple_cache_subnet_group(default_vpc_subnets):
-    (_, subnet_ids) = default_vpc_subnets
+def simple_cache_subnet_group(bootstrap_resources):
     csg_name = random_suffix_name("ack-test-csg", 32)
 
     replacements = REPLACEMENT_VALUES.copy()
     replacements["CACHE_SUBNET_GROUP_NAME"] = csg_name
     replacements["CACHE_SUBNET_GROUP_DESCRIPTION"] = INITIAL_DESCRIPTION
-    replacements["SUBNET_ID"] = subnet_ids[0]
+    replacements["SUBNET_ID"] = bootstrap_resources.Subnet1
 
     resource_data = load_elasticache_resource(
         "cache_subnet_group_simple",
@@ -142,13 +117,14 @@ def assert_subnet_group_deleted(elasticache_client, csg_name):
 
 @service_marker
 class TestCacheSubnetGroup:
-    def test_crud(self, elasticache_client, default_vpc_subnets, simple_cache_subnet_group):
+    def test_crud(self, elasticache_client, bootstrap_resources, simple_cache_subnet_group):
         """Create, read back, modify and delete a CacheSubnetGroup.
 
         ModifyCacheSubnetGroup accepts both the description and the subnet list,
         so a single update exercises every mutable field the resource has.
         """
-        (vpc_id, subnet_ids) = default_vpc_subnets
+        vpc_id = bootstrap_resources.VPCID
+        subnet_ids = [bootstrap_resources.Subnet1, bootstrap_resources.Subnet2]
         (ref, cr) = simple_cache_subnet_group
         csg_name = cr["spec"]["cacheSubnetGroupName"]
 
