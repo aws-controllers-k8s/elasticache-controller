@@ -32,6 +32,8 @@ RESOURCE_PLURAL = "cacheparametergroups"
 # cover the controller's reconcile latency.
 CREATE_WAIT_AFTER_SECONDS = 20
 MODIFY_WAIT_AFTER_SECONDS = 30
+DELETE_WAIT_PERIODS = 10
+DELETE_WAIT_PERIOD_LENGTH = 10
 
 PARAMETER_GROUP_FAMILY = "redis7"
 INITIAL_DESCRIPTION = "ack e2e test cache parameter group"
@@ -97,8 +99,116 @@ def get_aws_parameter(elasticache_client, cpg_name, parameter_name):
     return matches[0]
 
 
+def assert_cache_parameter_group_deleted(elasticache_client, cpg_name):
+    """DeleteCacheParameterGroup reports no lifecycle state, so poll until the
+    group is really gone instead of assuming it disappears immediately.
+    """
+    for _ in range(DELETE_WAIT_PERIODS):
+        try:
+            elasticache_client.describe_cache_parameter_groups(
+                CacheParameterGroupName=cpg_name,
+            )
+        except elasticache_client.exceptions.CacheParameterGroupNotFoundFault:
+            return
+        sleep(DELETE_WAIT_PERIOD_LENGTH)
+
+    pytest.fail(f"cache parameter group {cpg_name} still exists after deletion")
+
+
 @service_marker
 class TestCacheParameterGroup:
+    def test_crud(self, elasticache_client, simple_cache_parameter_group):
+        """Create, read back, modify and delete a CacheParameterGroup.
+
+        The parameter list is the only mutable part of this resource, so the
+        update half both sets a parameter and clears it again — clearing is what
+        drives the resetAllParameters path.
+        """
+        (ref, cr) = simple_cache_parameter_group
+        cpg_name = cr["spec"]["cacheParameterGroupName"]
+
+        sleep(CREATE_WAIT_AFTER_SECONDS)
+        assert k8s.wait_on_condition(
+            ref, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+            wait_periods=10, period_length=10,
+        )
+
+        aws_res = elasticache_client.describe_cache_parameter_groups(
+            CacheParameterGroupName=cpg_name,
+        )
+        assert len(aws_res["CacheParameterGroups"]) == 1
+        aws_cpg = aws_res["CacheParameterGroups"][0]
+        assert aws_cpg["CacheParameterGroupFamily"] == PARAMETER_GROUP_FAMILY
+        assert aws_cpg["Description"] == INITIAL_DESCRIPTION
+
+        # A new group carries only engine defaults. Capture the current value so
+        # the reset assertion below compares against the real default instead of
+        # a hardcoded, engine-version-specific one.
+        initial = get_aws_parameter(elasticache_client, cpg_name, TEST_PARAMETER)
+        assert initial["Source"] == "system"
+        initial_value = initial.get("ParameterValue")
+
+        resource = k8s.get_resource(ref)
+        status_parameters = resource["status"].get("parameters") or []
+        assert TEST_PARAMETER in [
+            p.get("parameterName") for p in status_parameters
+        ]
+
+        # Update: give the parameter a user-supplied value. Waiting for a NEWER
+        # synced transition is what proves the edit was reconciled; a plain wait
+        # can observe the pre-patch condition.
+        synced_before = condition.get_synced_last_transition_time(ref)
+        assert synced_before is not None
+
+        updates = {
+            "spec": {
+                "parameterNameValues": [
+                    {"parameterName": TEST_PARAMETER, "parameterValue": TEST_PARAMETER_VALUE},
+                ],
+            },
+        }
+        k8s.patch_custom_resource(ref, updates)
+        sleep(MODIFY_WAIT_AFTER_SECONDS)
+        assert k8s.wait_on_condition_after(
+            ref, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+            last_transition_after=synced_before,
+            wait_periods=10, period_length=10,
+        )
+
+        parameter = get_aws_parameter(elasticache_client, cpg_name, TEST_PARAMETER)
+        assert parameter["ParameterValue"] == TEST_PARAMETER_VALUE
+        assert parameter["Source"] == "user"
+
+        # The read path mirrors AWS's user-source parameters back into the spec.
+        resource = k8s.get_resource(ref)
+        assert TEST_PARAMETER in [
+            p.get("parameterName") for p in resource["spec"].get("parameterNameValues") or []
+        ]
+
+        # Clearing the list resets the group back to its engine defaults.
+        synced_before = condition.get_synced_last_transition_time(ref)
+        assert synced_before is not None
+
+        k8s.patch_custom_resource(ref, {"spec": {"parameterNameValues": []}})
+        sleep(MODIFY_WAIT_AFTER_SECONDS)
+        assert k8s.wait_on_condition_after(
+            ref, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+            last_transition_after=synced_before,
+            wait_periods=10, period_length=10,
+        )
+
+        parameter = get_aws_parameter(elasticache_client, cpg_name, TEST_PARAMETER)
+        assert parameter["Source"] == "system"
+        assert parameter.get("ParameterValue") == initial_value
+
+        # No user-source parameters are left, so the mirrored spec is empty.
+        resource = k8s.get_resource(ref)
+        assert not (resource["spec"].get("parameterNameValues") or [])
+
+        _, deleted = k8s.delete_custom_resource(ref, 3, 10)
+        assert deleted
+        assert_cache_parameter_group_deleted(elasticache_client, cpg_name)
+
     def test_description_drift_does_not_loop(self, elasticache_client, simple_cache_parameter_group):
         """ModifyCacheParameterGroup cannot change a group's description, so an
         edit must settle as a no-op rather than producing a delta the controller

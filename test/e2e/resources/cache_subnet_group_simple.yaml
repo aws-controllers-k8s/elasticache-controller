@@ -1,0 +1,11 @@
+# A simple CacheSubnetGroup manifest. subnetRefs is deliberately omitted:
+# the controller rejects a manifest that sets both subnetIDs and subnetRefs.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: CacheSubnetGroup
+metadata:
+  name: $CACHE_SUBNET_GROUP_NAME
+spec:
+  cacheSubnetGroupName: $CACHE_SUBNET_GROUP_NAME
+  cacheSubnetGroupDescription: $CACHE_SUBNET_GROUP_DESCRIPTION
+  subnetIDs:
+    - $SUBNET_ID

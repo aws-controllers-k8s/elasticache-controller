@@ -35,6 +35,9 @@ class TestBootstrapResources:
     CWLogGroup1: str
     CWLogGroup2: str
     CPGName: str
+    VPCID: str
+    Subnet1: str
+    Subnet2: str
 
     def replacement_dict(self):
         return {
@@ -49,7 +52,10 @@ class TestBootstrapResources:
             "NON_DEFAULT_USER": self.NonDefaultUser,
             "LOG_GROUP": self.CWLogGroup1,
             "LOG_GROUP_2": self.CWLogGroup2,
-            "CACHE_PARAMETER_GROUP_NAME": self.CPGName
+            "CACHE_PARAMETER_GROUP_NAME": self.CPGName,
+            "VPC_ID": self.VPCID,
+            "SUBNET_ID": self.Subnet1,
+            "SUBNET_ID_2": self.Subnet2
         }
 
 _bootstrap_resources = None
