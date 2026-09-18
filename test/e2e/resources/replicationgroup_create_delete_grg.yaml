@@ -1,0 +1,20 @@
+# Primary replication group for the GlobalReplicationGroup tests.
+#
+# A Global Datastore rejects T-family and sub-"large" node types on the primary and
+# requires automatic failover, so this cannot reuse replicationgroup_create_delete.yaml.
+# It is a separate fixture rather than an edit to that one so the existing
+# ReplicationGroup tests keep provisioning the smaller node type they need.
+# https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Redis-Global-Datastores-Getting-Started.html
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  cacheNodeType: cache.r6g.large
+  engine: redis
+  engineVersion: "$ENGINE_VERSION"
+  numNodeGroups: $NUM_NODE_GROUPS
+  replicasPerNodeGroup: $REPLICAS_PER_NODE_GROUP
+  automaticFailoverEnabled: true
+  description: primary for global datastore tests
+  replicationGroupID: $RG_ID
