@@ -126,11 +126,39 @@ func (rm *resourceManager) CustomDescribeGlobalReplicationGroupsSetOutput(
 		ko.Status.Members,
 	)
 
+	// The generated read path maps these four straight out of the Describe response
+	// whether or not the user declared them, which reintroduces for them the same
+	// ownership problem the two fields above are guarded against.
+	ko.Spec.Engine = observedIfManaged(r.ko.Spec.Engine, ko.Spec.Engine)
+	ko.Spec.EngineVersion = observedIfManaged(r.ko.Spec.EngineVersion, ko.Spec.EngineVersion)
+	ko.Spec.CacheNodeType = observedIfManaged(r.ko.Spec.CacheNodeType, ko.Spec.CacheNodeType)
+	ko.Spec.Description = observedIfManaged(r.ko.Spec.Description, ko.Spec.Description)
+
 	// spec.cacheParameterGroupName is deliberately untouched. It is an input to an
 	// engine upgrade rather than observable state -- ElastiCache copies it onto the
 	// members and never reports it back on the datastore -- so `latest` keeps the
 	// desired value and the field never produces a delta of its own.
 	return ko, nil
+}
+
+// observedIfManaged returns the observed value only for a field the user actually
+// manages, and nil otherwise.
+//
+// A datastore inherits engine, version and node type from its primary, so AWS
+// reports all three on a manifest that declares none of them. Mapped into Spec
+// unconditionally, each becomes a nil-desired-versus-observed difference that no
+// reconcile can clear: the delta stays permanently non-empty, every pass issues a
+// ModifyGlobalReplicationGroup carrying no field at all, and because more than one
+// such difference is outstanding the update requeues itself indefinitely. Nothing
+// surfaces on the resource -- IsSynced reads the datastore's status, which stays
+// steady throughout -- so the loop is silent. Leaving an undeclared field nil keeps
+// both sides nil, and also stops the runtime patching an observed value back into a
+// manifest that never asked to own it.
+func observedIfManaged(desired, observed *string) *string {
+	if desired == nil {
+		return nil
+	}
+	return observed
 }
 
 // observedNodeGroupCount reports the shard count to compare a desired count

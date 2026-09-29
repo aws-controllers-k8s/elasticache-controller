@@ -39,7 +39,7 @@ RESOURCE_PLURAL_RG = "replicationgroups"
 # 'available' when the suite runs every elasticache resource in parallel. Each wait
 # returns as soon as its target state is reached, so a generous ceiling costs
 # nothing on the happy path and only absorbs that tail.
-RG_AVAILABLE_WAIT_PERIODS = 40
+RG_AVAILABLE_WAIT_PERIODS = 50
 RG_AVAILABLE_PERIOD_LENGTH = 30
 
 CREATE_WAIT_PERIODS = 30
@@ -48,6 +48,12 @@ MODIFY_WAIT_PERIODS = 30
 MODIFY_PERIOD_LENGTH = 30
 DELETE_WAIT_PERIODS = 40
 DELETE_PERIOD_LENGTH = 30
+
+# An engine upgrade is applied member by member and holds the datastore in
+# 'modifying' throughout, so it needs a larger ceiling than an in-place attribute
+# change like the description.
+UPGRADE_WAIT_PERIODS = 50
+UPGRADE_PERIOD_LENGTH = 30
 
 STEADY_STATES = ("primary-only", "available")
 
@@ -88,12 +94,28 @@ def wait_global_replication_group_status(
     return False
 
 
+def engine_versions_match(actual, expected: str) -> bool:
+    """Compare engine versions the way the controller does, by major.minor.
+
+    ElastiCache resolves a requested version to a fully-qualified one and reports
+    that back: ask for "7.1" and the datastore reports "7.1.0". Asserting exact
+    string equality against the requested value therefore never succeeds, which is
+    the same trap that produced aws-controllers-k8s/community#1737 and the reason
+    pkg/util.EngineVersionsMatch ignores the patch component above engine 5. This
+    mirrors that rule so the assertion agrees with the delta the controller sees.
+    """
+    if not actual:
+        return False
+    return actual.split(".")[:2] == expected.split(".")[:2]
+
+
 def wait_global_attribute(
     global_rg_id: str,
     attribute: str,
     expected,
     wait_periods: int = MODIFY_WAIT_PERIODS,
     period_length: int = MODIFY_PERIOD_LENGTH,
+    match=None,
 ) -> bool:
     """Wait until an attribute matches AND the datastore has settled.
 
@@ -101,7 +123,12 @@ def wait_global_attribute(
     for a few seconds after the spec is patched, before the controller issues the
     modify and AWS flips the status to 'modifying'. Requiring both the value and a
     steady state means the wait cannot pass on the pre-patch state.
+
+    'match' defaults to equality; pass a comparator for a value AWS normalises
+    rather than echoing back.
     """
+    if match is None:
+        match = lambda actual, want: actual == want
     for i in range(wait_periods):
         grg = get_global_replication_group(global_rg_id)
         if grg is not None:
@@ -111,7 +138,7 @@ def wait_global_attribute(
                 f"GlobalReplicationGroup {global_rg_id} {attribute}={actual} "
                 f"status={status} waiting for {expected} ({i}/{wait_periods})"
             )
-            if actual == expected and status in STEADY_STATES:
+            if match(actual, expected) and status in STEADY_STATES:
                 return True
         sleep(period_length)
     return False
@@ -161,6 +188,26 @@ def wait_replication_group_available(rg_id: str) -> bool:
     return False
 
 
+def wait_replication_group_deleted(rg_id: str) -> bool:
+    """Poll until the ReplicationGroup is gone.
+
+    Deliberately not boto's 'replication_group_deleted' waiter: that waiter treats
+    status 'available' as a terminal failure, and the group necessarily still reads
+    'available' for the seconds between deleting the CR and the controller issuing
+    the delete, so it aborts immediately and leaks the group.
+    """
+    for i in range(DELETE_WAIT_PERIODS):
+        try:
+            ec.describe_replication_groups(ReplicationGroupId=rg_id)
+        except ec.exceptions.ReplicationGroupNotFoundFault:
+            return True
+        except Exception as e:
+            logging.warning(f"error checking ReplicationGroup {rg_id}: {e}")
+        logging.debug(f"waiting for ReplicationGroup {rg_id} to be deleted ({i})")
+        sleep(DELETE_PERIOD_LENGTH)
+    return False
+
+
 def wait_k8s_global_id(reference, wait_periods: int = 10, period_length: int = 10):
     """Poll until the controller records the AWS-generated full datastore ID."""
     for _ in range(wait_periods):
@@ -185,7 +232,7 @@ def assert_condition_not_true(reference, condition_type: str):
     )
 
 
-def create_grg(suffix: str, primary_rg_id: str, description: str, extra_spec: dict = None):
+def create_grg(suffix: str, primary_rg_id: str, description: str):
     """Create a GlobalReplicationGroup and wait for it to reach primary-only."""
     grg_name = f"grg-{suffix}"
     grg_resource = load_elasticache_resource(
@@ -197,9 +244,6 @@ def create_grg(suffix: str, primary_rg_id: str, description: str, extra_spec: di
             "DESCRIPTION": description,
         },
     )
-    if extra_spec:
-        grg_resource["spec"].update(extra_spec)
-
     reference = k8s.CustomResourceReference(
         CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL_GRG, grg_name, namespace="default"
     )
@@ -233,7 +277,17 @@ def delete_grg(reference, global_id: str):
 
 @pytest.fixture(scope="module")
 def primary_replication_group():
-    """A ReplicationGroup that satisfies the Global Datastore primary requirements."""
+    """A ReplicationGroup that satisfies the Global Datastore primary requirements.
+
+    Module scope buys no sharing here and is only a guard against per-test
+    duplication within one worker: the suite runs under pytest-xdist LoadScheduling
+    with more workers than tests, so each test lands in its own process and
+    instantiates this fixture separately. Every test that requests it therefore
+    provisions another two-node cache.r6g.large group, and those provision
+    concurrently with the rest of the elasticache suite. That is why the modify
+    cases below are one test rather than three -- at four copies the contention
+    pushed one group past a 20-minute budget and the suite failed on setup.
+    """
     rg_id = random_suffix_name("ack-e2e-grg-primary", 32)
     rg_resource = load_elasticache_resource(
         "replicationgroup_create_delete_grg",
@@ -258,13 +312,10 @@ def primary_replication_group():
     yield rg_id
 
     k8s.delete_custom_resource(reference)
-    try:
-        ec.get_waiter("replication_group_deleted").wait(
-            ReplicationGroupId=rg_id,
-            WaiterConfig={"Delay": 30, "MaxAttempts": 40},
+    if not wait_replication_group_deleted(rg_id):
+        logging.warning(
+            f"cleanup of ReplicationGroup {rg_id} did not complete within the budget"
         )
-    except Exception as e:
-        logging.warning(f"cleanup of ReplicationGroup {rg_id} did not complete: {e}")
 
 
 @service_marker
@@ -328,7 +379,16 @@ class TestGlobalReplicationGroupInvalidPrimary:
 
 @service_marker
 class TestGlobalReplicationGroupModify:
-    def test_modify_description(self, primary_replication_group):
+    def test_modify_sequence(self, primary_replication_group):
+        """Apply each supported modification in turn to one datastore.
+
+        The three changes share a datastore rather than taking one each because
+        every test costs another primary ReplicationGroup under this suite's
+        scheduling (see the primary_replication_group fixture). Sharing also makes
+        this a stronger test of the one-change-per-request rule than three isolated
+        cases were: the changes are applied in sequence against a datastore that has
+        already been modified, not against a freshly created one.
+        """
         rg_id = primary_replication_group
         suffix = random_suffix_name("ack-e2e-mod", 20)
         reference, global_id = create_grg(suffix, rg_id, "Original description")
@@ -352,24 +412,12 @@ class TestGlobalReplicationGroupModify:
             period_length=MODIFY_PERIOD_LENGTH,
         ), "resource did not return to ACK.ResourceSynced=True after the modify"
 
-        delete_grg(reference, global_id)
-
-    def test_modify_automatic_failover_is_noop(self, primary_replication_group):
-        """Setting a value AWS already reports must converge without a Modify call.
-
-        A Global Datastore inherits automatic failover from its primary, so
-        Modify(AutomaticFailoverEnabled=true) is a no-op that AWS rejects. The
-        controller derives the current value from live member state, so it must see
-        that the value already matches and never issue the call -- neither
-        ACK.Terminal nor ACK.Recoverable should ever appear.
-        """
-        rg_id = primary_replication_group
-        suffix = random_suffix_name("ack-e2e-afe", 20)
-
-        # Created without the field so the patch below is the first time it is set,
-        # which is the exact trigger for the reconcile loop this guards against.
-        reference, global_id = create_grg(suffix, rg_id, "ACK E2E failover no-op")
-
+        # Setting a value AWS already reports must converge without a Modify call. A
+        # datastore inherits automatic failover from its primary, so
+        # Modify(AutomaticFailoverEnabled=true) is a no-op AWS rejects. The controller
+        # derives the current value from live member state, so it must see the value
+        # already matches and never issue the call. This is the first time the field
+        # is set, which is the exact trigger for the loop it guards against.
         k8s.patch_custom_resource(
             reference, {"spec": {"automaticFailoverEnabled": True}}
         )
@@ -386,23 +434,11 @@ class TestGlobalReplicationGroupModify:
         assert_condition_not_true(reference, condition.CONDITION_TYPE_RECOVERABLE)
         condition.assert_synced(reference)
 
-        delete_grg(reference, global_id)
-
-    def test_engine_version_upgrade(self, primary_replication_group):
-        """A minor engine upgrade must send engine and version together and converge.
-
-        ModifyGlobalReplicationGroup rejects an engine version sent on its own, so
-        this exercises the grouped engine request. A MAJOR upgrade additionally
-        requires spec.cacheParameterGroupName; that branch is covered by unit tests
-        because it could not be validated against live AWS here.
-        """
-        rg_id = primary_replication_group
-        suffix = random_suffix_name("ack-e2e-ev", 20)
-        reference, global_id = create_grg(
-            suffix, rg_id, "ACK E2E engine upgrade",
-            extra_spec={"engine": "redis", "engineVersion": "7.0"},
-        )
-
+        # A minor engine upgrade must send engine and version together and converge.
+        # ModifyGlobalReplicationGroup rejects an engine version sent on its own, so
+        # this exercises the grouped engine request. A MAJOR upgrade additionally
+        # requires spec.cacheParameterGroupName; that branch is covered by unit tests
+        # because it could not be validated against live AWS here.
         synced_before = condition.get_synced_last_transition_time(reference)
         assert synced_before is not None
 
@@ -410,9 +446,12 @@ class TestGlobalReplicationGroupModify:
             reference, {"spec": {"engine": "redis", "engineVersion": "7.1"}}
         )
 
-        assert wait_global_attribute(global_id, "EngineVersion", "7.1"), (
-            f"GlobalReplicationGroup {global_id} engine version was not upgraded"
-        )
+        assert wait_global_attribute(
+            global_id, "EngineVersion", "7.1",
+            wait_periods=UPGRADE_WAIT_PERIODS,
+            period_length=UPGRADE_PERIOD_LENGTH,
+            match=engine_versions_match,
+        ), f"GlobalReplicationGroup {global_id} engine version was not upgraded"
         # The upgrade wait above has already elapsed real time, so a read is
         # sufficient here and does not pass merely for lack of elapsed time.
         assert_condition_not_true(reference, condition.CONDITION_TYPE_TERMINAL)
