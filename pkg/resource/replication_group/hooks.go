@@ -25,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -519,22 +519,22 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	// This means that we have already attempted to apply the CacheNodeType once and
 	// were not successful hence we will set a terminal condition.
 	if !cacheNodeTypeRequiresUpdate(desired) && delta.DifferentAt("Spec.CacheNodeType") {
-		return nil, awserr.New("InvalidParameterCombination", "Cannot update CacheNodeType, "+
-			"Please refer to Events for more details", nil)
+		return nil, &smithy.GenericAPIError{Code: "InvalidParameterCombination", Message: "Cannot update CacheNodeType, " +
+			"Please refer to Events for more details"}
 
 	}
 
 	// Handle the asynchronous rollback for Resharding.
 	if !nodeGroupRequiresUpdate(desired) && rm.shardConfigurationsDiffer(desired, latest) {
 
-		return nil, awserr.New("InvalidParameterCombination", "Cannot update NodeGroups, "+
-			"Please refer to Events for more details", nil)
+		return nil, &smithy.GenericAPIError{Code: "InvalidParameterCombination", Message: "Cannot update NodeGroups, " +
+			"Please refer to Events for more details"}
 	}
 
 	// Handle NodeGroupConfiguration asynchronous rollback situations other than Resharding.
 	if !nodeGroupRequiresUpdate(desired) && (rm.replicaCountDifference(desired, latest) != 0 && !delta.DifferentAt("Spec.ReplicasPerNodeGroup")) {
-		return nil, awserr.New("InvalidParameterCombination", "Cannot update NodeGroupConfiguration, "+
-			"Please refer to Events for more details", nil)
+		return nil, &smithy.GenericAPIError{Code: "InvalidParameterCombination", Message: "Cannot update NodeGroupConfiguration, " +
+			"Please refer to Events for more details"}
 	}
 
 	// Order of operations when diffs map to multiple updates APIs:
@@ -1028,7 +1028,7 @@ func (rm *resourceManager) newUpdateShardConfigurationRequestPayload(
 		}
 	} else if decrease {
 		if len(shardsToRetain) == 0 {
-			return nil, awserr.New("InvalidParameterValue", "At least one node group should be present.", nil)
+			return nil, &smithy.GenericAPIError{Code: "InvalidParameterValue", Message: "At least one node group should be present."}
 		}
 		res.NodeGroupsToRetain = shardsToRetain
 	}
