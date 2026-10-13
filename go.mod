@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/aws-controllers-k8s/ec2-controller v1.22.0
 	github.com/aws-controllers-k8s/kms-controller v1.6.0
-	github.com/aws-controllers-k8s/runtime v0.65.0
+	github.com/aws-controllers-k8s/runtime v0.66.0
 	github.com/aws-controllers-k8s/sns-controller v1.11.0
 	github.com/aws/aws-sdk-go-v2 v1.41.10
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.54.0
