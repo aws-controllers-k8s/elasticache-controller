@@ -188,26 +188,6 @@ def wait_replication_group_available(rg_id: str) -> bool:
     return False
 
 
-def wait_replication_group_deleted(rg_id: str) -> bool:
-    """Poll until the ReplicationGroup is gone.
-
-    Deliberately not boto's 'replication_group_deleted' waiter: that waiter treats
-    status 'available' as a terminal failure, and the group necessarily still reads
-    'available' for the seconds between deleting the CR and the controller issuing
-    the delete, so it aborts immediately and leaks the group.
-    """
-    for i in range(DELETE_WAIT_PERIODS):
-        try:
-            ec.describe_replication_groups(ReplicationGroupId=rg_id)
-        except ec.exceptions.ReplicationGroupNotFoundFault:
-            return True
-        except Exception as e:
-            logging.warning(f"error checking ReplicationGroup {rg_id}: {e}")
-        logging.debug(f"waiting for ReplicationGroup {rg_id} to be deleted ({i})")
-        sleep(DELETE_PERIOD_LENGTH)
-    return False
-
-
 def wait_k8s_global_id(reference, wait_periods: int = 10, period_length: int = 10):
     """Poll until the controller records the AWS-generated full datastore ID."""
     for _ in range(wait_periods):
@@ -352,11 +332,14 @@ def primary_replication_group():
 
     yield rg_id
 
-    k8s.delete_custom_resource(reference)
-    if not wait_replication_group_deleted(rg_id):
-        logging.warning(
-            f"cleanup of ReplicationGroup {rg_id} did not complete within the budget"
-        )
+    # Same invariant as delete_grg: replication_group's sdkDelete requeues while the
+    # group reads deleting, so the finalizer only comes off once it is gone from AWS.
+    _, removed = k8s.delete_custom_resource(
+        reference,
+        wait_periods=DELETE_WAIT_PERIODS,
+        period_length=DELETE_PERIOD_LENGTH,
+    )
+    assert removed, f"primary ReplicationGroup CR for {rg_id} was not removed"
 
 
 @service_marker
