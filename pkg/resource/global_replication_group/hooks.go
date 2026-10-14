@@ -371,9 +371,11 @@ const (
 )
 
 // nextModify reports which logical change to send now. AWS rejects a request
-// carrying more than one logical change, and treats engine plus engine version as
-// a single upgrade that must travel together, so the caller applies one and
-// requeues for the rest.
+// carrying more than one logical change, and counts engine and engine version as
+// one upgrade rather than two, so those two may share a request while any other
+// change waits for a requeue. Grouping does not make either field mandatory when
+// the other is absent: a version-only bump sends no engine, which is the request
+// replication_group's modify path builds for the same change.
 func nextModify(delta *ackcompare.Delta) modifyChange {
 	ordered := []struct {
 		change  modifyChange
