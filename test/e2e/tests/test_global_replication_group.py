@@ -232,6 +232,44 @@ def assert_condition_not_true(reference, condition_type: str):
     )
 
 
+# Fields the basic manifest never declares. A datastore inherits all three from
+# its primary, so AWS reports them on every call; the controller must not write
+# them back into a spec that never asked to manage them.
+UNDECLARED_SPEC_FIELDS = ("cacheNodeType", "engine", "engineVersion", "nodeGroupCount")
+
+
+def assert_spec_claims_nothing_undeclared(reference):
+    """Assert the controller has not taken ownership of fields the user left unset.
+
+    Guards the Create and Describe responses alike: both report inherited values,
+    and copying either into the spec would silently claim the field and leave a
+    difference no reconcile can clear.
+    """
+    cr = k8s.get_resource(reference)
+    spec = (cr or {}).get("spec") or {}
+    claimed = [f for f in UNDECLARED_SPEC_FIELDS if spec.get(f) is not None]
+    assert not claimed, (
+        f"controller wrote undeclared field(s) into spec: "
+        f"{ {f: spec[f] for f in claimed} }"
+    )
+
+
+def assert_status_matches_aws(reference, global_id: str):
+    """Assert the CR's status.status is not a stale echo of a write response.
+
+    A mutation response reports a status the subsequent Describe can contradict, so
+    without a requeue to schedule that read the CR holds the stale value until the
+    next resync period.
+    """
+    aws_status = (get_global_replication_group(global_id) or {}).get("Status")
+    cr = k8s.get_resource(reference)
+    cr_status = ((cr or {}).get("status") or {}).get("status")
+    assert cr_status == aws_status, (
+        f"CR status.status {cr_status!r} does not match the datastore's "
+        f"reported status {aws_status!r}"
+    )
+
+
 def create_grg(suffix: str, primary_rg_id: str, description: str):
     """Create a GlobalReplicationGroup and wait for it to reach primary-only."""
     grg_name = f"grg-{suffix}"
@@ -337,6 +375,13 @@ class TestGlobalReplicationGroupLifecycle:
         assert grg["Status"] == "primary-only"
         assert len(grg.get("Members") or []) >= 1
 
+        # The CR's own spec and status, not just what AWS reports. The Create
+        # response carries the node type, engine and engine version inherited from
+        # the primary; writing any of them back would claim a field the manifest
+        # never declared.
+        assert_spec_claims_nothing_undeclared(reference)
+        assert_status_matches_aws(reference, global_id)
+
         delete_grg(reference, global_id)
 
         # Deleting the datastore must not delete the ReplicationGroup it only
@@ -411,6 +456,13 @@ class TestGlobalReplicationGroupModify:
             wait_periods=MODIFY_WAIT_PERIODS,
             period_length=MODIFY_PERIOD_LENGTH,
         ), "resource did not return to ACK.ResourceSynced=True after the modify"
+
+        # A description change is the single-pending-change case: the Modify response
+        # reported 'available' while the datastore was still 'primary-only', so
+        # without a requeue the CR would hold that stale status until the next
+        # resync. Checked after the Synced wait above, so the read is meaningful.
+        assert_status_matches_aws(reference, global_id)
+        assert_spec_claims_nothing_undeclared(reference)
 
         # Setting a value AWS already reports must converge without a Modify call. A
         # datastore inherits automatic failover from its primary, so

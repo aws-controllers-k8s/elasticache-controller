@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -34,8 +34,8 @@ func (rm *resourceManager) CustomCreateSnapshot(
 ) (*resource, error) {
 	if r.ko.Spec.SourceSnapshotName != nil {
 		if r.ko.Spec.CacheClusterID != nil || r.ko.Spec.ReplicationGroupID != nil {
-			return nil, awserr.New("InvalidParameterCombination", "Cannot specify CacheClusteId or "+
-				"ReplicationGroupId while SourceSnapshotName is specified", nil)
+			return nil, &smithy.GenericAPIError{Code: "InvalidParameterCombination", Message: "Cannot specify CacheClusteId or " +
+				"ReplicationGroupId while SourceSnapshotName is specified"}
 		}
 
 		input, err := rm.newCopySnapshotPayload(r)

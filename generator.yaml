@@ -489,10 +489,8 @@ resources:
       # region-specific prefix. The resulting full ID is what every later call uses
       # and lands in status.globalReplicationGroupID.
       GlobalReplicationGroupIdSuffix:
-        is_required: true
         is_immutable: true
       PrimaryReplicationGroupId:
-        is_required: true
         is_immutable: true
         references:
           resource: ReplicationGroup
@@ -501,10 +499,17 @@ resources:
         from:
           operation: ModifyGlobalReplicationGroup
           path: AutomaticFailoverEnabled
+      # A datastore inherits node type, engine and engine version from its primary,
+      # so CreateGlobalReplicationGroup reports them without ever accepting them.
+      # Copying the response back would claim fields the user never declared and
+      # overwrite ones they did; the read path populates them only when managed.
       CacheNodeType:
         from:
           operation: ModifyGlobalReplicationGroup
           path: CacheNodeType
+        set:
+          - method: Create
+            ignore: from
       CacheParameterGroupName:
         from:
           operation: ModifyGlobalReplicationGroup
@@ -513,10 +518,16 @@ resources:
         from:
           operation: ModifyGlobalReplicationGroup
           path: Engine
+        set:
+          - method: Create
+            ignore: from
       EngineVersion:
         from:
           operation: ModifyGlobalReplicationGroup
           path: EngineVersion
+        set:
+          - method: Create
+            ignore: from
       # Shard count is moved by the dedicated Increase/DecreaseNodeGroups APIs, so
       # no single operation input models it. Declared synthetically and reconciled
       # in customUpdateGlobalReplicationGroup.
@@ -527,6 +538,10 @@ resources:
         CreateGlobalReplicationGroup:
           input_fields:
             GlobalReplicationGroupDescription: Description
+        # Not a request parameter: this renames the member of the
+        # GlobalReplicationGroup struct in the Describe *output*. Without it the
+        # read path stops populating Spec.Description and the field never
+        # reconciles.
         DescribeGlobalReplicationGroups:
           output_fields:
             GlobalReplicationGroupDescription: Description

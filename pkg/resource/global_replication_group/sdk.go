@@ -274,25 +274,10 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.AuthTokenEnabled = nil
 	}
-	if resp.GlobalReplicationGroup.CacheNodeType != nil {
-		ko.Spec.CacheNodeType = resp.GlobalReplicationGroup.CacheNodeType
-	} else {
-		ko.Spec.CacheNodeType = nil
-	}
 	if resp.GlobalReplicationGroup.ClusterEnabled != nil {
 		ko.Status.ClusterEnabled = resp.GlobalReplicationGroup.ClusterEnabled
 	} else {
 		ko.Status.ClusterEnabled = nil
-	}
-	if resp.GlobalReplicationGroup.Engine != nil {
-		ko.Spec.Engine = resp.GlobalReplicationGroup.Engine
-	} else {
-		ko.Spec.Engine = nil
-	}
-	if resp.GlobalReplicationGroup.EngineVersion != nil {
-		ko.Spec.EngineVersion = resp.GlobalReplicationGroup.EngineVersion
-	} else {
-		ko.Spec.EngineVersion = nil
 	}
 	if resp.GlobalReplicationGroup.GlobalNodeGroups != nil {
 		f7 := []*svcapitypes.GlobalNodeGroup{}
@@ -357,6 +342,19 @@ func (rm *resourceManager) sdkCreate(
 	}
 
 	rm.setStatusDefaults(ko)
+	// The resource now exists in AWS and ko carries its identifiers. Mark any
+	// error from here on as a post-create failure so the reconciler retains the
+	// ACK finalizer, and return ko so those identifiers reach the CR status and
+	// the next reconciliation finds the resource instead of creating a second
+	// one. See https://github.com/aws-controllers-k8s/community/issues/2849.
+	defer func() {
+		if err != nil {
+			err = ackerr.WrapPostCreateError(err)
+			if created == nil {
+				created = &resource{ko}
+			}
+		}
+	}()
 	return &resource{ko}, nil
 }
 

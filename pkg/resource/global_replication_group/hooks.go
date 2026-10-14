@@ -63,8 +63,8 @@ var (
 		errors.New("waiting for secondary members to be disassociated"),
 		ackrequeue.DefaultRequeueAfterDuration,
 	)
-	requeueWaitForRemainingChanges = ackrequeue.NeededAfter(
-		errors.New("applied one change; further field updates are pending"),
+	requeueAfterMutation = ackrequeue.NeededAfter(
+		errors.New("applied a change; re-reading to establish observed state"),
 		ackrequeue.DefaultRequeueAfterDuration,
 	)
 )
@@ -304,7 +304,11 @@ func (rm *resourceManager) updateNodeGroupCount(
 		if err != nil {
 			return nil, err
 		}
-		return rm.setResourceFromGlobalReplicationGroup(desired, resp.GlobalReplicationGroup)
+		out, err := rm.setResourceFromGlobalReplicationGroup(desired, resp.GlobalReplicationGroup)
+		if err != nil {
+			return nil, err
+		}
+		return out, requeueAfterMutation
 	case nodeGroupCountDecrease:
 		input := &svcsdk.DecreaseNodeGroupsInGlobalReplicationGroupInput{
 			GlobalReplicationGroupId: globalID,
@@ -323,7 +327,11 @@ func (rm *resourceManager) updateNodeGroupCount(
 		if err != nil {
 			return nil, err
 		}
-		return rm.setResourceFromGlobalReplicationGroup(desired, resp.GlobalReplicationGroup)
+		out, err := rm.setResourceFromGlobalReplicationGroup(desired, resp.GlobalReplicationGroup)
+		if err != nil {
+			return nil, err
+		}
+		return out, requeueAfterMutation
 	}
 	return latest, nil
 }
@@ -362,11 +370,11 @@ const (
 	modifyEngineUpgrade modifyChange = "engineUpgrade"
 )
 
-// pendingModify reports which logical change to send now and how many are pending
-// in total. AWS rejects a request carrying more than one logical change, and
-// treats engine plus engine version as a single upgrade that must travel
-// together, so the caller applies one and requeues for the rest.
-func pendingModify(delta *ackcompare.Delta) (modifyChange, int) {
+// nextModify reports which logical change to send now. AWS rejects a request
+// carrying more than one logical change, and treats engine plus engine version as
+// a single upgrade that must travel together, so the caller applies one and
+// requeues for the rest.
+func nextModify(delta *ackcompare.Delta) modifyChange {
 	ordered := []struct {
 		change  modifyChange
 		pending bool
@@ -377,18 +385,12 @@ func pendingModify(delta *ackcompare.Delta) (modifyChange, int) {
 		{modifyEngineUpgrade, delta.DifferentAt("Spec.Engine") || delta.DifferentAt("Spec.EngineVersion")},
 	}
 
-	next := modifyNone
-	pending := 0
 	for _, c := range ordered {
-		if !c.pending {
-			continue
-		}
-		pending++
-		if next == modifyNone {
-			next = c.change
+		if c.pending {
+			return c.change
 		}
 	}
-	return next, pending
+	return modifyNone
 }
 
 // requiresCacheParameterGroup reports whether an engine upgrade has to carry
@@ -433,7 +435,7 @@ func (rm *resourceManager) modifyGlobalReplicationGroup(
 	globalID *string,
 	delta *ackcompare.Delta,
 ) (*resource, error) {
-	next, pending := pendingModify(delta)
+	next := nextModify(delta)
 	if next == modifyNone {
 		// The delta is entirely in fields this API cannot change. Return the
 		// observed resource rather than nil, which would nil-deref in the
@@ -477,12 +479,12 @@ func (rm *resourceManager) modifyGlobalReplicationGroup(
 	if err != nil {
 		return nil, err
 	}
-	if pending > 1 {
-		// IsSynced is status-based, so a fast change would return the datastore to
-		// a synced status and strand the rest of the delta without this requeue.
-		return out, requeueWaitForRemainingChanges
-	}
-	return out, nil
+	// Requeue after every successful mutation, not just when more of the delta is
+	// pending. The response echoes the datastore's pre-mutation field values and
+	// can report a status the subsequent Describe contradicts, so without a
+	// requeue nothing schedules the read that establishes observed state and the
+	// resource holds stale values until the next resync period.
+	return out, requeueAfterMutation
 }
 
 // customDeleteGlobalReplicationGroup removes the datastore, which AWS only allows
@@ -612,8 +614,9 @@ func isInvalidGlobalReplicationGroupState(err error) bool {
 
 // setResourceFromGlobalReplicationGroup folds an Increase/Decrease/Modify
 // response back into the resource. Only the identifier and status move: the
-// response echoes the datastore's pre-mutation field values, and the next read is
-// what establishes observed state.
+// response echoes the datastore's pre-mutation field values, and can report a
+// status the subsequent Describe contradicts, so callers requeue to schedule the
+// read that establishes observed state.
 func (rm *resourceManager) setResourceFromGlobalReplicationGroup(
 	r *resource,
 	grg *svcsdktypes.GlobalReplicationGroup,

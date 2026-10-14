@@ -8,5 +8,5 @@ roleRef:
   name: ack-elasticache-controller
 subjects:
 - kind: ServiceAccount
-  name: ack-elasticache-controller
+  name: ack--controller
   namespace: ack-system

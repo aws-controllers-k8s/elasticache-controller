@@ -168,27 +168,26 @@ func TestRetainedNodeGroupIDs(t *testing.T) {
 	}
 }
 
-// pendingModify is the guard against sending AWS more than one logical change per
+// nextModify is the guard against sending AWS more than one logical change per
 // ModifyGlobalReplicationGroup request.
-func TestPendingModify(t *testing.T) {
+func TestNextModify(t *testing.T) {
 	cases := []struct {
-		name        string
-		paths       []string
-		wantChange  modifyChange
-		wantPending int
+		name       string
+		paths      []string
+		wantChange modifyChange
 	}{
-		{"nothing pending", nil, modifyNone, 0},
-		{"description only", []string{"Spec.Description"}, modifyDescription, 1},
-		{"failover only", []string{"Spec.AutomaticFailoverEnabled"}, modifyFailover, 1},
-		{"node type only", []string{"Spec.CacheNodeType"}, modifyCacheNodeType, 1},
-		{"engine version only", []string{"Spec.EngineVersion"}, modifyEngineUpgrade, 1},
-		{"engine only", []string{"Spec.Engine"}, modifyEngineUpgrade, 1},
-		{"engine and version are one logical change", []string{"Spec.Engine", "Spec.EngineVersion"}, modifyEngineUpgrade, 1},
-		{"description wins and node type stays pending", []string{"Spec.CacheNodeType", "Spec.Description"}, modifyDescription, 2},
-		{"three pending, description first", []string{"Spec.EngineVersion", "Spec.CacheNodeType", "Spec.Description"}, modifyDescription, 3},
-		{"failover before node type", []string{"Spec.CacheNodeType", "Spec.AutomaticFailoverEnabled"}, modifyFailover, 2},
-		{"a parameter group change alone is not a modifiable change", []string{"Spec.CacheParameterGroupName"}, modifyNone, 0},
-		{"an unmodifiable field alone yields nothing", []string{"Spec.GlobalReplicationGroupIDSuffix"}, modifyNone, 0},
+		{"nothing pending", nil, modifyNone},
+		{"description only", []string{"Spec.Description"}, modifyDescription},
+		{"failover only", []string{"Spec.AutomaticFailoverEnabled"}, modifyFailover},
+		{"node type only", []string{"Spec.CacheNodeType"}, modifyCacheNodeType},
+		{"engine version only", []string{"Spec.EngineVersion"}, modifyEngineUpgrade},
+		{"engine only", []string{"Spec.Engine"}, modifyEngineUpgrade},
+		{"engine and version are one logical change", []string{"Spec.Engine", "Spec.EngineVersion"}, modifyEngineUpgrade},
+		{"description wins and node type stays pending", []string{"Spec.CacheNodeType", "Spec.Description"}, modifyDescription},
+		{"three pending, description first", []string{"Spec.EngineVersion", "Spec.CacheNodeType", "Spec.Description"}, modifyDescription},
+		{"failover before node type", []string{"Spec.CacheNodeType", "Spec.AutomaticFailoverEnabled"}, modifyFailover},
+		{"a parameter group change alone is not a modifiable change", []string{"Spec.CacheParameterGroupName"}, modifyNone},
+		{"an unmodifiable field alone yields nothing", []string{"Spec.GlobalReplicationGroupIDSuffix"}, modifyNone},
 	}
 
 	for _, tc := range cases {
@@ -197,12 +196,8 @@ func TestPendingModify(t *testing.T) {
 			for _, p := range tc.paths {
 				delta.Add(p, nil, nil)
 			}
-			gotChange, gotPending := pendingModify(delta)
-			if gotChange != tc.wantChange {
+			if gotChange := nextModify(delta); gotChange != tc.wantChange {
 				t.Fatalf("change: want %q, got %q", tc.wantChange, gotChange)
-			}
-			if gotPending != tc.wantPending {
-				t.Fatalf("pending: want %d, got %d", tc.wantPending, gotPending)
 			}
 		})
 	}

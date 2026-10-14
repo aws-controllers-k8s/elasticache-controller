@@ -3,11 +3,10 @@ module github.com/aws-controllers-k8s/elasticache-controller
 go 1.25.0
 
 require (
-	github.com/aws-controllers-k8s/ec2-controller v1.0.7
-	github.com/aws-controllers-k8s/kms-controller v1.0.2
-	github.com/aws-controllers-k8s/runtime v0.64.0
-	github.com/aws-controllers-k8s/sns-controller v1.0.11
-	github.com/aws/aws-sdk-go v1.49.0
+	github.com/aws-controllers-k8s/ec2-controller v1.22.0
+	github.com/aws-controllers-k8s/kms-controller v1.6.0
+	github.com/aws-controllers-k8s/runtime v0.66.0
+	github.com/aws-controllers-k8s/sns-controller v1.11.0
 	github.com/aws/aws-sdk-go-v2 v1.41.10
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.54.0
 	github.com/aws/smithy-go v1.26.0
@@ -27,8 +26,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.26 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.26 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2 // indirect
