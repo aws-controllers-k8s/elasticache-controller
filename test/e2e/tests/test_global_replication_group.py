@@ -305,7 +305,15 @@ def create_grg(suffix: str, primary_rg_id: str, description: str):
 
 
 def delete_grg(reference, global_id: str):
-    k8s.delete_custom_resource(reference)
+    # The CR keeps its finalizer until the controller's delete succeeds, so polling
+    # for the CR's removal is what proves the delete path converged; the AWS check
+    # then confirms the datastore itself is gone and not merely abandoned.
+    _, removed = k8s.delete_custom_resource(
+        reference,
+        wait_periods=DELETE_WAIT_PERIODS,
+        period_length=DELETE_PERIOD_LENGTH,
+    )
+    assert removed, f"GlobalReplicationGroup CR {reference.name} was not removed"
     assert wait_global_replication_group_status(
         global_id, "deleted",
         wait_periods=DELETE_WAIT_PERIODS,
@@ -419,7 +427,13 @@ class TestGlobalReplicationGroupInvalidPrimary:
             wait_periods=12, period_length=10,
         ), "an absent primary did not drive the resource to ACK.Terminal=True"
 
-        k8s.delete_custom_resource(reference)
+        # delete_grg does not fit here: creation never succeeded, so there is no
+        # datastore in AWS to wait on. A terminal resource must still be deletable,
+        # which is what polling the CR's removal checks.
+        _, removed = k8s.delete_custom_resource(
+            reference, wait_periods=12, period_length=5,
+        )
+        assert removed, f"terminal GlobalReplicationGroup CR {grg_name} was not removed"
 
 
 @service_marker
