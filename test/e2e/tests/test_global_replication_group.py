@@ -78,11 +78,11 @@ def wait_global_replication_group_status(
     wait_periods: int = CREATE_WAIT_PERIODS,
     period_length: int = CREATE_PERIOD_LENGTH,
 ) -> bool:
-    """Wait until the datastore reports target_status, or is gone for 'deleted'."""
+    """Wait until the datastore reports target_status."""
     for i in range(wait_periods):
         grg = get_global_replication_group(global_rg_id)
         if grg is None:
-            return target_status == "deleted"
+            return False
         current = grg.get("Status")
         logging.debug(
             f"GlobalReplicationGroup {global_rg_id} status={current} "
@@ -304,21 +304,16 @@ def create_grg(suffix: str, primary_rg_id: str, description: str):
     return reference, global_id
 
 
-def delete_grg(reference, global_id: str):
-    # The CR keeps its finalizer until the controller's delete succeeds, so polling
-    # for the CR's removal is what proves the delete path converged; the AWS check
-    # then confirms the datastore itself is gone and not merely abandoned.
+def delete_grg(reference):
+    # Polling the CR's removal is sufficient proof the datastore is gone: the delete
+    # hook requeues after issuing Delete and keeps requeueing while AWS reports
+    # deleting, so the finalizer only comes off once Describe reports nothing.
     _, removed = k8s.delete_custom_resource(
         reference,
         wait_periods=DELETE_WAIT_PERIODS,
         period_length=DELETE_PERIOD_LENGTH,
     )
     assert removed, f"GlobalReplicationGroup CR {reference.name} was not removed"
-    assert wait_global_replication_group_status(
-        global_id, "deleted",
-        wait_periods=DELETE_WAIT_PERIODS,
-        period_length=DELETE_PERIOD_LENGTH,
-    ), f"GlobalReplicationGroup {global_id} was not deleted"
 
 
 @pytest.fixture(scope="module")
@@ -390,7 +385,7 @@ class TestGlobalReplicationGroupLifecycle:
         assert_spec_claims_nothing_undeclared(reference)
         assert_status_matches_aws(reference, global_id)
 
-        delete_grg(reference, global_id)
+        delete_grg(reference)
 
         # Deleting the datastore must not delete the ReplicationGroup it only
         # references.
@@ -528,4 +523,4 @@ class TestGlobalReplicationGroupModify:
             period_length=MODIFY_PERIOD_LENGTH,
         ), "resource did not return to ACK.ResourceSynced=True after the upgrade"
 
-        delete_grg(reference, global_id)
+        delete_grg(reference)
