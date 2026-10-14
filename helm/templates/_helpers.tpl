@@ -85,6 +85,7 @@ rules:
   - cacheclusters
   - cacheparametergroups
   - cachesubnetgroups
+  - globalreplicationgroups
   - replicationgroups
   - serverlesscaches
   - serverlesscachesnapshots
@@ -105,6 +106,7 @@ rules:
   - cacheclusters/status
   - cacheparametergroups/status
   - cachesubnetgroups/status
+  - globalreplicationgroups/status
   - replicationgroups/status
   - serverlesscaches/status
   - serverlesscachesnapshots/status
