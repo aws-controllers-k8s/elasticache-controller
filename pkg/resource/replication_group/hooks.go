@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
@@ -1385,6 +1386,15 @@ func modifyDelta(
 			}
 		}
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
+	}
+
+	// the API lowercases the engine name, so "Valkey" in the spec reads back
+	// as "valkey" and is not a change
+	if delta.DifferentAt("Spec.Engine") {
+		if desired.ko.Spec.Engine != nil && latest.ko.Spec.Engine != nil &&
+			strings.EqualFold(*desired.ko.Spec.Engine, *latest.ko.Spec.Engine) {
+			common.RemoveFromDelta(delta, "Spec.Engine")
+		}
 	}
 
 	// if server has given PreferredMaintenanceWindow a default value, no action needs to be taken
