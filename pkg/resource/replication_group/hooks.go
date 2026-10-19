@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -1475,6 +1476,27 @@ func autoFailoverRequiresUpdate(desired *resource, latest *resource) bool {
 	} else {
 		return *latest.ko.Status.AutomaticFailover != string(svcapitypes.AutomaticFailoverStatus_disabled)
 	}
+}
+
+// userGroupIDsDifference returns the user group IDs in desired that latest does
+// not carry, and the ones in latest that desired no longer lists, compared by
+// value so they can go into UserGroupIdsToAdd and UserGroupIdsToRemove.
+func userGroupIDsDifference(desired []*string, latest []*string) ([]string, []string) {
+	desiredIDs := aws.ToStringSlice(desired)
+	latestIDs := aws.ToStringSlice(latest)
+	toAdd := []string{}
+	toRemove := []string{}
+	for _, id := range desiredIDs {
+		if !slices.Contains(latestIDs, id) {
+			toAdd = append(toAdd, id)
+		}
+	}
+	for _, id := range latestIDs {
+		if !slices.Contains(desiredIDs, id) {
+			toRemove = append(toRemove, id)
+		}
+	}
+	return toAdd, toRemove
 }
 
 // primaryClusterIDRequiresUpdate retrieves the current primary cluster ID and determines whether
