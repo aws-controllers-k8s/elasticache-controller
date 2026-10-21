@@ -273,6 +273,12 @@ func (rm *resourceManager) customSetOutput(
 		ko.Status.AllowedScaleUpModifications = nil
 	}
 
+	// the status copy always shows the value the service reports, whatever spec holds
+	ko.Status.AutoMinorVersionUpgrade = nil
+	if respRG.AutoMinorVersionUpgrade != nil {
+		ko.Status.AutoMinorVersionUpgrade = aws.Bool(*respRG.AutoMinorVersionUpgrade)
+	}
+
 	// populate status logDeliveryConfigurations struct
 	if respRG.LogDeliveryConfigurations != nil {
 		var f11 []*svcapitypes.LogDeliveryConfiguration

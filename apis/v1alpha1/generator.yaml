@@ -148,6 +148,11 @@ resources:
         from:
           operation: ListAllowedNodeTypeModifications
           path: ScaleDownModifications
+      AutoMinorVersionUpgrade:
+        is_read_only: true # keeps the status field that existed before the spec field was added
+        from:
+          operation: CreateReplicationGroup
+          path: ReplicationGroup.AutoMinorVersionUpgrade
       AutomaticFailoverEnabled:
         compare:
           is_ignored: true

@@ -375,6 +375,11 @@ type ReplicationGroupStatus struct {
 	// The date the auth token was last modified
 	// +kubebuilder:validation:Optional
 	AuthTokenLastModifiedDate *metav1.Time `json:"authTokenLastModifiedDate,omitempty"`
+	// If you are running Valkey 7.2 and above, or Redis OSS engine version 6.0
+	// and above, set this parameter to yes if you want to opt-in to the next auto
+	// minor version upgrade campaign. This parameter is disabled for previous versions.
+	// +kubebuilder:validation:Optional
+	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Indicates the status of automatic failover for this Valkey or Redis OSS replication
 	// group.
 	// +kubebuilder:validation:Optional

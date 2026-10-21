@@ -3070,6 +3070,11 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 		in, out := &in.AuthTokenLastModifiedDate, &out.AuthTokenLastModifiedDate
 		*out = (*in).DeepCopy()
 	}
+	if in.AutoMinorVersionUpgrade != nil {
+		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
+		*out = new(bool)
+		**out = **in
+	}
 	if in.AutomaticFailover != nil {
 		in, out := &in.AutomaticFailover, &out.AutomaticFailover
 		*out = new(string)

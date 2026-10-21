@@ -253,6 +253,7 @@ class TestReplicationGroup:
         assert rg['IpDiscovery'] == ip_discovery
         assert rg['NetworkType'] == network_type
         assert cr['spec']['autoMinorVersionUpgrade'] is False
+        assert cr['status']['autoMinorVersionUpgrade'] is False
         assert rg['AutoMinorVersionUpgrade'] is False
         assert_spec_tags(rg_id, tags)
 
@@ -287,6 +288,7 @@ class TestReplicationGroup:
         assert rg['SnapshotRetentionLimit'] == srl
         assert rg['SnapshotWindow'] == sw
         assert resource['spec']['autoMinorVersionUpgrade'] is True
+        assert resource['status']['autoMinorVersionUpgrade'] is True
         assert rg['AutoMinorVersionUpgrade'] is True
 
         patch = {"spec": {
