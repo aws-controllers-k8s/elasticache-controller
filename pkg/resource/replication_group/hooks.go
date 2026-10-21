@@ -1387,6 +1387,19 @@ func modifyDelta(
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
 	}
 
+	// the service may have moved to a newer minor version than the one in spec; keep spec as is
+	if delta.DifferentAt("Spec.EngineVersion") && !delta.DifferentAt("Spec.Engine") &&
+		desired.ko.Spec.EngineVersion != nil && latest.ko.Spec.EngineVersion != nil &&
+		latest.ko.Spec.AutoMinorVersionUpgrade != nil && *latest.ko.Spec.AutoMinorVersionUpgrade &&
+		util.EngineVersionAutoUpgraded(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
+		common.RemoveFromDelta(delta, "Spec.EngineVersion")
+	}
+
+	// the service applies its own default when the field is not in spec
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") && desired.ko.Spec.AutoMinorVersionUpgrade == nil {
+		common.RemoveFromDelta(delta, "Spec.AutoMinorVersionUpgrade")
+	}
+
 	// if server has given PreferredMaintenanceWindow a default value, no action needs to be taken
 	if delta.DifferentAt("Spec.PreferredMaintenanceWindow") {
 		if desired.ko.Spec.PreferredMaintenanceWindow == nil && latest.ko.Spec.PreferredMaintenanceWindow != nil {

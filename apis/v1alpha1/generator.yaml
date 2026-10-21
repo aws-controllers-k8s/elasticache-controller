@@ -539,7 +539,6 @@ ignore:
     - ModifyReplicationGroupInput.SecurityGroupIds
     - ModifyReplicationGroupInput.EngineVersion
     - CreateReplicationGroupInput.GlobalReplicationGroupId
-    - CreateReplicationGroupInput.AutoMinorVersionUpgrade
     - CreateReplicationGroupInput.NumCacheClusters
     - CacheCluster.LogDeliveryConfigurations
     - CacheCluster.PendingModifiedValues.ScaleConfig

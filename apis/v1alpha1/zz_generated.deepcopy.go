@@ -2748,6 +2748,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(corev1alpha1.SecretKeyReference)
 		**out = **in
 	}
+	if in.AutoMinorVersionUpgrade != nil {
+		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
+		*out = new(bool)
+		**out = **in
+	}
 	if in.AutomaticFailoverEnabled != nil {
 		in, out := &in.AutomaticFailoverEnabled, &out.AutomaticFailoverEnabled
 		*out = new(bool)
@@ -3064,11 +3069,6 @@ func (in *ReplicationGroupStatus) DeepCopyInto(out *ReplicationGroupStatus) {
 	if in.AuthTokenLastModifiedDate != nil {
 		in, out := &in.AuthTokenLastModifiedDate, &out.AuthTokenLastModifiedDate
 		*out = (*in).DeepCopy()
-	}
-	if in.AutoMinorVersionUpgrade != nil {
-		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
-		*out = new(bool)
-		**out = **in
 	}
 	if in.AutomaticFailover != nil {
 		in, out := &in.AutomaticFailover, &out.AutomaticFailover

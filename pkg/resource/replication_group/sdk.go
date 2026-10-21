@@ -115,9 +115,9 @@ func (rm *resourceManager) sdkFind(
 			ko.Status.AuthTokenLastModifiedDate = nil
 		}
 		if elem.AutoMinorVersionUpgrade != nil {
-			ko.Status.AutoMinorVersionUpgrade = elem.AutoMinorVersionUpgrade
+			ko.Spec.AutoMinorVersionUpgrade = elem.AutoMinorVersionUpgrade
 		} else {
-			ko.Status.AutoMinorVersionUpgrade = nil
+			ko.Spec.AutoMinorVersionUpgrade = nil
 		}
 		if elem.AutomaticFailover != "" {
 			ko.Status.AutomaticFailover = aws.String(string(elem.AutomaticFailover))
@@ -592,9 +592,9 @@ func (rm *resourceManager) sdkCreate(
 		ko.Status.AuthTokenLastModifiedDate = nil
 	}
 	if resp.ReplicationGroup.AutoMinorVersionUpgrade != nil {
-		ko.Status.AutoMinorVersionUpgrade = resp.ReplicationGroup.AutoMinorVersionUpgrade
+		ko.Spec.AutoMinorVersionUpgrade = resp.ReplicationGroup.AutoMinorVersionUpgrade
 	} else {
-		ko.Status.AutoMinorVersionUpgrade = nil
+		ko.Spec.AutoMinorVersionUpgrade = nil
 	}
 	if resp.ReplicationGroup.AutomaticFailover != "" {
 		ko.Status.AutomaticFailover = aws.String(string(resp.ReplicationGroup.AutomaticFailover))
@@ -958,6 +958,9 @@ func (rm *resourceManager) newCreateRequestPayload(
 			res.AuthToken = aws.String(tmpSecret)
 		}
 	}
+	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
+		res.AutoMinorVersionUpgrade = r.ko.Spec.AutoMinorVersionUpgrade
+	}
 	if r.ko.Spec.AutomaticFailoverEnabled != nil {
 		res.AutomaticFailoverEnabled = r.ko.Spec.AutomaticFailoverEnabled
 	}
@@ -992,42 +995,42 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.KmsKeyId = r.ko.Spec.KMSKeyID
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f13 := []svcsdktypes.LogDeliveryConfigurationRequest{}
-		for _, f13iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f13elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
-			if f13iter.DestinationDetails != nil {
-				f13elemf0 := &svcsdktypes.DestinationDetails{}
-				if f13iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f13elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
-					if f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f13elemf0f0.LogGroup = f13iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+		f14 := []svcsdktypes.LogDeliveryConfigurationRequest{}
+		for _, f14iter := range r.ko.Spec.LogDeliveryConfigurations {
+			f14elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
+			if f14iter.DestinationDetails != nil {
+				f14elemf0 := &svcsdktypes.DestinationDetails{}
+				if f14iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f14elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
+					if f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f14elemf0f0.LogGroup = f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f13elemf0.CloudWatchLogsDetails = f13elemf0f0
+					f14elemf0.CloudWatchLogsDetails = f14elemf0f0
 				}
-				if f13iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f13elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
-					if f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f13elemf0f1.DeliveryStream = f13iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+				if f14iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f14elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
+					if f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f14elemf0f1.DeliveryStream = f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f13elemf0.KinesisFirehoseDetails = f13elemf0f1
+					f14elemf0.KinesisFirehoseDetails = f14elemf0f1
 				}
-				f13elem.DestinationDetails = f13elemf0
+				f14elem.DestinationDetails = f14elemf0
 			}
-			if f13iter.DestinationType != nil {
-				f13elem.DestinationType = svcsdktypes.DestinationType(*f13iter.DestinationType)
+			if f14iter.DestinationType != nil {
+				f14elem.DestinationType = svcsdktypes.DestinationType(*f14iter.DestinationType)
 			}
-			if f13iter.Enabled != nil {
-				f13elem.Enabled = f13iter.Enabled
+			if f14iter.Enabled != nil {
+				f14elem.Enabled = f14iter.Enabled
 			}
-			if f13iter.LogFormat != nil {
-				f13elem.LogFormat = svcsdktypes.LogFormat(*f13iter.LogFormat)
+			if f14iter.LogFormat != nil {
+				f14elem.LogFormat = svcsdktypes.LogFormat(*f14iter.LogFormat)
 			}
-			if f13iter.LogType != nil {
-				f13elem.LogType = svcsdktypes.LogType(*f13iter.LogType)
+			if f14iter.LogType != nil {
+				f14elem.LogType = svcsdktypes.LogType(*f14iter.LogType)
 			}
-			f13 = append(f13, *f13elem)
+			f14 = append(f14, *f14elem)
 		}
-		res.LogDeliveryConfigurations = f13
+		res.LogDeliveryConfigurations = f14
 	}
 	if r.ko.Spec.MultiAZEnabled != nil {
 		res.MultiAZEnabled = r.ko.Spec.MultiAZEnabled
@@ -1036,38 +1039,38 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.NetworkType = svcsdktypes.NetworkType(*r.ko.Spec.NetworkType)
 	}
 	if r.ko.Spec.NodeGroupConfiguration != nil {
-		f16 := []svcsdktypes.NodeGroupConfiguration{}
-		for _, f16iter := range r.ko.Spec.NodeGroupConfiguration {
-			f16elem := &svcsdktypes.NodeGroupConfiguration{}
-			if f16iter.NodeGroupID != nil {
-				f16elem.NodeGroupId = f16iter.NodeGroupID
+		f17 := []svcsdktypes.NodeGroupConfiguration{}
+		for _, f17iter := range r.ko.Spec.NodeGroupConfiguration {
+			f17elem := &svcsdktypes.NodeGroupConfiguration{}
+			if f17iter.NodeGroupID != nil {
+				f17elem.NodeGroupId = f17iter.NodeGroupID
 			}
-			if f16iter.PrimaryAvailabilityZone != nil {
-				f16elem.PrimaryAvailabilityZone = f16iter.PrimaryAvailabilityZone
+			if f17iter.PrimaryAvailabilityZone != nil {
+				f17elem.PrimaryAvailabilityZone = f17iter.PrimaryAvailabilityZone
 			}
-			if f16iter.PrimaryOutpostARN != nil {
-				f16elem.PrimaryOutpostArn = f16iter.PrimaryOutpostARN
+			if f17iter.PrimaryOutpostARN != nil {
+				f17elem.PrimaryOutpostArn = f17iter.PrimaryOutpostARN
 			}
-			if f16iter.ReplicaAvailabilityZones != nil {
-				f16elem.ReplicaAvailabilityZones = aws.ToStringSlice(f16iter.ReplicaAvailabilityZones)
+			if f17iter.ReplicaAvailabilityZones != nil {
+				f17elem.ReplicaAvailabilityZones = aws.ToStringSlice(f17iter.ReplicaAvailabilityZones)
 			}
-			if f16iter.ReplicaCount != nil {
-				replicaCountCopy0 := *f16iter.ReplicaCount
+			if f17iter.ReplicaCount != nil {
+				replicaCountCopy0 := *f17iter.ReplicaCount
 				if replicaCountCopy0 > math.MaxInt32 || replicaCountCopy0 < math.MinInt32 {
 					return nil, fmt.Errorf("error: field ReplicaCount is of type int32")
 				}
 				replicaCountCopy := int32(replicaCountCopy0)
-				f16elem.ReplicaCount = &replicaCountCopy
+				f17elem.ReplicaCount = &replicaCountCopy
 			}
-			if f16iter.ReplicaOutpostARNs != nil {
-				f16elem.ReplicaOutpostArns = aws.ToStringSlice(f16iter.ReplicaOutpostARNs)
+			if f17iter.ReplicaOutpostARNs != nil {
+				f17elem.ReplicaOutpostArns = aws.ToStringSlice(f17iter.ReplicaOutpostARNs)
 			}
-			if f16iter.Slots != nil {
-				f16elem.Slots = f16iter.Slots
+			if f17iter.Slots != nil {
+				f17elem.Slots = f17iter.Slots
 			}
-			f16 = append(f16, *f16elem)
+			f17 = append(f17, *f17elem)
 		}
-		res.NodeGroupConfiguration = f16
+		res.NodeGroupConfiguration = f17
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
 		res.NotificationTopicArn = r.ko.Spec.NotificationTopicARN
@@ -1132,18 +1135,18 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SnapshotWindow = r.ko.Spec.SnapshotWindow
 	}
 	if r.ko.Spec.Tags != nil {
-		f31 := []svcsdktypes.Tag{}
-		for _, f31iter := range r.ko.Spec.Tags {
-			f31elem := &svcsdktypes.Tag{}
-			if f31iter.Key != nil {
-				f31elem.Key = f31iter.Key
+		f32 := []svcsdktypes.Tag{}
+		for _, f32iter := range r.ko.Spec.Tags {
+			f32elem := &svcsdktypes.Tag{}
+			if f32iter.Key != nil {
+				f32elem.Key = f32iter.Key
 			}
-			if f31iter.Value != nil {
-				f31elem.Value = f31iter.Value
+			if f32iter.Value != nil {
+				f32elem.Value = f32iter.Value
 			}
-			f31 = append(f31, *f31elem)
+			f32 = append(f32, *f32elem)
 		}
-		res.Tags = f31
+		res.Tags = f32
 	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
 		res.TransitEncryptionEnabled = r.ko.Spec.TransitEncryptionEnabled
@@ -1280,9 +1283,9 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Status.AuthTokenLastModifiedDate = nil
 	}
 	if resp.ReplicationGroup.AutoMinorVersionUpgrade != nil {
-		ko.Status.AutoMinorVersionUpgrade = resp.ReplicationGroup.AutoMinorVersionUpgrade
+		ko.Spec.AutoMinorVersionUpgrade = resp.ReplicationGroup.AutoMinorVersionUpgrade
 	} else {
-		ko.Status.AutoMinorVersionUpgrade = nil
+		ko.Spec.AutoMinorVersionUpgrade = nil
 	}
 	if resp.ReplicationGroup.AutomaticFailover != "" {
 		ko.Status.AutomaticFailover = aws.String(string(resp.ReplicationGroup.AutomaticFailover))
@@ -1640,8 +1643,8 @@ func (rm *resourceManager) newUpdateRequestPayload(
 			res.AuthToken = aws.String(tmpSecret)
 		}
 	}
-	if r.ko.Status.AutoMinorVersionUpgrade != nil {
-		res.AutoMinorVersionUpgrade = r.ko.Status.AutoMinorVersionUpgrade
+	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
+		res.AutoMinorVersionUpgrade = r.ko.Spec.AutoMinorVersionUpgrade
 	}
 	if r.ko.Spec.AutomaticFailoverEnabled != nil {
 		res.AutomaticFailoverEnabled = r.ko.Spec.AutomaticFailoverEnabled
@@ -1997,9 +2000,9 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Status.AuthTokenLastModifiedDate = nil
 	}
 	if resp.ReplicationGroup.AutoMinorVersionUpgrade != nil {
-		ko.Status.AutoMinorVersionUpgrade = resp.ReplicationGroup.AutoMinorVersionUpgrade
+		ko.Spec.AutoMinorVersionUpgrade = resp.ReplicationGroup.AutoMinorVersionUpgrade
 	} else {
-		ko.Status.AutoMinorVersionUpgrade = nil
+		ko.Spec.AutoMinorVersionUpgrade = nil
 	}
 	if resp.ReplicationGroup.AutomaticFailover != "" {
 		ko.Status.AutomaticFailover = aws.String(string(resp.ReplicationGroup.AutomaticFailover))
