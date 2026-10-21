@@ -557,10 +557,10 @@ resources:
         - InvalidParameterValue
         - InvalidParameterCombination
         - ServiceLinkedRoleNotFoundFault
-        - ReplicationGroupNotFoundFault
-        # A parameter group named for a major engine upgrade that does not exist is
-        # a spec error, not something retrying fixes. The code has no Fault suffix.
-        - CacheParameterGroupNotFound
+        # ReplicationGroupNotFoundFault and CacheParameterGroupNotFound name a
+        # dependency rather than this resource, so either can mean "not created
+        # yet" instead of "wrong". They retry rather than stranding the resource
+        # until its spec changes; InvalidParameterValue still catches a bad value.
     hooks:
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"
@@ -589,6 +589,10 @@ resources:
         in:
         - available
         - primary-only
+    # CreateGlobalReplicationGroup accepts no tags at this SDK pin, so there is no
+    # Tags field for the generator to manage. Datastores are taggable, and newer
+    # aws-sdk-go-v2 releases model Tags on the create input, so this records a pin
+    # limitation rather than an untaggable resource.
     tags:
       ignore: true
 operations:

@@ -531,9 +531,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	case "GlobalReplicationGroupAlreadyExistsFault",
 		"InvalidParameterValue",
 		"InvalidParameterCombination",
-		"ServiceLinkedRoleNotFoundFault",
-		"ReplicationGroupNotFoundFault",
-		"CacheParameterGroupNotFound":
+		"ServiceLinkedRoleNotFoundFault":
 		return true
 	default:
 		return false
