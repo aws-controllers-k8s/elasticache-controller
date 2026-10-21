@@ -379,8 +379,15 @@ class TestGlobalReplicationGroupLifecycle:
 
 @service_marker
 class TestGlobalReplicationGroupInvalidPrimary:
-    def test_invalid_primary_terminal(self):
-        """A primary that does not exist must be terminal, not retried forever."""
+    def test_invalid_primary_recoverable(self):
+        """A primary that does not exist is retried, not made terminal.
+
+        ReplicationGroupNotFoundFault names a dependency rather than this resource,
+        so it reads as "not created yet" as readily as "wrong": the primary's ID is
+        user-chosen, so a datastore and its primary can legitimately be applied
+        together. The error is therefore recoverable, and the resource must surface
+        it rather than strand itself until its spec changes.
+        """
         suffix = random_suffix_name("ack-e2e-bad", 20)
         grg_name = f"grg-bad-{suffix}"
         grg_resource = load_elasticache_resource(
@@ -401,17 +408,28 @@ class TestGlobalReplicationGroupInvalidPrimary:
         ) is not None
 
         assert k8s.wait_on_condition(
-            reference, condition.CONDITION_TYPE_TERMINAL, "True",
+            reference, condition.CONDITION_TYPE_RECOVERABLE, "True",
             wait_periods=12, period_length=10,
-        ), "an absent primary did not drive the resource to ACK.Terminal=True"
+        ), "an absent primary did not surface ACK.Recoverable=True"
+
+        # Check the condition names the missing dependency, so this cannot pass on
+        # any unrelated error. smithy renders a fault as "<code>: <message>".
+        recoverable = k8s.get_resource_condition(
+            reference, condition.CONDITION_TYPE_RECOVERABLE
+        )
+        assert "ReplicationGroupNotFoundFault" in ((recoverable or {}).get("message") or ""), (
+            f"ACK.Recoverable does not name the missing primary: {recoverable}"
+        )
+        assert_condition_not_true(reference, condition.CONDITION_TYPE_TERMINAL)
+        assert_condition_not_true(reference, condition.CONDITION_TYPE_RESOURCE_SYNCED)
 
         # delete_grg does not fit here: creation never succeeded, so there is no
-        # datastore in AWS to wait on. A terminal resource must still be deletable,
-        # which is what polling the CR's removal checks.
+        # datastore in AWS to wait on. A resource blocked on a missing dependency
+        # must still be deletable, which is what polling the CR's removal checks.
         _, removed = k8s.delete_custom_resource(
             reference, wait_periods=12, period_length=5,
         )
-        assert removed, f"terminal GlobalReplicationGroup CR {grg_name} was not removed"
+        assert removed, f"GlobalReplicationGroup CR {grg_name} was not removed"
 
 
 @service_marker
