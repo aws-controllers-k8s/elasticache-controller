@@ -1182,6 +1182,7 @@ func (rm *resourceManager) sdkUpdate(
 	if err != nil {
 		return nil, err
 	}
+	stripDatastoreOwnedInput(input, latest)
 	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
 		input.LogDeliveryConfigurations = nil
 	}
