@@ -7,8 +7,4 @@
 	if !delta.DifferentAt("Spec.Durability") {
 		input.Durability = ""
 	}
-	if delta.DifferentAt("Spec.UserGroupIDs") {
-		input.UserGroupIdsToAdd, input.UserGroupIdsToRemove = userGroupIDsDifference(
-			desired.ko.Spec.UserGroupIDs, latest.ko.Spec.UserGroupIDs,
-		)
-	}
+	rm.updateUserGroupIDsPayload(input, desired, latest, delta)

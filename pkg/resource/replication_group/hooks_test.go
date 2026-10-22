@@ -14,10 +14,13 @@
 package replication_group
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 )
@@ -35,13 +38,13 @@ func TestUserGroupIDsDifference(t *testing.T) {
 			desired:    aws.StringSlice([]string{"ug-a", "ug-b"}),
 			latest:     aws.StringSlice([]string{"ug-a"}),
 			wantAdd:    []string{"ug-b"},
-			wantRemove: []string{},
+			wantRemove: nil,
 		},
 		{
 			name:       "a group removed",
 			desired:    aws.StringSlice([]string{"ug-a"}),
 			latest:     aws.StringSlice([]string{"ug-a", "ug-b"}),
-			wantAdd:    []string{},
+			wantAdd:    nil,
 			wantRemove: []string{"ug-b"},
 		},
 		{
@@ -55,14 +58,14 @@ func TestUserGroupIDsDifference(t *testing.T) {
 			name:       "same groups in another order are not re-sent",
 			desired:    aws.StringSlice([]string{"ug-b", "ug-a"}),
 			latest:     aws.StringSlice([]string{"ug-a", "ug-b"}),
-			wantAdd:    []string{},
-			wantRemove: []string{},
+			wantAdd:    nil,
+			wantRemove: nil,
 		},
 		{
 			name:       "all groups removed",
 			desired:    nil,
 			latest:     aws.StringSlice([]string{"ug-a"}),
-			wantAdd:    []string{},
+			wantAdd:    nil,
 			wantRemove: []string{"ug-a"},
 		},
 	}
@@ -91,5 +94,64 @@ func TestUserGroupIDsDeltaPath(t *testing.T) {
 	}
 	if delta.DifferentAt("UserGroupIDs") {
 		t.Errorf("DifferentAt(\"UserGroupIDs\") matched; the hook must use the Spec prefixed path")
+	}
+}
+
+func userGroupResources(desired, latest []string) (*resource, *resource) {
+	d := &resource{ko: &svcapitypes.ReplicationGroup{}}
+	d.ko.Spec.UserGroupIDs = aws.StringSlice(desired)
+	l := &resource{ko: &svcapitypes.ReplicationGroup{}}
+	l.ko.Spec.UserGroupIDs = aws.StringSlice(latest)
+	return d, l
+}
+
+// The query serializer writes an empty non-nil list as an explicit empty
+// parameter, so a side with nothing to send has to stay nil on the input.
+func TestUpdateUserGroupIDsPayload(t *testing.T) {
+	tests := []struct {
+		name       string
+		desired    []string
+		latest     []string
+		wantAdd    []string
+		wantRemove []string
+	}{
+		{"pure add leaves the remove side nil", []string{"ug-a", "ug-b"}, []string{"ug-a"}, []string{"ug-b"}, nil},
+		{"pure remove leaves the add side nil", []string{"ug-a"}, []string{"ug-a", "ug-b"}, nil, []string{"ug-b"}},
+		{"replace fills both sides", []string{"ug-b"}, []string{"ug-a"}, []string{"ug-b"}, []string{"ug-a"}},
+		{"no difference touches neither side", []string{"ug-a"}, []string{"ug-a"}, nil, nil},
+	}
+	rm := &resourceManager{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			desired, latest := userGroupResources(tt.desired, tt.latest)
+			input := &svcsdk.ModifyReplicationGroupInput{}
+			rm.updateUserGroupIDsPayload(input, desired, latest, newResourceDelta(desired, latest))
+			if !reflect.DeepEqual(input.UserGroupIdsToAdd, tt.wantAdd) || !reflect.DeepEqual(input.UserGroupIdsToRemove, tt.wantRemove) {
+				t.Errorf("input = (%#v, %#v), want (%#v, %#v)", input.UserGroupIdsToAdd, input.UserGroupIdsToRemove, tt.wantAdd, tt.wantRemove)
+			}
+		})
+	}
+}
+
+// ModifyReplicationGroup applies the user group change asynchronously and its
+// response still lists the previous groups. The stale list must not reach the
+// spec, or the next reconcile swaps the groups back.
+func TestCustomModifyReplicationGroupSetOutputKeepsDesiredUserGroupIDs(t *testing.T) {
+	desired, _ := userGroupResources([]string{"ug-b"}, nil)
+	ko := desired.ko.DeepCopy()
+	ko.Spec.UserGroupIDs = aws.StringSlice([]string{"ug-a"})
+	resp := &svcsdk.ModifyReplicationGroupOutput{ReplicationGroup: &svcsdktypes.ReplicationGroup{
+		ReplicationGroupId: aws.String("rg"),
+		Status:             aws.String("modifying"),
+		UserGroupIds:       []string{"ug-a"},
+	}}
+
+	rm := &resourceManager{}
+	out, err := rm.CustomModifyReplicationGroupSetOutput(context.Background(), desired, resp, ko)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := aws.ToStringSlice(out.Spec.UserGroupIDs); !reflect.DeepEqual(got, []string{"ug-b"}) {
+		t.Errorf("Spec.UserGroupIDs = %v, want the desired [ug-b]", got)
 	}
 }
