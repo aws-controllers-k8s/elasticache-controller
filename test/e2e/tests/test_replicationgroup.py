@@ -192,6 +192,30 @@ def rg_fault_tolerance(rg_fault_tolerance_input, make_replication_group, rg_dele
         ReplicationGroupId=rg_fault_tolerance_input['RG_ID'])
 
 
+# assert that the CR status and the AWS side both carry the desired log delivery
+# configuration, or none when it is disabled
+def assert_log_delivery_config(reference, rg_id, config):
+    resource = k8s.get_resource(reference)
+    rg = retrieve_replication_group(rg_id)
+    aws_active = [c for c in rg.get("LogDeliveryConfigurations", [])
+                  if c["LogType"] == config["logType"] and c.get("Status") == "active"]
+    if not config["enabled"]:
+        assert not resource["status"].get("logDeliveryConfigurations")
+        assert not aws_active
+        return
+    assert len(aws_active) == 1
+    assert aws_active[0]["DestinationType"] == config["destinationType"]
+    assert aws_active[0]["DestinationDetails"]["CloudWatchLogsDetails"]["LogGroup"] == \
+        config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"]
+    assert aws_active[0]["LogFormat"] == config["logFormat"]
+    latest = resource["status"]["logDeliveryConfigurations"][0]
+    assert latest["status"] == "active"
+    assert latest["destinationDetails"] == config["destinationDetails"]
+    assert latest["destinationType"] == config["destinationType"]
+    assert latest["logFormat"] == config["logFormat"]
+    assert latest["logType"] == config["logType"]
+
+
 @service_marker
 class TestReplicationGroup:
     def test_rg_cmd_fromsnapshot(self, rg_cmd_fromsnapshot):
@@ -603,4 +627,61 @@ class TestReplicationGroup:
         resource = k8s.get_resource(reference)
         assert resource['metadata']['deletionTimestamp'] is not None
 
+        rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+
+    def test_rg_log_delivery(self, make_rg_name, make_replication_group, rg_deletion_waiter, bootstrap_resources):
+        input_dict = {
+            "RG_ID": make_rg_name("rg-log-delivery"),
+            # quoted in the manifest would be cleaner, but the shared template
+            # substitutes the value bare and "7.1" parses as a YAML number
+            "ENGINE_VERSION": "6.x",
+            "NUM_NODE_GROUPS": "1",
+            "REPLICAS_PER_NODE_GROUP": "0"
+        }
+        (reference, _) = make_replication_group(
+            "replicationgroup_create_delete", input_dict, input_dict["RG_ID"])
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+        def apply(config):
+            patch = {"spec": {"logDeliveryConfigurations": [config]}}
+            _ = k8s.patch_custom_resource(reference, patch)
+            sleep(DEFAULT_WAIT_SECS)
+            assert k8s.wait_on_condition(
+                reference, "ACK.ResourceSynced", "True", wait_periods=30)
+            assert_log_delivery_config(reference, input_dict["RG_ID"], config)
+
+        # add log delivery
+        config = {
+            "destinationDetails": {
+                "cloudWatchLogsDetails": {
+                    "logGroup": bootstrap_resources.CWLogGroup1
+                }
+            },
+            "destinationType": "cloudwatch-logs",
+            "enabled": True,
+            "logFormat": "json",
+            "logType": "slow-log"
+        }
+        apply(config)
+
+        # change the target log group and the log format
+        config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"] = bootstrap_resources.CWLogGroup2
+        config["logFormat"] = "text"
+        apply(config)
+
+        # a resync with nothing to change must leave the configuration as is
+        sleep(DEFAULT_WAIT_SECS)
+        assert_log_delivery_config(reference, input_dict["RG_ID"], config)
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=1)
+
+        # disable, then enable again
+        apply({"logType": "slow-log", "enabled": False})
+        config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"] = bootstrap_resources.CWLogGroup1
+        config["logFormat"] = "json"
+        apply(config)
+
+        k8s.delete_custom_resource(reference)
+        sleep(DEFAULT_WAIT_SECS)
         rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
