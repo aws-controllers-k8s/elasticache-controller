@@ -152,7 +152,7 @@ type ReplicationGroupSpec struct {
 	// the service determines the effective durability based on the engine version,
 	// cluster mode, and other parameters. The resolved setting is reflected in
 	// the EffectiveDurability property of the replication group. For more information,
-	// see Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.html).
+	// see Durability (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/durability.html).
 	Durability *string `json:"durability,omitempty"`
 	// The name of the cache engine to be used for the clusters in this replication
 	// group. The value must be set to valkey or redis.
@@ -399,7 +399,7 @@ type ReplicationGroupStatus struct {
 	// The effective durability of the replication group. When Durability is set
 	// to default, the service resolves the actual durability based on the engine
 	// version, cluster mode, and other parameters. This field reflects the resolved
-	// value. For more information, see Configuring Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/ConfiguringDurability.html).
+	// value. For more information, see Configuring Durability (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.Configuring.html).
 	// +kubebuilder:validation:Optional
 	EffectiveDurability *string `json:"effectiveDurability,omitempty"`
 	// A list of events. Each element in the list contains detailed information

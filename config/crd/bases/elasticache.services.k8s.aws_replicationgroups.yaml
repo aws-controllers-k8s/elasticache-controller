@@ -236,7 +236,7 @@ spec:
                   the service determines the effective durability based on the engine version,
                   cluster mode, and other parameters. The resolved setting is reflected in
                   the EffectiveDurability property of the replication group. For more information,
-                  see Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.html).
+                  see Durability (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/durability.html).
                 type: string
               engine:
                 description: |-
@@ -583,10 +583,9 @@ spec:
                   description: |-
                     A tag that can be added to an ElastiCache cluster or replication group. Tags
                     are composed of a Key/Value pair. You can use tags to categorize and track
-                    all your ElastiCache resources, with the exception of global replication
-                    group. When you add or remove tags on replication groups, those actions will
-                    be replicated to all nodes in the replication group. A tag with a null Value
-                    is permitted.
+                    all your ElastiCache resources. When you add or remove tags on replication
+                    groups, those actions will be replicated to all nodes in the replication
+                    group. A tag with a null Value is permitted.
                   properties:
                     key:
                       type: string
@@ -783,7 +782,7 @@ spec:
                   The effective durability of the replication group. When Durability is set
                   to default, the service resolves the actual durability based on the engine
                   version, cluster mode, and other parameters. This field reflects the resolved
-                  value. For more information, see Configuring Durability (http://docs.aws.amazon.com/AmazonElastiCache/latest/dg/ConfiguringDurability.html).
+                  value. For more information, see Configuring Durability (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Durability.Configuring.html).
                 type: string
               events:
                 description: |-
