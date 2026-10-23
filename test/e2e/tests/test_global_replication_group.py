@@ -1,0 +1,527 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You may
+# not use this file except in compliance with the License. A copy of the
+# License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+
+"""Integration tests for the ElastiCache GlobalReplicationGroup resource.
+
+Scope is deliberately limited to paths that are cheap against real AWS. Shard
+scaling is the slowest Global Datastore operation by a wide margin -- ElastiCache
+holds the datastore in 'modifying' for the whole slot migration -- so the shard
+count decisions are covered by unit tests over the delta classifier in
+pkg/resource/global_replication_group/hooks_test.go instead of here, keeping this
+suite off the critical path of every elasticache presubmit.
+"""
+
+import logging
+from time import sleep
+
+import boto3
+import pytest
+from acktest.k8s import condition
+from acktest.k8s import resource as k8s
+from acktest.resources import random_suffix_name
+
+from e2e import CRD_GROUP, CRD_VERSION, load_elasticache_resource, service_marker
+
+RESOURCE_PLURAL_GRG = "globalreplicationgroups"
+RESOURCE_PLURAL_RG = "replicationgroups"
+
+# The prerequisite primary can take well over a plain 15-minute budget to reach
+# 'available' when the suite runs every elasticache resource in parallel. Each wait
+# returns as soon as its target state is reached, so a generous ceiling costs
+# nothing on the happy path and only absorbs that tail.
+RG_AVAILABLE_WAIT_PERIODS = 50
+RG_AVAILABLE_PERIOD_LENGTH = 30
+
+CREATE_WAIT_PERIODS = 30
+CREATE_PERIOD_LENGTH = 30
+MODIFY_WAIT_PERIODS = 30
+MODIFY_PERIOD_LENGTH = 30
+DELETE_WAIT_PERIODS = 40
+DELETE_PERIOD_LENGTH = 30
+
+# An engine upgrade is applied member by member and holds the datastore in
+# 'modifying' throughout, so it needs a larger ceiling than an in-place attribute
+# change like the description.
+UPGRADE_WAIT_PERIODS = 50
+UPGRADE_PERIOD_LENGTH = 30
+
+STEADY_STATES = ("primary-only", "available")
+
+ec = boto3.client("elasticache")
+
+
+def get_global_replication_group(global_rg_id: str):
+    try:
+        resp = ec.describe_global_replication_groups(
+            GlobalReplicationGroupId=global_rg_id,
+            ShowMemberInfo=True,
+        )
+    except ec.exceptions.GlobalReplicationGroupNotFoundFault:
+        return None
+    groups = resp.get("GlobalReplicationGroups") or []
+    return groups[0] if groups else None
+
+
+def wait_global_replication_group_status(
+    global_rg_id: str,
+    target_status: str,
+    wait_periods: int = CREATE_WAIT_PERIODS,
+    period_length: int = CREATE_PERIOD_LENGTH,
+) -> bool:
+    """Wait until the datastore reports target_status."""
+    for i in range(wait_periods):
+        grg = get_global_replication_group(global_rg_id)
+        if grg is None:
+            return False
+        current = grg.get("Status")
+        logging.debug(
+            f"GlobalReplicationGroup {global_rg_id} status={current} "
+            f"waiting for {target_status} ({i}/{wait_periods})"
+        )
+        if current == target_status:
+            return True
+        sleep(period_length)
+    return False
+
+
+def engine_versions_match(actual, expected: str) -> bool:
+    """Compare engine versions the way the controller does, by major.minor.
+
+    ElastiCache resolves a requested version to a fully-qualified one and reports
+    that back: ask for "7.1" and the datastore reports "7.1.0". Asserting exact
+    string equality against the requested value therefore never succeeds, which is
+    the same trap that produced aws-controllers-k8s/community#1737 and the reason
+    pkg/util.EngineVersionsMatch ignores the patch component above engine 5. This
+    mirrors that rule so the assertion agrees with the delta the controller sees.
+    """
+    if not actual:
+        return False
+    return actual.split(".")[:2] == expected.split(".")[:2]
+
+
+def wait_global_attribute(
+    global_rg_id: str,
+    attribute: str,
+    expected,
+    wait_periods: int = MODIFY_WAIT_PERIODS,
+    period_length: int = MODIFY_PERIOD_LENGTH,
+    match=None,
+) -> bool:
+    """Wait until an attribute matches AND the datastore has settled.
+
+    Polling on status alone is racy: the datastore keeps its pre-patch steady state
+    for a few seconds after the spec is patched, before the controller issues the
+    modify and AWS flips the status to 'modifying'. Requiring both the value and a
+    steady state means the wait cannot pass on the pre-patch state.
+
+    'match' defaults to equality; pass a comparator for a value AWS normalises
+    rather than echoing back.
+    """
+    if match is None:
+        match = lambda actual, want: actual == want
+    for i in range(wait_periods):
+        grg = get_global_replication_group(global_rg_id)
+        if grg is not None:
+            actual = grg.get(attribute)
+            status = grg.get("Status")
+            logging.debug(
+                f"GlobalReplicationGroup {global_rg_id} {attribute}={actual} "
+                f"status={status} waiting for {expected} ({i}/{wait_periods})"
+            )
+            if match(actual, expected) and status in STEADY_STATES:
+                return True
+        sleep(period_length)
+    return False
+
+
+def wait_primary_automatic_failover(
+    global_rg_id: str,
+    expected_enabled: bool,
+    wait_periods: int = MODIFY_WAIT_PERIODS,
+    period_length: int = MODIFY_PERIOD_LENGTH,
+) -> bool:
+    """Wait until the primary member's automatic failover matches and it settled.
+
+    The Describe response has no top-level automatic-failover attribute; it is only
+    observable per member, which is why the controller derives it from member state.
+    """
+    target = {"enabled", "enabling"} if expected_enabled else {"disabled", "disabling"}
+    for i in range(wait_periods):
+        grg = get_global_replication_group(global_rg_id)
+        if grg is not None:
+            primary = next(
+                (m for m in (grg.get("Members") or []) if m.get("Role") == "PRIMARY"),
+                None,
+            )
+            failover = primary.get("AutomaticFailover") if primary else None
+            status = grg.get("Status")
+            logging.debug(
+                f"GlobalReplicationGroup {global_rg_id} primary failover={failover} "
+                f"status={status} waiting for enabled={expected_enabled} ({i}/{wait_periods})"
+            )
+            if failover in target and status in STEADY_STATES:
+                return True
+        sleep(period_length)
+    return False
+
+
+def wait_replication_group_available(rg_id: str) -> bool:
+    for i in range(RG_AVAILABLE_WAIT_PERIODS):
+        try:
+            rg = ec.describe_replication_groups(ReplicationGroupId=rg_id)["ReplicationGroups"][0]
+            if rg["Status"] == "available":
+                return True
+        except Exception as e:
+            logging.warning(f"error checking ReplicationGroup {rg_id}: {e}")
+        logging.debug(f"waiting for ReplicationGroup {rg_id} to be available ({i})")
+        sleep(RG_AVAILABLE_PERIOD_LENGTH)
+    return False
+
+
+def wait_k8s_global_id(reference, wait_periods: int = 10, period_length: int = 10):
+    """Poll until the controller records the AWS-generated full datastore ID."""
+    for _ in range(wait_periods):
+        resource = k8s.get_resource(reference)
+        global_id = (resource or {}).get("status", {}).get("globalReplicationGroupID")
+        if global_id:
+            return global_id
+        sleep(period_length)
+    return None
+
+
+def assert_condition_not_true(reference, condition_type: str):
+    """Assert a condition is absent or not True, as a point-in-time read.
+
+    Only meaningful after a positive wait has already let real time elapse. Written
+    as a single read rather than a short wait_on_condition, because a wait with a
+    tiny budget would pass simply by not giving the condition time to appear.
+    """
+    cond = k8s.get_resource_condition(reference, condition_type)
+    assert cond is None or cond.get("status") != "True", (
+        f"{condition_type} was unexpectedly True: {cond}"
+    )
+
+
+# Fields the basic manifest never declares. A datastore inherits all three from
+# its primary, so AWS reports them on every call; the controller must not write
+# them back into a spec that never asked to manage them.
+UNDECLARED_SPEC_FIELDS = ("cacheNodeType", "engine", "engineVersion", "nodeGroupCount")
+
+
+def assert_spec_claims_nothing_undeclared(reference):
+    """Assert the controller has not taken ownership of fields the user left unset.
+
+    Guards the Create and Describe responses alike: both report inherited values,
+    and copying either into the spec would silently claim the field and leave a
+    difference no reconcile can clear.
+    """
+    cr = k8s.get_resource(reference)
+    spec = (cr or {}).get("spec") or {}
+    claimed = [f for f in UNDECLARED_SPEC_FIELDS if spec.get(f) is not None]
+    assert not claimed, (
+        f"controller wrote undeclared field(s) into spec: "
+        f"{ {f: spec[f] for f in claimed} }"
+    )
+
+
+def assert_status_matches_aws(reference, global_id: str):
+    """Assert the CR's status.status is not a stale echo of a write response.
+
+    A mutation response reports a status the subsequent Describe can contradict, so
+    without a requeue to schedule that read the CR holds the stale value until the
+    next resync period.
+    """
+    aws_status = (get_global_replication_group(global_id) or {}).get("Status")
+    cr = k8s.get_resource(reference)
+    cr_status = ((cr or {}).get("status") or {}).get("status")
+    assert cr_status == aws_status, (
+        f"CR status.status {cr_status!r} does not match the datastore's "
+        f"reported status {aws_status!r}"
+    )
+
+
+def create_grg(suffix: str, primary_rg_id: str, description: str):
+    """Create a GlobalReplicationGroup and wait for it to reach primary-only."""
+    grg_name = f"grg-{suffix}"
+    grg_resource = load_elasticache_resource(
+        "global_replication_group_basic",
+        additional_replacements={
+            "GRG_NAME": grg_name,
+            "GRG_SUFFIX": suffix,
+            "PRIMARY_RG_ID": primary_rg_id,
+            "DESCRIPTION": description,
+        },
+    )
+    reference = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL_GRG, grg_name, namespace="default"
+    )
+    _ = k8s.create_custom_resource(reference, grg_resource)
+    assert k8s.wait_resource_consumed_by_controller(
+        reference, wait_periods=15, period_length=20
+    ) is not None
+
+    global_id = wait_k8s_global_id(reference)
+    assert global_id is not None, "status.globalReplicationGroupID was never populated"
+    assert wait_global_replication_group_status(global_id, "primary-only"), (
+        f"GlobalReplicationGroup {global_id} did not reach primary-only"
+    )
+    # IsSynced is status-based, so waiting on the condition guarantees the CR's own
+    # status already reflects the state asserted above.
+    assert k8s.wait_on_condition(
+        reference, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+        wait_periods=10, period_length=15,
+    ), "resource did not reach ACK.ResourceSynced=True after create"
+    return reference, global_id
+
+
+def delete_grg(reference):
+    # Polling the CR's removal is sufficient proof the datastore is gone: the delete
+    # hook requeues after issuing Delete and keeps requeueing while AWS reports
+    # deleting, so the finalizer only comes off once Describe reports nothing.
+    _, removed = k8s.delete_custom_resource(
+        reference,
+        wait_periods=DELETE_WAIT_PERIODS,
+        period_length=DELETE_PERIOD_LENGTH,
+    )
+    assert removed, f"GlobalReplicationGroup CR {reference.name} was not removed"
+
+
+@pytest.fixture(scope="module")
+def primary_replication_group():
+    """A ReplicationGroup that satisfies the Global Datastore primary requirements.
+
+    Module scope buys no sharing here and is only a guard against per-test
+    duplication within one worker: the suite runs under pytest-xdist LoadScheduling
+    with more workers than tests, so each test lands in its own process and
+    instantiates this fixture separately. Every test that requests it therefore
+    provisions another two-node cache.r6g.large group, and those provision
+    concurrently with the rest of the elasticache suite. That is why the modify
+    cases below are one test rather than three -- at four copies the contention
+    pushed one group past a 20-minute budget and the suite failed on setup.
+    """
+    rg_id = random_suffix_name("ack-e2e-grg-primary", 32)
+    rg_resource = load_elasticache_resource(
+        "replicationgroup_create_delete_grg",
+        additional_replacements={
+            "RG_ID": rg_id,
+            "ENGINE_VERSION": "7.0",
+            "NUM_NODE_GROUPS": "1",
+            "REPLICAS_PER_NODE_GROUP": "1",
+        },
+    )
+    reference = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL_RG, rg_id, namespace="default"
+    )
+    _ = k8s.create_custom_resource(reference, rg_resource)
+    assert k8s.wait_resource_consumed_by_controller(
+        reference, wait_periods=15, period_length=20
+    ) is not None
+    assert wait_replication_group_available(rg_id), (
+        f"primary ReplicationGroup {rg_id} did not become available"
+    )
+
+    yield rg_id
+
+    # Same invariant as delete_grg: replication_group's sdkDelete requeues while the
+    # group reads deleting, so the finalizer only comes off once it is gone from AWS.
+    _, removed = k8s.delete_custom_resource(
+        reference,
+        wait_periods=DELETE_WAIT_PERIODS,
+        period_length=DELETE_PERIOD_LENGTH,
+    )
+    assert removed, f"primary ReplicationGroup CR for {rg_id} was not removed"
+
+
+@service_marker
+class TestGlobalReplicationGroupLifecycle:
+    def test_create_and_verify(self, primary_replication_group):
+        """Create, reach primary-only and Synced, then delete, retaining the primary."""
+        rg_id = primary_replication_group
+        suffix = random_suffix_name("ack-e2e-grg", 20)
+
+        reference, global_id = create_grg(suffix, rg_id, "ACK E2E basic lifecycle")
+
+        # AWS prepends a region-specific prefix, so the recorded ID is the suffix
+        # plus more -- this is the field every later API call keys on.
+        assert suffix in global_id
+        assert len(global_id) > len(suffix)
+
+        grg = get_global_replication_group(global_id)
+        assert grg is not None
+        assert grg["Status"] == "primary-only"
+        assert len(grg.get("Members") or []) >= 1
+
+        # The CR's own spec and status, not just what AWS reports. The Create
+        # response carries the node type, engine and engine version inherited from
+        # the primary; writing any of them back would claim a field the manifest
+        # never declared.
+        assert_spec_claims_nothing_undeclared(reference)
+        assert_status_matches_aws(reference, global_id)
+
+        delete_grg(reference)
+
+        # Deleting the datastore must not delete the ReplicationGroup it only
+        # references.
+        assert wait_replication_group_available(rg_id), (
+            f"primary ReplicationGroup {rg_id} should survive the datastore's deletion"
+        )
+
+
+@service_marker
+class TestGlobalReplicationGroupInvalidPrimary:
+    def test_invalid_primary_recoverable(self):
+        """A primary that does not exist is retried, not made terminal.
+
+        ReplicationGroupNotFoundFault names a dependency rather than this resource,
+        so it reads as "not created yet" as readily as "wrong": the primary's ID is
+        user-chosen, so a datastore and its primary can legitimately be applied
+        together. The error is therefore recoverable, and the resource must surface
+        it rather than strand itself until its spec changes.
+        """
+        suffix = random_suffix_name("ack-e2e-bad", 20)
+        grg_name = f"grg-bad-{suffix}"
+        grg_resource = load_elasticache_resource(
+            "global_replication_group_basic",
+            additional_replacements={
+                "GRG_NAME": grg_name,
+                "GRG_SUFFIX": suffix,
+                "PRIMARY_RG_ID": "ack-e2e-nonexistent-primary",
+                "DESCRIPTION": "ACK E2E invalid primary",
+            },
+        )
+        reference = k8s.CustomResourceReference(
+            CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL_GRG, grg_name, namespace="default"
+        )
+        _ = k8s.create_custom_resource(reference, grg_resource)
+        assert k8s.wait_resource_consumed_by_controller(
+            reference, wait_periods=10, period_length=15
+        ) is not None
+
+        assert k8s.wait_on_condition(
+            reference, condition.CONDITION_TYPE_RECOVERABLE, "True",
+            wait_periods=12, period_length=10,
+        ), "an absent primary did not surface ACK.Recoverable=True"
+
+        # Check the condition names the missing dependency, so this cannot pass on
+        # any unrelated error. smithy renders a fault as "<code>: <message>".
+        recoverable = k8s.get_resource_condition(
+            reference, condition.CONDITION_TYPE_RECOVERABLE
+        )
+        assert "ReplicationGroupNotFoundFault" in ((recoverable or {}).get("message") or ""), (
+            f"ACK.Recoverable does not name the missing primary: {recoverable}"
+        )
+        assert_condition_not_true(reference, condition.CONDITION_TYPE_TERMINAL)
+        assert_condition_not_true(reference, condition.CONDITION_TYPE_RESOURCE_SYNCED)
+
+        # delete_grg does not fit here: creation never succeeded, so there is no
+        # datastore in AWS to wait on. A resource blocked on a missing dependency
+        # must still be deletable, which is what polling the CR's removal checks.
+        _, removed = k8s.delete_custom_resource(
+            reference, wait_periods=12, period_length=5,
+        )
+        assert removed, f"GlobalReplicationGroup CR {grg_name} was not removed"
+
+
+@service_marker
+class TestGlobalReplicationGroupModify:
+    def test_modify_sequence(self, primary_replication_group):
+        """Apply each supported modification in turn to one datastore.
+
+        The three changes share a datastore rather than taking one each because
+        every test costs another primary ReplicationGroup under this suite's
+        scheduling (see the primary_replication_group fixture). Sharing also makes
+        this a stronger test of the one-change-per-request rule than three isolated
+        cases were: the changes are applied in sequence against a datastore that has
+        already been modified, not against a freshly created one.
+        """
+        rg_id = primary_replication_group
+        suffix = random_suffix_name("ack-e2e-mod", 20)
+        reference, global_id = create_grg(suffix, rg_id, "Original description")
+
+        # ACK rewrites the Synced condition on every reconcile, so requiring a newer
+        # timestamp proves this change was reconciled rather than reading a stale True.
+        synced_before = condition.get_synced_last_transition_time(reference)
+        assert synced_before is not None
+
+        k8s.patch_custom_resource(
+            reference, {"spec": {"description": "Updated by ACK E2E"}}
+        )
+
+        assert wait_global_attribute(
+            global_id, "GlobalReplicationGroupDescription", "Updated by ACK E2E"
+        ), f"GlobalReplicationGroup {global_id} description was not updated"
+        assert k8s.wait_on_condition_after(
+            reference, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+            last_transition_after=synced_before,
+            wait_periods=MODIFY_WAIT_PERIODS,
+            period_length=MODIFY_PERIOD_LENGTH,
+        ), "resource did not return to ACK.ResourceSynced=True after the modify"
+
+        # A description change is the single-pending-change case: the Modify response
+        # reported 'available' while the datastore was still 'primary-only', so
+        # without a requeue the CR would hold that stale status until the next
+        # resync. Checked after the Synced wait above, so the read is meaningful.
+        assert_status_matches_aws(reference, global_id)
+        assert_spec_claims_nothing_undeclared(reference)
+
+        # Setting a value AWS already reports must converge without a Modify call. A
+        # datastore inherits automatic failover from its primary, so
+        # Modify(AutomaticFailoverEnabled=true) is a no-op AWS rejects. The controller
+        # derives the current value from live member state, so it must see the value
+        # already matches and never issue the call. This is the first time the field
+        # is set, which is the exact trigger for the loop it guards against.
+        k8s.patch_custom_resource(
+            reference, {"spec": {"automaticFailoverEnabled": True}}
+        )
+
+        assert wait_primary_automatic_failover(global_id, True), (
+            f"GlobalReplicationGroup {global_id} primary does not report failover enabled"
+        )
+        assert not k8s.wait_on_condition(
+            reference, condition.CONDITION_TYPE_TERMINAL, "True",
+            wait_periods=8, period_length=15,
+        ), "a no-op failover change drove the resource to ACK.Terminal=True"
+        # Checked as a read, not a wait: the two-minute Terminal window above has
+        # already given the controller ample time to surface either condition.
+        assert_condition_not_true(reference, condition.CONDITION_TYPE_RECOVERABLE)
+        condition.assert_synced(reference)
+
+        # A minor engine upgrade must send engine and version together and converge.
+        # ModifyGlobalReplicationGroup rejects an engine version sent on its own, so
+        # this exercises the grouped engine request. A MAJOR upgrade additionally
+        # requires spec.cacheParameterGroupName; that branch is covered by unit tests
+        # because it could not be validated against live AWS here.
+        synced_before = condition.get_synced_last_transition_time(reference)
+        assert synced_before is not None
+
+        k8s.patch_custom_resource(
+            reference, {"spec": {"engine": "redis", "engineVersion": "7.1"}}
+        )
+
+        assert wait_global_attribute(
+            global_id, "EngineVersion", "7.1",
+            wait_periods=UPGRADE_WAIT_PERIODS,
+            period_length=UPGRADE_PERIOD_LENGTH,
+            match=engine_versions_match,
+        ), f"GlobalReplicationGroup {global_id} engine version was not upgraded"
+        # The upgrade wait above has already elapsed real time, so a read is
+        # sufficient here and does not pass merely for lack of elapsed time.
+        assert_condition_not_true(reference, condition.CONDITION_TYPE_TERMINAL)
+        assert k8s.wait_on_condition_after(
+            reference, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+            last_transition_after=synced_before,
+            wait_periods=MODIFY_WAIT_PERIODS,
+            period_length=MODIFY_PERIOD_LENGTH,
+        ), "resource did not return to ACK.ResourceSynced=True after the upgrade"
+
+        delete_grg(reference)

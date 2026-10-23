@@ -1,0 +1,141 @@
+// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"). You may
+// not use this file except in compliance with the License. A copy of the
+// License is located at
+//
+//     http://aws.amazon.com/apache2.0/
+//
+// or in the "license" file accompanying this file. This file is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+// express or implied. See the License for the specific language governing
+// permissions and limitations under the License.
+
+package replication_group
+
+import (
+	"testing"
+
+	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+
+	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
+)
+
+func newMemberTestRG(grgID *string) *resource {
+	ko := &svcapitypes.ReplicationGroup{}
+	if grgID != nil {
+		ko.Status.GlobalReplicationGroupInfo = &svcapitypes.GlobalReplicationGroupInfo{
+			GlobalReplicationGroupID:         grgID,
+			GlobalReplicationGroupMemberRole: aws.String("PRIMARY"),
+		}
+	}
+	return &resource{ko: ko}
+}
+
+func TestIsGlobalDatastoreMember(t *testing.T) {
+	cases := map[string]struct {
+		id   *string
+		want bool
+	}{
+		"no info":  {nil, false},
+		"empty id": {aws.String(""), false},
+		"member":   {aws.String("sgaui-grg"), true},
+	}
+	for name, tc := range cases {
+		if got := isGlobalDatastoreMember(newMemberTestRG(tc.id)); got != tc.want {
+			t.Errorf("%s: got %t, want %t", name, got, tc.want)
+		}
+	}
+	// Status present with no ID at all.
+	r := newMemberTestRG(nil)
+	r.ko.Status.GlobalReplicationGroupInfo = &svcapitypes.GlobalReplicationGroupInfo{}
+	if isGlobalDatastoreMember(r) {
+		t.Error("info without an ID: got member")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.CacheNodeType = aws.String("cache.r6g.large")
+	desired.ko.Spec.CacheParameterGroupName = aws.String("default.redis7")
+	desired.ko.Spec.Description = aws.String("new")
+
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.CacheNodeType = aws.String("cache.r6g.xlarge")
+	latest.ko.Spec.CacheParameterGroupName = aws.String("global-datastore-redis7")
+	latest.ko.Spec.Description = aws.String("old")
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.CacheNodeType", desired.ko.Spec.CacheNodeType, latest.ko.Spec.CacheNodeType)
+	delta.Add("Spec.CacheParameterGroupName", desired.ko.Spec.CacheParameterGroupName, latest.ko.Spec.CacheParameterGroupName)
+	delta.Add("Spec.EngineVersion", aws.String("7.0"), aws.String("7.1"))
+	delta.Add("Spec.AutomaticFailoverEnabled", aws.Bool(false), aws.String("enabled"))
+	delta.Add("Spec.Description", desired.ko.Spec.Description, latest.ko.Spec.Description)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+
+	for _, p := range datastoreOwnedSpecPaths {
+		if delta.DifferentAt(p) {
+			t.Errorf("%s still in delta", p)
+		}
+	}
+	if !delta.DifferentAt("Spec.Description") {
+		t.Error("Spec.Description was removed; only datastore-owned paths may be")
+	}
+	if got := *desired.ko.Spec.CacheNodeType; got != "cache.r6g.xlarge" {
+		t.Errorf("CacheNodeType = %q, want the observed value", got)
+	}
+	if got := *desired.ko.Spec.CacheParameterGroupName; got != "global-datastore-redis7" {
+		t.Errorf("CacheParameterGroupName = %q, want the observed value", got)
+	}
+	// The copy must not alias latest.
+	*latest.ko.Spec.CacheNodeType = "changed"
+	if *desired.ko.Spec.CacheNodeType != "cache.r6g.xlarge" {
+		t.Error("desired.CacheNodeType aliases latest")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_OnlyOwnedDiffsEmptiesSpecDelta(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.CacheParameterGroupName = aws.String("global-datastore-redis7")
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.CacheParameterGroupName", aws.String("default.redis7"), latest.ko.Spec.CacheParameterGroupName)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if delta.DifferentAt("Spec") {
+		t.Errorf("delta still differs: %v", delta.Differences)
+	}
+}
+
+func TestStripDatastoreOwnedInput(t *testing.T) {
+	newInput := func() *svcsdk.ModifyReplicationGroupInput {
+		return &svcsdk.ModifyReplicationGroupInput{
+			CacheNodeType:               aws.String("cache.r6g.large"),
+			CacheParameterGroupName:     aws.String("default.redis7"),
+			EngineVersion:               aws.String("7.0"),
+			AutomaticFailoverEnabled:    aws.Bool(true),
+			AutoMinorVersionUpgrade:     aws.Bool(true),
+			ReplicationGroupDescription: aws.String("kept"),
+		}
+	}
+
+	in := newInput()
+	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")))
+	if in.CacheNodeType != nil || in.CacheParameterGroupName != nil || in.EngineVersion != nil ||
+		in.AutomaticFailoverEnabled != nil || in.AutoMinorVersionUpgrade != nil {
+		t.Errorf("member input still carries datastore-owned fields: %+v", in)
+	}
+	if in.ReplicationGroupDescription == nil {
+		t.Error("description was stripped")
+	}
+
+	in = newInput()
+	stripDatastoreOwnedInput(in, newMemberTestRG(nil))
+	if in.CacheNodeType == nil || in.AutoMinorVersionUpgrade == nil {
+		t.Error("non-member input was modified")
+	}
+}

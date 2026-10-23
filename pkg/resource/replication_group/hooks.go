@@ -522,6 +522,16 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 			requeue.DefaultRequeueAfterDuration)
 	}
 
+	// A Global Datastore member cannot modify the fields the datastore owns.
+	// Adopt the observed values rather than reverting them, and stop here when
+	// nothing else differs, so the refreshed spec is persisted.
+	if isGlobalDatastoreMember(latest) {
+		reconcileDatastoreOwnedFields(desired, latest, delta)
+		if !delta.DifferentAt("Spec") {
+			return &resource{ko: desired.ko.DeepCopy()}, nil
+		}
+	}
+
 	// Handle the asynchronous rollback case for while Scaling down.
 	// This means that we have already attempted to apply the CacheNodeType once and
 	// were not successful hence we will set a terminal condition.
