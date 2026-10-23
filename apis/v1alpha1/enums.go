@@ -69,6 +69,13 @@ const (
 	ClusterMode_enabled    ClusterMode = "enabled"
 )
 
+type ConnectionType string
+
+const (
+	ConnectionType_public ConnectionType = "public"
+	ConnectionType_vpc    ConnectionType = "vpc"
+)
+
 type DataStorageUnit string
 
 const (
@@ -243,6 +250,13 @@ const (
 	StorageEncryptionType_none            StorageEncryptionType = "none"
 	StorageEncryptionType_sse_elasticache StorageEncryptionType = "sse-elasticache"
 	StorageEncryptionType_sse_kms         StorageEncryptionType = "sse-kms"
+)
+
+type TLSMode string
+
+const (
+	TLSMode_none      TLSMode = "none"
+	TLSMode_verify_ca TLSMode = "verify-ca"
 )
 
 type TransitEncryptionMode string

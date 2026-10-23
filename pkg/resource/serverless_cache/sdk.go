@@ -132,6 +132,11 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.CacheUsageLimits = nil
 		}
+		if elem.ConnectionType != "" {
+			ko.Spec.ConnectionType = aws.String(string(elem.ConnectionType))
+		} else {
+			ko.Spec.ConnectionType = nil
+		}
 		if elem.CreateTime != nil {
 			ko.Status.CreateTime = &metav1.Time{*elem.CreateTime}
 		} else {
@@ -148,15 +153,15 @@ func (rm *resourceManager) sdkFind(
 			ko.Spec.Description = nil
 		}
 		if elem.Endpoint != nil {
-			f5 := &svcapitypes.Endpoint{}
+			f6 := &svcapitypes.Endpoint{}
 			if elem.Endpoint.Address != nil {
-				f5.Address = elem.Endpoint.Address
+				f6.Address = elem.Endpoint.Address
 			}
 			if elem.Endpoint.Port != nil {
 				portCopy := int64(*elem.Endpoint.Port)
-				f5.Port = &portCopy
+				f6.Port = &portCopy
 			}
-			ko.Status.Endpoint = f5
+			ko.Status.Endpoint = f6
 		} else {
 			ko.Status.Endpoint = nil
 		}
@@ -180,16 +185,39 @@ func (rm *resourceManager) sdkFind(
 		} else {
 			ko.Spec.MajorEngineVersion = nil
 		}
+		if elem.Migration != nil {
+			f11 := &svcapitypes.MigrationSummary{}
+			if elem.Migration.CutoverMode != nil {
+				f11.CutoverMode = elem.Migration.CutoverMode
+			}
+			if elem.Migration.MigrationEndpoint != nil {
+				f11f1 := &svcapitypes.Endpoint{}
+				if elem.Migration.MigrationEndpoint.Address != nil {
+					f11f1.Address = elem.Migration.MigrationEndpoint.Address
+				}
+				if elem.Migration.MigrationEndpoint.Port != nil {
+					portCopy := int64(*elem.Migration.MigrationEndpoint.Port)
+					f11f1.Port = &portCopy
+				}
+				f11.MigrationEndpoint = f11f1
+			}
+			if elem.Migration.Status != nil {
+				f11.Status = elem.Migration.Status
+			}
+			ko.Status.Migration = f11
+		} else {
+			ko.Status.Migration = nil
+		}
 		if elem.ReaderEndpoint != nil {
-			f10 := &svcapitypes.Endpoint{}
+			f12 := &svcapitypes.Endpoint{}
 			if elem.ReaderEndpoint.Address != nil {
-				f10.Address = elem.ReaderEndpoint.Address
+				f12.Address = elem.ReaderEndpoint.Address
 			}
 			if elem.ReaderEndpoint.Port != nil {
 				portCopy := int64(*elem.ReaderEndpoint.Port)
-				f10.Port = &portCopy
+				f12.Port = &portCopy
 			}
-			ko.Status.ReaderEndpoint = f10
+			ko.Status.ReaderEndpoint = f12
 		} else {
 			ko.Status.ReaderEndpoint = nil
 		}
@@ -341,6 +369,11 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.CacheUsageLimits = nil
 	}
+	if resp.ServerlessCache.ConnectionType != "" {
+		ko.Spec.ConnectionType = aws.String(string(resp.ServerlessCache.ConnectionType))
+	} else {
+		ko.Spec.ConnectionType = nil
+	}
 	if resp.ServerlessCache.CreateTime != nil {
 		ko.Status.CreateTime = &metav1.Time{*resp.ServerlessCache.CreateTime}
 	} else {
@@ -357,15 +390,15 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.Description = nil
 	}
 	if resp.ServerlessCache.Endpoint != nil {
-		f5 := &svcapitypes.Endpoint{}
+		f6 := &svcapitypes.Endpoint{}
 		if resp.ServerlessCache.Endpoint.Address != nil {
-			f5.Address = resp.ServerlessCache.Endpoint.Address
+			f6.Address = resp.ServerlessCache.Endpoint.Address
 		}
 		if resp.ServerlessCache.Endpoint.Port != nil {
 			portCopy := int64(*resp.ServerlessCache.Endpoint.Port)
-			f5.Port = &portCopy
+			f6.Port = &portCopy
 		}
-		ko.Status.Endpoint = f5
+		ko.Status.Endpoint = f6
 	} else {
 		ko.Status.Endpoint = nil
 	}
@@ -389,16 +422,39 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Spec.MajorEngineVersion = nil
 	}
+	if resp.ServerlessCache.Migration != nil {
+		f11 := &svcapitypes.MigrationSummary{}
+		if resp.ServerlessCache.Migration.CutoverMode != nil {
+			f11.CutoverMode = resp.ServerlessCache.Migration.CutoverMode
+		}
+		if resp.ServerlessCache.Migration.MigrationEndpoint != nil {
+			f11f1 := &svcapitypes.Endpoint{}
+			if resp.ServerlessCache.Migration.MigrationEndpoint.Address != nil {
+				f11f1.Address = resp.ServerlessCache.Migration.MigrationEndpoint.Address
+			}
+			if resp.ServerlessCache.Migration.MigrationEndpoint.Port != nil {
+				portCopy := int64(*resp.ServerlessCache.Migration.MigrationEndpoint.Port)
+				f11f1.Port = &portCopy
+			}
+			f11.MigrationEndpoint = f11f1
+		}
+		if resp.ServerlessCache.Migration.Status != nil {
+			f11.Status = resp.ServerlessCache.Migration.Status
+		}
+		ko.Status.Migration = f11
+	} else {
+		ko.Status.Migration = nil
+	}
 	if resp.ServerlessCache.ReaderEndpoint != nil {
-		f10 := &svcapitypes.Endpoint{}
+		f12 := &svcapitypes.Endpoint{}
 		if resp.ServerlessCache.ReaderEndpoint.Address != nil {
-			f10.Address = resp.ServerlessCache.ReaderEndpoint.Address
+			f12.Address = resp.ServerlessCache.ReaderEndpoint.Address
 		}
 		if resp.ServerlessCache.ReaderEndpoint.Port != nil {
 			portCopy := int64(*resp.ServerlessCache.ReaderEndpoint.Port)
-			f10.Port = &portCopy
+			f12.Port = &portCopy
 		}
-		ko.Status.ReaderEndpoint = f10
+		ko.Status.ReaderEndpoint = f12
 	} else {
 		ko.Status.ReaderEndpoint = nil
 	}
@@ -511,6 +567,9 @@ func (rm *resourceManager) newCreateRequestPayload(
 		}
 		res.CacheUsageLimits = f0
 	}
+	if r.ko.Spec.ConnectionType != nil {
+		res.ConnectionType = svcsdktypes.ConnectionType(*r.ko.Spec.ConnectionType)
+	}
 	if r.ko.Spec.DailySnapshotTime != nil {
 		res.DailySnapshotTime = r.ko.Spec.DailySnapshotTime
 	}
@@ -547,18 +606,18 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SubnetIds = aws.ToStringSlice(r.ko.Spec.SubnetIDs)
 	}
 	if r.ko.Spec.Tags != nil {
-		f11 := []svcsdktypes.Tag{}
-		for _, f11iter := range r.ko.Spec.Tags {
-			f11elem := &svcsdktypes.Tag{}
-			if f11iter.Key != nil {
-				f11elem.Key = f11iter.Key
+		f12 := []svcsdktypes.Tag{}
+		for _, f12iter := range r.ko.Spec.Tags {
+			f12elem := &svcsdktypes.Tag{}
+			if f12iter.Key != nil {
+				f12elem.Key = f12iter.Key
 			}
-			if f11iter.Value != nil {
-				f11elem.Value = f11iter.Value
+			if f12iter.Value != nil {
+				f12elem.Value = f12iter.Value
 			}
-			f11 = append(f11, *f11elem)
+			f12 = append(f12, *f12elem)
 		}
-		res.Tags = f11
+		res.Tags = f12
 	}
 	if r.ko.Spec.UserGroupID != nil {
 		res.UserGroupId = r.ko.Spec.UserGroupID

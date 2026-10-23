@@ -404,6 +404,13 @@ resources:
           resource: Key
           service_name: kms
           path: Status.ACKResourceMetadata.ARN
+      # Create-only: ModifyServerlessCache does not accept it. Excluded from the
+      # delta so a cache whose CR omits it (AWS reports the default "vpc") does
+      # not requeue on a difference no update can resolve.
+      ConnectionType:
+        is_immutable: true
+        compare:
+          is_ignored: true
       UserGroupID:
         references:
           resource: UserGroup

@@ -410,6 +410,15 @@ type LogDeliveryConfigurationRequest struct {
 	LogType            *string             `json:"logType,omitempty"`
 }
 
+// Provides a summary of the current migration status for a serverless cache.
+type MigrationSummary struct {
+	CutoverMode *string `json:"cutoverMode,omitempty"`
+	// Represents the information required for client programs to connect to a cache
+	// node. This value is read-only.
+	MigrationEndpoint *Endpoint `json:"migrationEndpoint,omitempty"`
+	Status            *string   `json:"status,omitempty"`
+}
+
 // Represents a collection of cache nodes in a replication group. One node in
 // the node group is the read/write primary node. All the other nodes are read-only
 // Replica nodes.
@@ -655,6 +664,12 @@ type ScaleConfig struct {
 	ScalePercentage      *int64 `json:"scalePercentage,omitempty"`
 }
 
+// Configuration for authenticating with the source using Secrets Manager during
+// migration.
+type SecretManagerAuthConfig struct {
+	SecretARN *string `json:"secretARN,omitempty"`
+}
+
 // Represents a single cache security group and its status.
 type SecurityGroupMembership struct {
 	SecurityGroupID *string `json:"securityGroupID,omitempty"`
@@ -688,6 +703,7 @@ type ServerlessCache_SDK struct {
 	ARN *string `json:"arn,omitempty"`
 	// The usage limits for storage and ElastiCache Processing Units for the cache.
 	CacheUsageLimits  *CacheUsageLimits `json:"cacheUsageLimits,omitempty"`
+	ConnectionType    *string           `json:"connectionType,omitempty"`
 	CreateTime        *metav1.Time      `json:"createTime,omitempty"`
 	DailySnapshotTime *string           `json:"dailySnapshotTime,omitempty"`
 	Description       *string           `json:"description,omitempty"`
@@ -698,6 +714,8 @@ type ServerlessCache_SDK struct {
 	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
 	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
 	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
+	// Provides a summary of the current migration status for a serverless cache.
+	Migration *MigrationSummary `json:"migration,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node. This value is read-only.
 	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`
@@ -761,6 +779,11 @@ type Snapshot_SDK struct {
 	VPCID                       *string         `json:"vpcID,omitempty"`
 }
 
+// The TLS configuration for connecting to the source during migration.
+type SourceTLSConfiguration struct {
+	SourceTLSCertificate *string `json:"sourceTLSCertificate,omitempty"`
+}
+
 // Represents the subnet associated with a cluster. This parameter refers to
 // subnets defined in Amazon Virtual Private Cloud (Amazon VPC) and used with
 // ElastiCache.
@@ -779,10 +802,9 @@ type SubnetOutpost struct {
 
 // A tag that can be added to an ElastiCache cluster or replication group. Tags
 // are composed of a Key/Value pair. You can use tags to categorize and track
-// all your ElastiCache resources, with the exception of global replication
-// group. When you add or remove tags on replication groups, those actions will
-// be replicated to all nodes in the replication group. A tag with a null Value
-// is permitted.
+// all your ElastiCache resources. When you add or remove tags on replication
+// groups, those actions will be replicated to all nodes in the replication
+// group. A tag with a null Value is permitted.
 type Tag struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
