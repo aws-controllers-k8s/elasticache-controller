@@ -1393,10 +1393,10 @@ func modifyDelta(
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
 	}
 
-	// the service may have moved to a newer minor version than the one in spec; keep spec as is
+	// the service may have moved to a newer minor version than the one in spec; keep spec as is,
+	// since a minor version downgrade is rejected by the service whatever the auto upgrade setting
 	if delta.DifferentAt("Spec.EngineVersion") && !delta.DifferentAt("Spec.Engine") &&
 		desired.ko.Spec.EngineVersion != nil && latest.ko.Spec.EngineVersion != nil &&
-		latest.ko.Spec.AutoMinorVersionUpgrade != nil && *latest.ko.Spec.AutoMinorVersionUpgrade &&
 		util.EngineVersionAutoUpgraded(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
 		common.RemoveFromDelta(delta, "Spec.EngineVersion")
 	}

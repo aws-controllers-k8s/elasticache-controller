@@ -40,8 +40,8 @@ func TestModifyDeltaEngineVersionWithAutoMinorVersionUpgrade(t *testing.T) {
 		wantDiffers    bool
 	}{
 		{"auto upgraded to newer minor", "7.2", "7.3", aws.Bool(true), false},
-		{"newer minor but auto upgrade disabled", "7.2", "7.3", aws.Bool(false), true},
-		{"newer minor but auto upgrade unreported", "7.2", "7.3", nil, true},
+		{"newer minor and auto upgrade disabled", "7.2", "7.3", aws.Bool(false), false},
+		{"newer minor and auto upgrade unreported", "7.2", "7.3", nil, false},
 		{"downgrade is not an auto upgrade", "7.3", "7.2", aws.Bool(true), true},
 		{"major version change is not an auto upgrade", "7.2", "8.0", aws.Bool(true), true},
 	}
