@@ -280,6 +280,12 @@ func (rm *resourceManager) customSetOutput(
 		ko.Status.AllowedScaleUpModifications = nil
 	}
 
+	// the status copy always shows the value the service reports, whatever spec holds
+	ko.Status.AutoMinorVersionUpgrade = nil
+	if respRG.AutoMinorVersionUpgrade != nil {
+		ko.Status.AutoMinorVersionUpgrade = aws.Bool(*respRG.AutoMinorVersionUpgrade)
+	}
+
 	// populate status logDeliveryConfigurations struct
 	if respRG.LogDeliveryConfigurations != nil {
 		var f11 []*svcapitypes.LogDeliveryConfiguration
@@ -1392,6 +1398,19 @@ func modifyDelta(
 			}
 		}
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
+	}
+
+	// the service may have moved to a newer minor version than the one in spec; keep spec as is,
+	// since a minor version downgrade is rejected by the service whatever the auto upgrade setting
+	if delta.DifferentAt("Spec.EngineVersion") && !delta.DifferentAt("Spec.Engine") &&
+		desired.ko.Spec.EngineVersion != nil && latest.ko.Spec.EngineVersion != nil &&
+		util.EngineVersionAutoUpgraded(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
+		common.RemoveFromDelta(delta, "Spec.EngineVersion")
+	}
+
+	// the service applies its own default when the field is not in spec
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") && desired.ko.Spec.AutoMinorVersionUpgrade == nil {
+		common.RemoveFromDelta(delta, "Spec.AutoMinorVersionUpgrade")
 	}
 
 	// if server has given PreferredMaintenanceWindow a default value, no action needs to be taken
