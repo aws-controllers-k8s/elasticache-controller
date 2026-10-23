@@ -703,7 +703,6 @@ type ServerlessCache_SDK struct {
 	ARN *string `json:"arn,omitempty"`
 	// The usage limits for storage and ElastiCache Processing Units for the cache.
 	CacheUsageLimits  *CacheUsageLimits `json:"cacheUsageLimits,omitempty"`
-	ConnectionType    *string           `json:"connectionType,omitempty"`
 	CreateTime        *metav1.Time      `json:"createTime,omitempty"`
 	DailySnapshotTime *string           `json:"dailySnapshotTime,omitempty"`
 	Description       *string           `json:"description,omitempty"`
@@ -714,8 +713,6 @@ type ServerlessCache_SDK struct {
 	FullEngineVersion  *string   `json:"fullEngineVersion,omitempty"`
 	KMSKeyID           *string   `json:"kmsKeyID,omitempty"`
 	MajorEngineVersion *string   `json:"majorEngineVersion,omitempty"`
-	// Provides a summary of the current migration status for a serverless cache.
-	Migration *MigrationSummary `json:"migration,omitempty"`
 	// Represents the information required for client programs to connect to a cache
 	// node. This value is read-only.
 	ReaderEndpoint         *Endpoint `json:"readerEndpoint,omitempty"`

@@ -4003,11 +4003,6 @@ func (in *ServerlessCacheSpec) DeepCopyInto(out *ServerlessCacheSpec) {
 		*out = new(CacheUsageLimits)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ConnectionType != nil {
-		in, out := &in.ConnectionType, &out.ConnectionType
-		*out = new(string)
-		**out = **in
-	}
 	if in.DailySnapshotTime != nil {
 		in, out := &in.DailySnapshotTime, &out.DailySnapshotTime
 		*out = new(string)
@@ -4169,11 +4164,6 @@ func (in *ServerlessCacheStatus) DeepCopyInto(out *ServerlessCacheStatus) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Migration != nil {
-		in, out := &in.Migration, &out.Migration
-		*out = new(MigrationSummary)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.ReaderEndpoint != nil {
 		in, out := &in.ReaderEndpoint, &out.ReaderEndpoint
 		*out = new(Endpoint)
@@ -4214,11 +4204,6 @@ func (in *ServerlessCache_SDK) DeepCopyInto(out *ServerlessCache_SDK) {
 		*out = new(CacheUsageLimits)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ConnectionType != nil {
-		in, out := &in.ConnectionType, &out.ConnectionType
-		*out = new(string)
-		**out = **in
-	}
 	if in.CreateTime != nil {
 		in, out := &in.CreateTime, &out.CreateTime
 		*out = (*in).DeepCopy()
@@ -4257,11 +4242,6 @@ func (in *ServerlessCache_SDK) DeepCopyInto(out *ServerlessCache_SDK) {
 		in, out := &in.MajorEngineVersion, &out.MajorEngineVersion
 		*out = new(string)
 		**out = **in
-	}
-	if in.Migration != nil {
-		in, out := &in.Migration, &out.Migration
-		*out = new(MigrationSummary)
-		(*in).DeepCopyInto(*out)
 	}
 	if in.ReaderEndpoint != nil {
 		in, out := &in.ReaderEndpoint, &out.ReaderEndpoint

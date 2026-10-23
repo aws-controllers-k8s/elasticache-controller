@@ -404,13 +404,6 @@ resources:
           resource: Key
           service_name: kms
           path: Status.ACKResourceMetadata.ARN
-      # Create-only: ModifyServerlessCache does not accept it. Excluded from the
-      # delta so a cache whose CR omits it (AWS reports the default "vpc") does
-      # not requeue on a difference no update can resolve.
-      ConnectionType:
-        is_immutable: true
-        compare:
-          is_ignored: true
       UserGroupID:
         references:
           resource: UserGroup
@@ -557,6 +550,10 @@ ignore:
     - CreateUserGroupOutput.ServerlessCaches
     - CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionEnabled
     - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionEnabled
+    # Added by aws-sdk-go-v2 service/elasticache v1.63.0-v1.64.0; not yet supported.
+    - CreateServerlessCacheInput.ConnectionType
+    - ServerlessCache.ConnectionType
+    - ServerlessCache.Migration
     # - CreateReplicationGroupOutput.ReplicationGroup.TransitEncryptionEnabled
     # - ModifyReplicationGroupInput.TransitEncryptionEnabled
     # - CreateReplicationGroupInput.TransitEncryptionEnabled
