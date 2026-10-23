@@ -632,7 +632,9 @@ class TestReplicationGroup:
     def test_rg_log_delivery(self, make_rg_name, make_replication_group, rg_deletion_waiter, bootstrap_resources):
         input_dict = {
             "RG_ID": make_rg_name("rg-log-delivery"),
-            "ENGINE_VERSION": "7.1",
+            # quoted in the manifest would be cleaner, but the shared template
+            # substitutes the value bare and "7.1" parses as a YAML number
+            "ENGINE_VERSION": "6.x",
             "NUM_NODE_GROUPS": "1",
             "REPLICAS_PER_NODE_GROUP": "0"
         }
