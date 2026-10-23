@@ -1,0 +1,16 @@
+# Replication group with a mixed-case engine name and a KMS key, the shape that
+# used to drift right after creation
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  atRestEncryptionEnabled: true
+  cacheNodeType: cache.t3.micro
+  engine: Valkey
+  engineVersion: "8.0"
+  kmsKeyID: $KMS_KEY_ID
+  numNodeGroups: 1
+  replicasPerNodeGroup: 0
+  description: engine case test RG
+  replicationGroupID: $RG_ID
