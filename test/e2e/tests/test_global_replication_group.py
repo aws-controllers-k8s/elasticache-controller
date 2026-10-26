@@ -26,6 +26,7 @@ from time import sleep
 
 import boto3
 import pytest
+from acktest import tags as tagutil
 from acktest.k8s import condition
 from acktest.k8s import resource as k8s
 from acktest.resources import random_suffix_name
@@ -250,6 +251,24 @@ def assert_status_matches_aws(reference, global_id: str):
     )
 
 
+def wait_global_tags(
+    arn: str,
+    expected: dict,
+    wait_periods: int = MODIFY_WAIT_PERIODS,
+    period_length: int = MODIFY_PERIOD_LENGTH,
+) -> bool:
+    """Wait until the datastore's user tags, minus ACK system tags, equal expected."""
+    tags = None
+    for _ in range(wait_periods):
+        tag_list = ec.list_tags_for_resource(ResourceName=arn)["TagList"]
+        tags = {t["Key"]: t.get("Value") for t in tagutil.clean(tag_list)}
+        if tags == expected:
+            return True
+        sleep(period_length)
+    logging.warning(f"GlobalReplicationGroup {arn} tags={tags}, expected {expected}")
+    return False
+
+
 def create_grg(suffix: str, primary_rg_id: str, description: str):
     """Create a GlobalReplicationGroup and wait for it to reach primary-only."""
     grg_name = f"grg-{suffix}"
@@ -367,6 +386,19 @@ class TestGlobalReplicationGroupLifecycle:
         # never declared.
         assert_spec_claims_nothing_undeclared(reference)
         assert_status_matches_aws(reference, global_id)
+
+        # Tags are set on create, then changed through the tagging APIs, since
+        # ModifyGlobalReplicationGroup does not accept them.
+        arn = grg["ARN"]
+        assert wait_global_tags(arn, {"created-by": "ack-e2e"}), "create-time tags missing"
+        k8s.patch_custom_resource(
+            reference, {"spec": {"tags": [{"key": "team", "value": "ack"}]}}
+        )
+        assert wait_global_tags(arn, {"team": "ack"}), "tag update not applied"
+        assert k8s.wait_on_condition(
+            reference, condition.CONDITION_TYPE_RESOURCE_SYNCED, "True",
+            wait_periods=MODIFY_WAIT_PERIODS, period_length=MODIFY_PERIOD_LENGTH,
+        ), "resource did not return to ACK.ResourceSynced=True after the tag update"
 
         delete_grg(reference)
 

@@ -589,12 +589,6 @@ resources:
         in:
         - available
         - primary-only
-    # CreateGlobalReplicationGroup accepts no tags at this SDK pin, so there is no
-    # Tags field for the generator to manage. Datastores are taggable, and newer
-    # aws-sdk-go-v2 releases model Tags on the create input, so this records a pin
-    # limitation rather than an untaggable resource.
-    tags:
-      ignore: true
 operations:
   DescribeServerlessCaches:
     operation_type:

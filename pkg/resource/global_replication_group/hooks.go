@@ -138,7 +138,36 @@ func (rm *resourceManager) CustomDescribeGlobalReplicationGroupsSetOutput(
 	// engine upgrade rather than observable state -- ElastiCache copies it onto the
 	// members and never reports it back on the datastore -- so `latest` keeps the
 	// desired value and the field never produces a delta of its own.
+
+	// Describe does not report tags, so they are read separately, as
+	// replication_group does.
+	if ko.Status.ACKResourceMetadata != nil && ko.Status.ACKResourceMetadata.ARN != nil {
+		tags, err := rm.getTags(ctx, string(*ko.Status.ACKResourceMetadata.ARN))
+		if err != nil {
+			return nil, err
+		}
+		ko.Spec.Tags = tags
+	}
 	return ko, nil
+}
+
+// getTags retrieves the datastore's tags.
+func (rm *resourceManager) getTags(
+	ctx context.Context,
+	resourceARN string,
+) ([]*svcapitypes.Tag, error) {
+	return util.GetTags(ctx, rm.sdkapi, rm.metrics, resourceARN)
+}
+
+// syncTags adds or removes tags so the datastore matches the desired tags.
+// ModifyGlobalReplicationGroup does not accept tags.
+func (rm *resourceManager) syncTags(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+) error {
+	return util.SyncTags(ctx, desired.ko.Spec.Tags, latest.ko.Spec.Tags,
+		latest.ko.Status.ACKResourceMetadata, convertToOrderedACKTags, rm.sdkapi, rm.metrics)
 }
 
 // observedIfManaged returns the observed value only for a field the user actually
@@ -237,6 +266,10 @@ func (rm *resourceManager) customUpdateGlobalReplicationGroup(
 			"status.globalReplicationGroupID is not set, so the datastore cannot be updated"))
 	}
 
+	// SyncTags requeues after a tag change, so any other change waits a pass.
+	if delta.DifferentAt("Spec.Tags") {
+		return nil, rm.syncTags(ctx, desired, latest)
+	}
 	if delta.DifferentAt("Spec.NodeGroupCount") {
 		return rm.updateNodeGroupCount(ctx, desired, latest, globalID)
 	}

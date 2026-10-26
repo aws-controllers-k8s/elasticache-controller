@@ -7,3 +7,6 @@ spec:
   globalReplicationGroupIDSuffix: $GRG_SUFFIX
   primaryReplicationGroupID: $PRIMARY_RG_ID
   description: $DESCRIPTION
+  tags:
+    - key: created-by
+      value: ack-e2e
