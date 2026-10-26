@@ -276,6 +276,9 @@ class TestReplicationGroup:
         assert rg['SnapshotWindow'] == sw
         assert rg['IpDiscovery'] == ip_discovery
         assert rg['NetworkType'] == network_type
+        assert cr['spec']['autoMinorVersionUpgrade'] is False
+        assert cr['status']['autoMinorVersionUpgrade'] is False
+        assert rg['AutoMinorVersionUpgrade'] is False
         assert_spec_tags(rg_id, tags)
 
         # change field values, wait for resource to sync
@@ -292,6 +295,7 @@ class TestReplicationGroup:
             "description": description,
             "snapshotRetentionLimit": srl,
             "snapshotWindow": sw,
+            "autoMinorVersionUpgrade": True,
         }}
         _ = k8s.patch_custom_resource(reference, patch)
         sleep(DEFAULT_WAIT_SECS)
@@ -307,6 +311,9 @@ class TestReplicationGroup:
         assert resource['spec']['description'] == description
         assert rg['SnapshotRetentionLimit'] == srl
         assert rg['SnapshotWindow'] == sw
+        assert resource['spec']['autoMinorVersionUpgrade'] is True
+        assert resource['status']['autoMinorVersionUpgrade'] is True
+        assert rg['AutoMinorVersionUpgrade'] is True
 
         patch = {"spec": {
             "tags": new_tags

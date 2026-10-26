@@ -280,6 +280,12 @@ func (rm *resourceManager) customSetOutput(
 		ko.Status.AllowedScaleUpModifications = nil
 	}
 
+	// the status copy always shows the value the service reports, whatever spec holds
+	ko.Status.AutoMinorVersionUpgrade = nil
+	if respRG.AutoMinorVersionUpgrade != nil {
+		ko.Status.AutoMinorVersionUpgrade = aws.Bool(*respRG.AutoMinorVersionUpgrade)
+	}
+
 	// populate status logDeliveryConfigurations struct
 	if respRG.LogDeliveryConfigurations != nil {
 		var f11 []*svcapitypes.LogDeliveryConfiguration
@@ -629,6 +635,14 @@ func (rm *resourceManager) modifyReplicationGroup(
 			return nil, err
 		}
 
+		// The ModifyReplicationGroup response may still report the old value for
+		// AutoMinorVersionUpgrade while the change is in progress. Preserve the
+		// desired value so it is not overwritten in the spec; the generated
+		// sdkUpdate will confirm or re-send it on the next reconcile.
+		if desired.ko.Spec.AutoMinorVersionUpgrade != nil {
+			out.ko.Spec.AutoMinorVersionUpgrade = desired.ko.Spec.AutoMinorVersionUpgrade
+		}
+
 		return out, nil
 	}
 
@@ -753,7 +767,16 @@ func (rm *resourceManager) increaseReplicaCount(
 		rm.log.V(1).Info("Error during IncreaseReplicaCount", "error", respErr)
 		return nil, respErr
 	}
-	return rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
+	out, err := rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
+	if err != nil {
+		return nil, err
+	}
+	// IncreaseReplicaCount does not accept AutoMinorVersionUpgrade; preserve the
+	// desired value so a concurrent change is not silently reverted in the spec.
+	if desired.ko.Spec.AutoMinorVersionUpgrade != nil {
+		out.ko.Spec.AutoMinorVersionUpgrade = desired.ko.Spec.AutoMinorVersionUpgrade
+	}
+	return out, nil
 }
 
 func (rm *resourceManager) decreaseReplicaCount(
@@ -771,7 +794,16 @@ func (rm *resourceManager) decreaseReplicaCount(
 		rm.log.V(1).Info("Error during DecreaseReplicaCount", "error", respErr)
 		return nil, respErr
 	}
-	return rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
+	out, err := rm.setReplicationGroupOutput(ctx, desired, resp.ReplicationGroup)
+	if err != nil {
+		return nil, err
+	}
+	// DecreaseReplicaCount does not accept AutoMinorVersionUpgrade; preserve the
+	// desired value so a concurrent change is not silently reverted in the spec.
+	if desired.ko.Spec.AutoMinorVersionUpgrade != nil {
+		out.ko.Spec.AutoMinorVersionUpgrade = desired.ko.Spec.AutoMinorVersionUpgrade
+	}
+	return out, nil
 }
 
 func (rm *resourceManager) updateShardConfiguration(
@@ -800,6 +832,11 @@ func (rm *resourceManager) updateShardConfiguration(
 	// Update the annotations since API call was successful
 	rm.setLastRequestedNodeGroupConfiguration(desired, ko)
 	rm.setLastRequestedNumNodeGroups(desired, ko)
+	// ModifyReplicationGroupShardConfiguration does not accept AutoMinorVersionUpgrade;
+	// preserve the desired value so a concurrent change is not silently reverted in the spec.
+	if desired.ko.Spec.AutoMinorVersionUpgrade != nil {
+		ko.Spec.AutoMinorVersionUpgrade = desired.ko.Spec.AutoMinorVersionUpgrade
+	}
 	return &resource{ko}, nil
 }
 
@@ -1186,6 +1223,13 @@ func (rm *resourceManager) newModifyReplicationGroupRequestPayload(
 		input.CacheParameterGroupName = desired.ko.Spec.CacheParameterGroupName
 	}
 
+	// AutoMinorVersionUpgrade can be changed alongside engine/security-group
+	// updates in the same ModifyReplicationGroup call.
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") &&
+		desired.ko.Spec.AutoMinorVersionUpgrade != nil {
+		input.AutoMinorVersionUpgrade = desired.ko.Spec.AutoMinorVersionUpgrade
+	}
+
 	return input
 }
 
@@ -1377,6 +1421,19 @@ func modifyDelta(
 			}
 		}
 		// TODO: handle the case of a nil difference (especially when desired EV is nil)
+	}
+
+	// the service may have moved to a newer minor version than the one in spec; keep spec as is,
+	// since a minor version downgrade is rejected by the service whatever the auto upgrade setting
+	if delta.DifferentAt("Spec.EngineVersion") && !delta.DifferentAt("Spec.Engine") &&
+		desired.ko.Spec.EngineVersion != nil && latest.ko.Spec.EngineVersion != nil &&
+		util.EngineVersionAutoUpgraded(*desired.ko.Spec.EngineVersion, *latest.ko.Spec.EngineVersion) {
+		common.RemoveFromDelta(delta, "Spec.EngineVersion")
+	}
+
+	// the service applies its own default when the field is not in spec
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") && desired.ko.Spec.AutoMinorVersionUpgrade == nil {
+		common.RemoveFromDelta(delta, "Spec.AutoMinorVersionUpgrade")
 	}
 
 	// if server has given PreferredMaintenanceWindow a default value, no action needs to be taken
