@@ -65,6 +65,9 @@ type GlobalReplicationGroupSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	PrimaryReplicationGroupID  *string                                  `json:"primaryReplicationGroupID,omitempty"`
 	PrimaryReplicationGroupRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"primaryReplicationGroupRef,omitempty"`
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `json:"tags,omitempty"`
 }
 
 // GlobalReplicationGroupStatus defines the observed state of GlobalReplicationGroup

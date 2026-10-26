@@ -667,6 +667,10 @@ ignore:
     - CreateUserGroupOutput.ServerlessCaches
     - CreateReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionEnabled
     - ModifyReplicationGroupOutput.ReplicationGroup.PendingModifiedValues.TransitEncryptionEnabled
+    # Added by aws-sdk-go-v2 service/elasticache v1.63.0-v1.64.0; not yet supported.
+    - CreateServerlessCacheInput.ConnectionType
+    - ServerlessCache.ConnectionType
+    - ServerlessCache.Migration
     # - CreateReplicationGroupOutput.ReplicationGroup.TransitEncryptionEnabled
     # - ModifyReplicationGroupInput.TransitEncryptionEnabled
     # - CreateReplicationGroupInput.TransitEncryptionEnabled

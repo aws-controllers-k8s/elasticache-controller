@@ -40,13 +40,13 @@ import (
 )
 
 const (
-	// AnnotationLastRequestedLDCs is an annotation whose value is the marshaled list of pointers to
-	// LogDeliveryConfigurationRequest structs passed in as input to either the create or modify API called most
-	// recently
-	AnnotationLastRequestedLDCs = svcapitypes.AnnotationPrefix + "last-requested-log-delivery-configurations"
 	// AnnotationLastRequestedCNT is an annotation whose value is passed in as input to either the create or modify API
 	// called most recently
 	AnnotationLastRequestedCNT = svcapitypes.AnnotationPrefix + "last-requested-cache-node-type"
+	// annotationLastRequestedLDCs held the last requested log delivery
+	// configurations before they were compared with the observed state. It is
+	// no longer written and is removed from resources that still carry it.
+	annotationLastRequestedLDCs = svcapitypes.AnnotationPrefix + "last-requested-log-delivery-configurations"
 	// AnnotationLastRequestedNNG is an annotation whose value is passed in as input to either the create or modify API
 	// called most recently
 	AnnotationLastRequestedNNG = svcapitypes.AnnotationPrefix + "last-requested-num-node-groups"
@@ -399,8 +399,8 @@ func (rm *resourceManager) setAnnotationsFields(
 ) {
 	annotations := getAnnotationsFields(r, ko)
 
-	rm.setLastRequestedLogDeliveryConfigurations(r, annotations)
 	rm.setLastRequestedCacheNodeType(r, annotations)
+	delete(annotations, annotationLastRequestedLDCs)
 	ko.ObjectMeta.Annotations = annotations
 }
 
@@ -421,21 +421,6 @@ func getAnnotationsFields(
 
 	ko.ObjectMeta.Annotations = annotations
 	return annotations
-}
-
-// setLastRequestedLogDeliveryConfigurations copies desired.Spec.LogDeliveryConfigurations
-// into the annotations of the object.
-// r is the desired resource, and annotations is the annotations map modified by this method
-func (rm *resourceManager) setLastRequestedLogDeliveryConfigurations(
-	r *resource,
-	annotations map[string]string,
-) {
-	lastRequestedConfigs, err := json.Marshal(r.ko.Spec.LogDeliveryConfigurations)
-	if err != nil {
-		annotations[AnnotationLastRequestedLDCs] = "null"
-	} else {
-		annotations[AnnotationLastRequestedLDCs] = string(lastRequestedConfigs)
-	}
 }
 
 // setLastRequestedCacheNodeType copies desired.Spec.CacheNodeType into the annotation
@@ -1411,11 +1396,9 @@ func modifyDelta(
 		}
 	}
 
-	// note that the comparison is actually done between desired.Spec.LogDeliveryConfigurations and
-	// the last requested configurations saved in annotations (as opposed to latest.Spec.LogDeliveryConfigurations)
-	if logDeliveryRequiresUpdate(desired) {
+	if logDeliveryRequiresUpdate(desired, latest) {
 		delta.Add("Spec.LogDeliveryConfigurations", desired.ko.Spec.LogDeliveryConfigurations,
-			unmarshalLastRequestedLDCs(desired))
+			latest.ko.Status.LogDeliveryConfigurations)
 	}
 
 	if multiAZRequiresUpdate(desired, latest) {
@@ -1432,25 +1415,93 @@ func modifyDelta(
 	}
 }
 
-// logDeliveryRequiresUpdate retrieves the last requested configurations saved in annotations and compares them
-// to the current desired configurations
-func logDeliveryRequiresUpdate(desired *resource) bool {
-	desiredConfigs := desired.ko.Spec.LogDeliveryConfigurations
-	lastRequestedConfigs := unmarshalLastRequestedLDCs(desired)
-	return !reflect.DeepEqual(desiredConfigs, lastRequestedConfigs)
+// logDeliveryRequiresUpdate returns true if a desired log delivery request is
+// not reflected by the configurations the API reports, applied or pending.
+// Comparing with the observed state rather than with the last request kept in
+// an annotation lets adopted resources, which never carried that annotation,
+// converge instead of re-sending the same configuration on every reconcile.
+func logDeliveryRequiresUpdate(desired *resource, latest *resource) bool {
+	observed := latest.ko.Status.LogDeliveryConfigurations
+	var pending []*svcapitypes.PendingLogDeliveryConfiguration
+	if latest.ko.Status.PendingModifiedValues != nil {
+		pending = latest.ko.Status.PendingModifiedValues.LogDeliveryConfigurations
+	}
+	for _, req := range desired.ko.Spec.LogDeliveryConfigurations {
+		if req != nil && !logDeliverySatisfied(req, observed, pending) {
+			return true
+		}
+	}
+	return false
 }
 
-// unmarshal the value found in annotations for the LogDeliveryConfigurations field requested in the last
-// successful create or modify call
-func unmarshalLastRequestedLDCs(desired *resource) []*svcapitypes.LogDeliveryConfigurationRequest {
-	var lastRequestedConfigs []*svcapitypes.LogDeliveryConfigurationRequest
-
-	annotations := desired.ko.ObjectMeta.GetAnnotations()
-	if val, ok := annotations[AnnotationLastRequestedLDCs]; ok {
-		_ = json.Unmarshal([]byte(val), &lastRequestedConfigs)
+// logDeliverySatisfied returns true if the request is applied or in flight.
+// An enabled request needs a pending entry, or an observed entry that is not
+// being disabled, for its log type with the same destination and format. A
+// disabled request needs no pending entry and no observed entry that is not
+// being disabled.
+func logDeliverySatisfied(
+	req *svcapitypes.LogDeliveryConfigurationRequest,
+	observed []*svcapitypes.LogDeliveryConfiguration,
+	pending []*svcapitypes.PendingLogDeliveryConfiguration,
+) bool {
+	if req.LogType == nil {
+		return false
 	}
+	enabled := req.Enabled == nil || *req.Enabled
+	for _, p := range pending {
+		if p == nil || aws.ToString(p.LogType) != *req.LogType {
+			continue
+		}
+		return enabled && sameLogDeliveryDestination(req.DestinationType, req.LogFormat, req.DestinationDetails,
+			p.DestinationType, p.LogFormat, p.DestinationDetails)
+	}
+	for _, o := range observed {
+		if o == nil || aws.ToString(o.LogType) != *req.LogType {
+			continue
+		}
+		disabling := aws.ToString(o.Status) == string(svcapitypes.LogDeliveryConfigurationStatus_disabling)
+		if !enabled {
+			return disabling
+		}
+		return !disabling && sameLogDeliveryDestination(req.DestinationType, req.LogFormat, req.DestinationDetails,
+			o.DestinationType, o.LogFormat, o.DestinationDetails)
+	}
+	return !enabled
+}
 
-	return lastRequestedConfigs
+// sameLogDeliveryDestination returns true if the requested destination type,
+// format and destination match the reported ones. A field the request leaves
+// unset is not compared, so whatever the API fills in for it is accepted
+// instead of being re-sent on every reconcile.
+func sameLogDeliveryDestination(
+	reqType, reqFormat *string, reqDetails *svcapitypes.DestinationDetails,
+	gotType, gotFormat *string, gotDetails *svcapitypes.DestinationDetails,
+) bool {
+	if reqType != nil && *reqType != aws.ToString(gotType) {
+		return false
+	}
+	if reqFormat != nil && *reqFormat != aws.ToString(gotFormat) {
+		return false
+	}
+	if reqDetails == nil {
+		return true
+	}
+	reqGroup, reqStream := logDeliveryDestination(reqDetails)
+	gotGroup, gotStream := logDeliveryDestination(gotDetails)
+	return reqGroup == gotGroup && reqStream == gotStream
+}
+
+func logDeliveryDestination(details *svcapitypes.DestinationDetails) (logGroup string, deliveryStream string) {
+	if details == nil {
+		return "", ""
+	}
+	if details.CloudWatchLogsDetails != nil {
+		logGroup = aws.ToString(details.CloudWatchLogsDetails.LogGroup)
+	}
+	if details.KinesisFirehoseDetails != nil {
+		deliveryStream = aws.ToString(details.KinesisFirehoseDetails.DeliveryStream)
+	}
+	return logGroup, deliveryStream
 }
 
 // multiAZRequiresUpdate returns true if the latest multi AZ status does not yet match the

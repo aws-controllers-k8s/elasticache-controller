@@ -30,6 +30,7 @@ import (
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -374,6 +375,20 @@ func (rm *resourceManager) newCreateRequestPayload(
 	}
 	if r.ko.Spec.PrimaryReplicationGroupID != nil {
 		res.PrimaryReplicationGroupId = r.ko.Spec.PrimaryReplicationGroupID
+	}
+	if r.ko.Spec.Tags != nil {
+		f3 := []svcsdktypes.Tag{}
+		for _, f3iter := range r.ko.Spec.Tags {
+			f3elem := &svcsdktypes.Tag{}
+			if f3iter.Key != nil {
+				f3elem.Key = f3iter.Key
+			}
+			if f3iter.Value != nil {
+				f3elem.Value = f3iter.Value
+			}
+			f3 = append(f3, *f3elem)
+		}
+		res.Tags = f3
 	}
 
 	return res, nil
