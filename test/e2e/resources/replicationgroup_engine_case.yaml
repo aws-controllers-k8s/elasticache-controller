@@ -12,5 +12,7 @@ spec:
   kmsKeyID: $KMS_KEY_ID
   numNodeGroups: 1
   replicasPerNodeGroup: 0
+  # Valkey requires an explicit choice for in-transit encryption
+  transitEncryptionEnabled: true
   description: engine case test RG
   replicationGroupID: $RG_ID
