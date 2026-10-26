@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -191,6 +192,12 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 
 	// Keep the value of desired for CacheNodeType.
 	ko.Spec.CacheNodeType = r.ko.Spec.CacheNodeType
+
+	// A user group change is applied asynchronously, so the modify response
+	// still lists the previous groups. Keep the value of desired so the stale
+	// list is not written back into the spec, which would swap the groups
+	// back on the next reconcile.
+	ko.Spec.UserGroupIDs = r.ko.Spec.UserGroupIDs
 
 	rm.setAnnotationsFields(r, ko)
 	return ko, nil
@@ -1484,6 +1491,48 @@ func autoFailoverRequiresUpdate(desired *resource, latest *resource) bool {
 		return *latest.ko.Status.AutomaticFailover != string(svcapitypes.AutomaticFailoverStatus_enabled)
 	} else {
 		return *latest.ko.Status.AutomaticFailover != string(svcapitypes.AutomaticFailoverStatus_disabled)
+	}
+}
+
+// userGroupIDsDifference returns the user group IDs in desired that latest does
+// not carry, and the ones in latest that desired no longer lists, compared by
+// value so they can go into UserGroupIdsToAdd and UserGroupIdsToRemove. A side
+// with no change is returned as nil so the query serializer leaves it out.
+func userGroupIDsDifference(desired []*string, latest []*string) ([]string, []string) {
+	desiredIDs := aws.ToStringSlice(desired)
+	latestIDs := aws.ToStringSlice(latest)
+	var toAdd, toRemove []string
+	for _, id := range desiredIDs {
+		if !slices.Contains(latestIDs, id) {
+			toAdd = append(toAdd, id)
+		}
+	}
+	for _, id := range latestIDs {
+		if !slices.Contains(desiredIDs, id) {
+			toRemove = append(toRemove, id)
+		}
+	}
+	return toAdd, toRemove
+}
+
+// updateUserGroupIDsPayload fills UserGroupIdsToAdd and UserGroupIdsToRemove
+// from the Spec.UserGroupIDs difference, leaving a side nil when it has nothing
+// to send.
+func (rm *resourceManager) updateUserGroupIDsPayload(
+	input *svcsdk.ModifyReplicationGroupInput,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) {
+	if !delta.DifferentAt("Spec.UserGroupIDs") {
+		return
+	}
+	toAdd, toRemove := userGroupIDsDifference(desired.ko.Spec.UserGroupIDs, latest.ko.Spec.UserGroupIDs)
+	if len(toAdd) > 0 {
+		input.UserGroupIdsToAdd = toAdd
+	}
+	if len(toRemove) > 0 {
+		input.UserGroupIdsToRemove = toRemove
 	}
 }
 
