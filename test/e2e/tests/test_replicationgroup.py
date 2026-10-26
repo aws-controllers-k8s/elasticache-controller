@@ -640,51 +640,53 @@ class TestReplicationGroup:
         }
         (reference, _) = make_replication_group(
             "replicationgroup_create_delete", input_dict, input_dict["RG_ID"])
-        assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=90)
-
-        def apply(config):
-            patch = {"spec": {"logDeliveryConfigurations": [config]}}
-            _ = k8s.patch_custom_resource(reference, patch)
-            sleep(DEFAULT_WAIT_SECS)
+        try:
             assert k8s.wait_on_condition(
-                reference, "ACK.ResourceSynced", "True", wait_periods=30)
+                reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+            def apply(config):
+                patch = {"spec": {"logDeliveryConfigurations": [config]}}
+                _ = k8s.patch_custom_resource(reference, patch)
+                sleep(DEFAULT_WAIT_SECS)
+                assert k8s.wait_on_condition(
+                    reference, "ACK.ResourceSynced", "True", wait_periods=30)
+                assert_log_delivery_config(reference, input_dict["RG_ID"], config)
+
+            # add log delivery
+            config = {
+                "destinationDetails": {
+                    "cloudWatchLogsDetails": {
+                        "logGroup": bootstrap_resources.CWLogGroup1
+                    }
+                },
+                "destinationType": "cloudwatch-logs",
+                "enabled": True,
+                "logFormat": "json",
+                "logType": "slow-log"
+            }
+            apply(config)
+
+            # change the target log group and the log format
+            config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"] = bootstrap_resources.CWLogGroup2
+            config["logFormat"] = "text"
+            apply(config)
+
+            # a resync with nothing to change must leave the configuration as is
+            sleep(DEFAULT_WAIT_SECS)
             assert_log_delivery_config(reference, input_dict["RG_ID"], config)
+            assert k8s.wait_on_condition(
+                reference, "ACK.ResourceSynced", "True", wait_periods=1)
 
-        # add log delivery
-        config = {
-            "destinationDetails": {
-                "cloudWatchLogsDetails": {
-                    "logGroup": bootstrap_resources.CWLogGroup1
-                }
-            },
-            "destinationType": "cloudwatch-logs",
-            "enabled": True,
-            "logFormat": "json",
-            "logType": "slow-log"
-        }
-        apply(config)
+            # disable, then enable again
+            apply({"logType": "slow-log", "enabled": False})
+            config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"] = bootstrap_resources.CWLogGroup1
+            config["logFormat"] = "json"
+            apply(config)
 
-        # change the target log group and the log format
-        config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"] = bootstrap_resources.CWLogGroup2
-        config["logFormat"] = "text"
-        apply(config)
-
-        # a resync with nothing to change must leave the configuration as is
-        sleep(DEFAULT_WAIT_SECS)
-        assert_log_delivery_config(reference, input_dict["RG_ID"], config)
-        assert k8s.wait_on_condition(
-            reference, "ACK.ResourceSynced", "True", wait_periods=1)
-
-        # disable, then enable again
-        apply({"logType": "slow-log", "enabled": False})
-        config["destinationDetails"]["cloudWatchLogsDetails"]["logGroup"] = bootstrap_resources.CWLogGroup1
-        config["logFormat"] = "json"
-        apply(config)
-
-        k8s.delete_custom_resource(reference)
-        sleep(DEFAULT_WAIT_SECS)
-        rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+        finally:
+            k8s.delete_custom_resource(reference)
+            sleep(DEFAULT_WAIT_SECS)
+            rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
 
     def test_rg_user_groups_update(self, make_rg_name, make_replication_group, rg_deletion_waiter, bootstrap_resources):
         input_dict = {

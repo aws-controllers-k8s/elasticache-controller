@@ -43,6 +43,10 @@ const (
 	// AnnotationLastRequestedCNT is an annotation whose value is passed in as input to either the create or modify API
 	// called most recently
 	AnnotationLastRequestedCNT = svcapitypes.AnnotationPrefix + "last-requested-cache-node-type"
+	// annotationLastRequestedLDCs held the last requested log delivery
+	// configurations before they were compared with the observed state. It is
+	// no longer written and is removed from resources that still carry it.
+	annotationLastRequestedLDCs = svcapitypes.AnnotationPrefix + "last-requested-log-delivery-configurations"
 	// AnnotationLastRequestedNNG is an annotation whose value is passed in as input to either the create or modify API
 	// called most recently
 	AnnotationLastRequestedNNG = svcapitypes.AnnotationPrefix + "last-requested-num-node-groups"
@@ -396,6 +400,7 @@ func (rm *resourceManager) setAnnotationsFields(
 	annotations := getAnnotationsFields(r, ko)
 
 	rm.setLastRequestedCacheNodeType(r, annotations)
+	delete(annotations, annotationLastRequestedLDCs)
 	ko.ObjectMeta.Annotations = annotations
 }
 
@@ -1454,18 +1459,26 @@ func logDeliverySatisfied(
 	return !enabled
 }
 
-// sameLogDeliveryDestination returns true if two log delivery configurations
-// name the same destination type, format and destination.
+// sameLogDeliveryDestination returns true if the requested destination type,
+// format and destination match the reported ones. A field the request leaves
+// unset is not compared, so whatever the API fills in for it is accepted
+// instead of being re-sent on every reconcile.
 func sameLogDeliveryDestination(
-	aType, aFormat *string, aDetails *svcapitypes.DestinationDetails,
-	bType, bFormat *string, bDetails *svcapitypes.DestinationDetails,
+	reqType, reqFormat *string, reqDetails *svcapitypes.DestinationDetails,
+	gotType, gotFormat *string, gotDetails *svcapitypes.DestinationDetails,
 ) bool {
-	if aws.ToString(aType) != aws.ToString(bType) || aws.ToString(aFormat) != aws.ToString(bFormat) {
+	if reqType != nil && *reqType != aws.ToString(gotType) {
 		return false
 	}
-	aGroup, aStream := logDeliveryDestination(aDetails)
-	bGroup, bStream := logDeliveryDestination(bDetails)
-	return aGroup == bGroup && aStream == bStream
+	if reqFormat != nil && *reqFormat != aws.ToString(gotFormat) {
+		return false
+	}
+	if reqDetails == nil {
+		return true
+	}
+	reqGroup, reqStream := logDeliveryDestination(reqDetails)
+	gotGroup, gotStream := logDeliveryDestination(gotDetails)
+	return reqGroup == gotGroup && reqStream == gotStream
 }
 
 func logDeliveryDestination(details *svcapitypes.DestinationDetails) (logGroup string, deliveryStream string) {

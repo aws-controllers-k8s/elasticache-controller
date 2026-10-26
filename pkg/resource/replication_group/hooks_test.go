@@ -112,6 +112,15 @@ func TestLogDeliveryRequiresUpdate(t *testing.T) {
 			want:     false,
 		},
 		{
+			name: "type and format left unset accept what the API reports",
+			desired: []*svcapitypes.LogDeliveryConfigurationRequest{{
+				DestinationDetails: &svcapitypes.DestinationDetails{CloudWatchLogsDetails: &svcapitypes.CloudWatchLogsDestinationDetails{LogGroup: aws.String("/elasticache/rg")}},
+				LogType:            aws.String("slow-log"),
+			}},
+			observed: []*svcapitypes.LogDeliveryConfiguration{observedLogDelivery("slow-log", "/elasticache/rg", "active")},
+			want:     false,
+		},
+		{
 			name:     "still enabling",
 			desired:  []*svcapitypes.LogDeliveryConfigurationRequest{logDeliveryRequest("slow-log", "/elasticache/rg", nil)},
 			observed: []*svcapitypes.LogDeliveryConfiguration{observedLogDelivery("slow-log", "/elasticache/rg", "enabling")},
@@ -325,5 +334,28 @@ func TestCustomModifyReplicationGroupSetOutputKeepsDesiredUserGroupIDs(t *testin
 	}
 	if got := aws.ToStringSlice(out.Spec.UserGroupIDs); !reflect.DeepEqual(got, []string{"ug-b"}) {
 		t.Errorf("Spec.UserGroupIDs = %v, want the desired [ug-b]", got)
+	}
+}
+
+func TestSetAnnotationsFieldsDropsLegacyLogDeliveryAnnotation(t *testing.T) {
+	desired := &resource{ko: &svcapitypes.ReplicationGroup{}}
+	desired.ko.Spec.CacheNodeType = aws.String("cache.t3.micro")
+	desired.ko.ObjectMeta.Annotations = map[string]string{
+		annotationLastRequestedLDCs: "[]",
+		"keep.example.com/me":       "yes",
+	}
+	ko := &svcapitypes.ReplicationGroup{}
+
+	rm := &resourceManager{}
+	rm.setAnnotationsFields(desired, ko)
+
+	if _, ok := ko.ObjectMeta.Annotations[annotationLastRequestedLDCs]; ok {
+		t.Errorf("legacy log delivery annotation was kept")
+	}
+	if ko.ObjectMeta.Annotations["keep.example.com/me"] != "yes" {
+		t.Errorf("unrelated annotation was dropped")
+	}
+	if ko.ObjectMeta.Annotations[AnnotationLastRequestedCNT] != "cache.t3.micro" {
+		t.Errorf("cache node type annotation = %q", ko.ObjectMeta.Annotations[AnnotationLastRequestedCNT])
 	}
 }
