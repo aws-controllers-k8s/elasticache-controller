@@ -639,11 +639,6 @@ func (rm *resourceManager) sdkCreate(
 	} else {
 		ko.Status.EffectiveDurability = nil
 	}
-	if resp.ReplicationGroup.Engine != nil {
-		ko.Spec.Engine = resp.ReplicationGroup.Engine
-	} else {
-		ko.Spec.Engine = nil
-	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f14 := &svcapitypes.GlobalReplicationGroupInfo{}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
@@ -660,11 +655,6 @@ func (rm *resourceManager) sdkCreate(
 		ko.Spec.IPDiscovery = aws.String(string(resp.ReplicationGroup.IpDiscovery))
 	} else {
 		ko.Spec.IPDiscovery = nil
-	}
-	if resp.ReplicationGroup.KmsKeyId != nil {
-		ko.Spec.KMSKeyID = resp.ReplicationGroup.KmsKeyId
-	} else {
-		ko.Spec.KMSKeyID = nil
 	}
 	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
 		f17 := []*svcapitypes.LogDeliveryConfigurationRequest{}
@@ -1295,11 +1285,6 @@ func (rm *resourceManager) sdkUpdate(
 		ko.Spec.IPDiscovery = aws.String(string(resp.ReplicationGroup.IpDiscovery))
 	} else {
 		ko.Spec.IPDiscovery = nil
-	}
-	if resp.ReplicationGroup.KmsKeyId != nil {
-		ko.Spec.KMSKeyID = resp.ReplicationGroup.KmsKeyId
-	} else {
-		ko.Spec.KMSKeyID = nil
 	}
 	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
 		f17 := []*svcapitypes.LogDeliveryConfigurationRequest{}
@@ -1991,11 +1976,6 @@ func (rm *resourceManager) setReplicationGroupOutput(
 	} else {
 		ko.Status.EffectiveDurability = nil
 	}
-	if resp.ReplicationGroup.Engine != nil {
-		ko.Spec.Engine = resp.ReplicationGroup.Engine
-	} else {
-		ko.Spec.Engine = nil
-	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f14 := &svcapitypes.GlobalReplicationGroupInfo{}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {
@@ -2012,11 +1992,6 @@ func (rm *resourceManager) setReplicationGroupOutput(
 		ko.Spec.IPDiscovery = aws.String(string(resp.ReplicationGroup.IpDiscovery))
 	} else {
 		ko.Spec.IPDiscovery = nil
-	}
-	if resp.ReplicationGroup.KmsKeyId != nil {
-		ko.Spec.KMSKeyID = resp.ReplicationGroup.KmsKeyId
-	} else {
-		ko.Spec.KMSKeyID = nil
 	}
 	if resp.ReplicationGroup.LogDeliveryConfigurations != nil {
 		f17 := []*svcapitypes.LogDeliveryConfigurationRequest{}

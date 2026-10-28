@@ -359,3 +359,28 @@ func TestSetAnnotationsFieldsDropsLegacyLogDeliveryAnnotation(t *testing.T) {
 		t.Errorf("cache node type annotation = %q", ko.ObjectMeta.Annotations[AnnotationLastRequestedCNT])
 	}
 }
+
+func TestNewResourceDeltaEngineCase(t *testing.T) {
+	tests := []struct {
+		name          string
+		desired       *string
+		latest        *string
+		wantDifferent bool
+	}{
+		{"same engine in another case", aws.String("valKey"), aws.String("valkey"), false},
+		{"same engine", aws.String("redis"), aws.String("redis"), false},
+		{"different engine", aws.String("redis"), aws.String("valkey"), true},
+		{"engine set but not observed", aws.String("valkey"), nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			desired := &resource{ko: &svcapitypes.ReplicationGroup{}}
+			desired.ko.Spec.Engine = tt.desired
+			latest := &resource{ko: &svcapitypes.ReplicationGroup{}}
+			latest.ko.Spec.Engine = tt.latest
+			if got := newResourceDelta(desired, latest).DifferentAt("Spec.Engine"); got != tt.wantDifferent {
+				t.Errorf("DifferentAt(Spec.Engine) = %v, want %v", got, tt.wantDifferent)
+			}
+		})
+	}
+}

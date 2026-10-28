@@ -729,3 +729,80 @@ class TestReplicationGroup:
         k8s.delete_custom_resource(reference)
         sleep(DEFAULT_WAIT_SECS)
         rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+
+    def test_rg_engine_case_and_kms_key_no_drift(self, make_rg_name, make_replication_group, rg_deletion_waiter, bootstrap_resources):
+        input_dict = {
+            "RG_ID": make_rg_name("rg-engine-case"),
+            "KMS_KEY_ID": bootstrap_resources.KmsKeyID,
+        }
+        (reference, _) = make_replication_group(
+            "replicationgroup_engine_case", input_dict, input_dict["RG_ID"])
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+        # The API lowercases the engine and leaves the KMS key out of the
+        # create and modify responses; neither may be written back into the spec.
+        resource = k8s.get_resource(reference)
+        assert resource["spec"]["engine"] == "Valkey"
+        assert resource["spec"]["kmsKeyID"] == bootstrap_resources.KmsKeyID
+        rg = retrieve_replication_group(input_dict["RG_ID"])
+        assert rg["Engine"] == "valkey"
+        # the API reports the key ARN; the bootstrap holds the key ID
+        assert rg["KmsKeyId"].endswith(bootstrap_resources.KmsKeyID)
+
+        # Re-apply the manifest the way a GitOps tool does and give the
+        # controller a few reconciles: no drift, no modify loop.
+        _ = k8s.patch_custom_resource(reference, {"spec": {"engine": "Valkey", "kmsKeyID": bootstrap_resources.KmsKeyID}})
+        sleep(DEFAULT_WAIT_SECS)
+        resource = k8s.get_resource(reference)
+        assert resource["spec"]["engine"] == "Valkey"
+        assert resource["spec"]["kmsKeyID"] == bootstrap_resources.KmsKeyID
+        assert resource["status"]["status"] == "available"
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=1)
+
+        k8s.delete_custom_resource(reference)
+        sleep(DEFAULT_WAIT_SECS)
+        rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
+
+    def test_rg_user_groups_update(self, make_rg_name, make_replication_group, rg_deletion_waiter, bootstrap_resources):
+        input_dict = {
+            "RG_ID": make_rg_name("rg-user-groups"),
+            "USERGROUP_ID": bootstrap_resources.UserGroup1,
+        }
+        (reference, _) = make_replication_group(
+            "replicationgroup_user_groups", input_dict, input_dict["RG_ID"])
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=90)
+
+        rg = retrieve_replication_group(input_dict["RG_ID"])
+        assert rg["UserGroupIds"] == [bootstrap_resources.UserGroup1]
+
+        # Swap the user group. The change is applied asynchronously and the
+        # modify response still lists the previous group, so the spec must keep
+        # the new one and the controller must not swap the groups back.
+        patch = {"spec": {"userGroupIDs": [bootstrap_resources.UserGroup2]}}
+        _ = k8s.patch_custom_resource(reference, patch)
+        sleep(DEFAULT_WAIT_SECS)
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=30)
+
+        resource = k8s.get_resource(reference)
+        assert resource["spec"]["userGroupIDs"] == [bootstrap_resources.UserGroup2]
+        rg = retrieve_replication_group(input_dict["RG_ID"])
+        assert rg["UserGroupIds"] == [bootstrap_resources.UserGroup2]
+
+        # Several reconciles later nothing may have flipped back.
+        sleep(DEFAULT_WAIT_SECS)
+        resource = k8s.get_resource(reference)
+        assert resource["spec"]["userGroupIDs"] == [bootstrap_resources.UserGroup2]
+        assert resource["status"]["status"] == "available"
+        assert k8s.wait_on_condition(
+            reference, "ACK.ResourceSynced", "True", wait_periods=1)
+        rg = retrieve_replication_group(input_dict["RG_ID"])
+        assert rg["UserGroupIds"] == [bootstrap_resources.UserGroup2]
+        assert "UserGroups" not in rg.get("PendingModifiedValues", {})
+
+        k8s.delete_custom_resource(reference)
+        sleep(DEFAULT_WAIT_SECS)
+        rg_deletion_waiter.wait(ReplicationGroupId=input_dict["RG_ID"])
