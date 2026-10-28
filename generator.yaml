@@ -484,6 +484,11 @@ resources:
         - available
         - create_failed
   GlobalReplicationGroup:
+    # Member roles change outside the controller (failover, a secondary joining
+    # or leaving), so re-read the datastore regularly to keep status.members
+    # current instead of waiting for the default resync.
+    reconcile:
+      requeue_on_success_seconds: 60
     fields:
       # CreateGlobalReplicationGroup accepts only a suffix; ElastiCache prepends a
       # region-specific prefix. The resulting full ID is what every later call uses

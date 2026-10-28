@@ -111,6 +111,65 @@ func TestReconcileDatastoreOwnedFields_OnlyOwnedDiffsEmptiesSpecDelta(t *testing
 	}
 }
 
+func TestReconcileDatastoreOwnedFields_AdoptsEngineVersion(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.EngineVersion = aws.String("7.0")
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.EngineVersion = aws.String("7.1.0")
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.EngineVersion", desired.ko.Spec.EngineVersion, latest.ko.Spec.EngineVersion)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if got := *desired.ko.Spec.EngineVersion; got != "7.1.0" {
+		t.Errorf("EngineVersion = %q, want the observed value", got)
+	}
+	*latest.ko.Spec.EngineVersion = "changed"
+	if *desired.ko.Spec.EngineVersion != "7.1.0" {
+		t.Error("desired.EngineVersion aliases latest")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_KeepsMatchingEngineVersion(t *testing.T) {
+	// modifyDelta removed the "7.0" vs "7.0.7" difference, so the user's
+	// declared form stays.
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.EngineVersion = aws.String("7.0")
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.EngineVersion = aws.String("7.0.7")
+
+	reconcileDatastoreOwnedFields(desired, latest, ackcompare.NewDelta())
+	if got := *desired.ko.Spec.EngineVersion; got != "7.0" {
+		t.Errorf("EngineVersion = %q, want the declared value", got)
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_AdoptsAutomaticFailover(t *testing.T) {
+	cases := map[string]struct {
+		declared *bool
+		status   *string
+		want     *bool
+	}{
+		"enabled by datastore":  {aws.Bool(false), aws.String("enabled"), aws.Bool(true)},
+		"disabled by datastore": {aws.Bool(true), aws.String("disabled"), aws.Bool(false)},
+		"transitional status":   {aws.Bool(false), aws.String("enabling"), aws.Bool(false)},
+		"no status":             {aws.Bool(false), nil, aws.Bool(false)},
+		"undeclared":            {nil, aws.String("enabled"), nil},
+	}
+	for name, tc := range cases {
+		desired := newMemberTestRG(aws.String("sgaui-grg"))
+		desired.ko.Spec.AutomaticFailoverEnabled = tc.declared
+		latest := newMemberTestRG(aws.String("sgaui-grg"))
+		latest.ko.Status.AutomaticFailover = tc.status
+
+		reconcileDatastoreOwnedFields(desired, latest, ackcompare.NewDelta())
+		got := desired.ko.Spec.AutomaticFailoverEnabled
+		if (got == nil) != (tc.want == nil) || (got != nil && *got != *tc.want) {
+			t.Errorf("%s: AutomaticFailoverEnabled = %v, want %v", name, aws.ToBool(got), aws.ToBool(tc.want))
+		}
+	}
+}
+
 func TestStripDatastoreOwnedInput(t *testing.T) {
 	newInput := func() *svcsdk.ModifyReplicationGroupInput {
 		return &svcsdk.ModifyReplicationGroupInput{
