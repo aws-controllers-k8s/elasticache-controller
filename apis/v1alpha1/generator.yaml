@@ -489,6 +489,9 @@ resources:
     # current instead of waiting for the default resync.
     reconcile:
       requeue_on_success_seconds: 60
+    # requeue_on_success makes the generated updateConditions report Synced after
+    # any successful call, bypassing synced.when below; this re-applies that rule.
+    update_conditions_custom_method_name: CustomUpdateConditions
     fields:
       # CreateGlobalReplicationGroup accepts only a suffix; ElastiCache prepends a
       # region-specific prefix. The resulting full ID is what every later call uses
