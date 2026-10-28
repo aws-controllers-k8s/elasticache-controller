@@ -622,7 +622,8 @@ class TestReplicationGroup:
         assert resource["spec"]["kmsKeyID"] == bootstrap_resources.KmsKeyID
         rg = retrieve_replication_group(input_dict["RG_ID"])
         assert rg["Engine"] == "valkey"
-        assert rg["KmsKeyId"] == bootstrap_resources.KmsKeyID
+        # the API reports the key ARN; the bootstrap holds the key ID
+        assert rg["KmsKeyId"].endswith(bootstrap_resources.KmsKeyID)
 
         # Re-apply the manifest the way a GitOps tool does and give the
         # controller a few reconciles: no drift, no modify loop.
