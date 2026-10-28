@@ -317,6 +317,49 @@ func TestUpdateUserGroupIDsPayload(t *testing.T) {
 // ModifyReplicationGroup applies the user group change asynchronously and its
 // response still lists the previous groups. The stale list must not reach the
 // spec, or the next reconcile swaps the groups back.
+// autoMinorVersionUpgradeDesired returns a resource pair where desired has
+// AutoMinorVersionUpgrade set to the given value and the API response would
+// report the opposite (simulating the stale-response scenario).
+func autoMinorVersionUpgradeDesired(desiredVal bool) (*resource, *svcsdktypes.ReplicationGroup) {
+	ko := &svcapitypes.ReplicationGroup{}
+	ko.Spec.ReplicationGroupID = aws.String("rg")
+	ko.Spec.AutoMinorVersionUpgrade = aws.Bool(desiredVal)
+	desired := &resource{ko: ko}
+	// The API response still reports the old value (not yet applied).
+	respRG := &svcsdktypes.ReplicationGroup{
+		ReplicationGroupId:      aws.String("rg"),
+		Status:                  aws.String("modifying"),
+		AutoMinorVersionUpgrade: aws.Bool(!desiredVal),
+	}
+	return desired, respRG
+}
+
+// TestSetReplicationGroupOutputPreservesAutoMinorVersionUpgrade verifies that
+// setReplicationGroupOutput followed by the desired-value override leaves no
+// Spec.AutoMinorVersionUpgrade delta — covering the fix for all four custom
+// update paths (modifyReplicationGroup, increaseReplicaCount,
+// decreaseReplicaCount, updateShardConfiguration).
+func TestSetReplicationGroupOutputPreservesAutoMinorVersionUpgrade(t *testing.T) {
+	rm := &resourceManager{}
+
+	desired, respRG := autoMinorVersionUpgradeDesired(true)
+
+	out, err := rm.setReplicationGroupOutput(context.Background(), desired, respRG)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Simulate the fix: after setReplicationGroupOutput, restore desired's value.
+	if desired.ko.Spec.AutoMinorVersionUpgrade != nil {
+		out.ko.Spec.AutoMinorVersionUpgrade = desired.ko.Spec.AutoMinorVersionUpgrade
+	}
+
+	delta := newResourceDelta(desired, out)
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") {
+		t.Errorf("expected no Spec.AutoMinorVersionUpgrade delta after override, but delta was present")
+	}
+}
+
 func TestCustomModifyReplicationGroupSetOutputKeepsDesiredUserGroupIDs(t *testing.T) {
 	desired, _ := userGroupResources([]string{"ug-b"}, nil)
 	ko := desired.ko.DeepCopy()

@@ -2778,6 +2778,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(corev1alpha1.SecretKeyReference)
 		**out = **in
 	}
+	if in.AutoMinorVersionUpgrade != nil {
+		in, out := &in.AutoMinorVersionUpgrade, &out.AutoMinorVersionUpgrade
+		*out = new(bool)
+		**out = **in
+	}
 	if in.AutomaticFailoverEnabled != nil {
 		in, out := &in.AutomaticFailoverEnabled, &out.AutomaticFailoverEnabled
 		*out = new(bool)
