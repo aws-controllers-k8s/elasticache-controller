@@ -14,9 +14,14 @@
 package replication_group
 
 import (
+	"fmt"
+
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	corev1 "k8s.io/api/core/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
@@ -29,6 +34,7 @@ import (
 var datastoreOwnedSpecPaths = []string{
 	"Spec.CacheNodeType",
 	"Spec.CacheParameterGroupName",
+	"Spec.Engine",
 	"Spec.EngineVersion",
 	"Spec.AutomaticFailoverEnabled",
 }
@@ -55,6 +61,11 @@ func reconcileDatastoreOwnedFields(
 ) {
 	// modifyDelta has already dropped versions that match, such as "7.0"
 	// against "7.0.7", so a remaining difference means the datastore changed it.
+	if delta.DifferentAt("Spec.Engine") &&
+		desired.ko.Spec.Engine != nil && latest.ko.Spec.Engine != nil {
+		v := *latest.ko.Spec.Engine
+		desired.ko.Spec.Engine = &v
+	}
 	if delta.DifferentAt("Spec.EngineVersion") &&
 		desired.ko.Spec.EngineVersion != nil &&
 		latest.ko.Spec.EngineVersion != nil {
@@ -100,7 +111,56 @@ func stripDatastoreOwnedInput(
 	}
 	input.CacheNodeType = nil
 	input.CacheParameterGroupName = nil
+	input.Engine = nil
 	input.EngineVersion = nil
 	input.AutomaticFailoverEnabled = nil
 	input.AutoMinorVersionUpgrade = nil
+}
+
+// datastoreMemberAdvisoryReason keys the ACK.Advisory condition that tells
+// users a member's datastore-owned fields are adopted from AWS.
+const datastoreMemberAdvisoryReason = "GlobalDatastoreMember"
+
+// syncDatastoreMemberAdvisory sets the advisory while the group is a Global
+// Datastore member and removes it once the group leaves.
+func syncDatastoreMemberAdvisory(ko *svcapitypes.ReplicationGroup) {
+	r := &resource{ko: ko}
+	if isGlobalDatastoreMember(r) {
+		msg := fmt.Sprintf("Member of Global Datastore %s: cacheNodeType, "+
+			"cacheParameterGroupName, engine, engineVersion and "+
+			"automaticFailoverEnabled are managed by the GlobalReplicationGroup, "+
+			"and their spec values are replaced with the values AWS reports.",
+			*ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID)
+		// SetAdvisory stamps a new transition time, so only call it on a change.
+		if c := ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason); c != nil &&
+			c.Status == corev1.ConditionTrue && c.Message != nil && *c.Message == msg {
+			return
+		}
+		reason := datastoreMemberAdvisoryReason
+		ackcondition.SetAdvisory(r, corev1.ConditionTrue, &msg, &reason)
+		return
+	}
+	if ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason) == nil {
+		return
+	}
+	kept := []*ackv1alpha1.Condition{}
+	for _, c := range ko.Status.Conditions {
+		if c.Type == ackv1alpha1.ConditionTypeAdvisory && c.Reason != nil &&
+			*c.Reason == datastoreMemberAdvisoryReason {
+			continue
+		}
+		kept = append(kept, c)
+	}
+	ko.Status.Conditions = kept
+}
+
+// datastoreOwnedDifferences lists the datastore-owned fields that differ in delta.
+func datastoreOwnedDifferences(delta *ackcompare.Delta) []string {
+	owned := []string{}
+	for _, path := range datastoreOwnedSpecPaths {
+		if delta.DifferentAt(path) {
+			owned = append(owned, path)
+		}
+	}
+	return owned
 }

@@ -157,6 +157,7 @@ func (rm *resourceManager) CustomDescribeReplicationGroupsSetOutput(
 	if err != nil {
 		return nil, err
 	}
+	syncDatastoreMemberAdvisory(ko)
 	return ko, nil
 }
 
@@ -511,6 +512,10 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	// Adopt the observed values rather than reverting them, and stop here when
 	// nothing else differs, so the refreshed spec is persisted.
 	if isGlobalDatastoreMember(latest) {
+		if owned := datastoreOwnedDifferences(delta); len(owned) > 0 {
+			rm.log.Info("adopting Global Datastore values for datastore-owned fields",
+				"fields", owned)
+		}
 		reconcileDatastoreOwnedFields(desired, latest, delta)
 		if !delta.DifferentAt("Spec") {
 			return &resource{ko: desired.ko.DeepCopy()}, nil

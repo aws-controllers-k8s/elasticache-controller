@@ -16,9 +16,12 @@ package replication_group
 import (
 	"testing"
 
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
+	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	corev1 "k8s.io/api/core/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 )
@@ -175,6 +178,7 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 		return &svcsdk.ModifyReplicationGroupInput{
 			CacheNodeType:               aws.String("cache.r6g.large"),
 			CacheParameterGroupName:     aws.String("default.redis7"),
+			Engine:                      aws.String("redis"),
 			EngineVersion:               aws.String("7.0"),
 			AutomaticFailoverEnabled:    aws.Bool(true),
 			AutoMinorVersionUpgrade:     aws.Bool(true),
@@ -184,7 +188,7 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 
 	in := newInput()
 	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")))
-	if in.CacheNodeType != nil || in.CacheParameterGroupName != nil || in.EngineVersion != nil ||
+	if in.CacheNodeType != nil || in.CacheParameterGroupName != nil || in.Engine != nil || in.EngineVersion != nil ||
 		in.AutomaticFailoverEnabled != nil || in.AutoMinorVersionUpgrade != nil {
 		t.Errorf("member input still carries datastore-owned fields: %+v", in)
 	}
@@ -196,5 +200,49 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 	stripDatastoreOwnedInput(in, newMemberTestRG(nil))
 	if in.CacheNodeType == nil || in.AutoMinorVersionUpgrade == nil {
 		t.Error("non-member input was modified")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_AdoptsEngine(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.Engine = aws.String("redis")
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.Engine = aws.String("valkey")
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.Engine", desired.ko.Spec.Engine, latest.ko.Spec.Engine)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if got := *desired.ko.Spec.Engine; got != "valkey" {
+		t.Errorf("Engine = %q, want the observed value", got)
+	}
+	if delta.DifferentAt("Spec.Engine") {
+		t.Error("Engine difference left in delta")
+	}
+}
+
+func TestSyncDatastoreMemberAdvisory(t *testing.T) {
+	r := newMemberTestRG(aws.String("sgaui-grg"))
+	other := "Other"
+	ackcondition.SetAdvisory(r, corev1.ConditionTrue, nil, &other)
+
+	syncDatastoreMemberAdvisory(r.ko)
+	c := ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason)
+	if c == nil || c.Status != corev1.ConditionTrue || c.Message == nil {
+		t.Fatalf("member advisory not set: %+v", c)
+	}
+	stamp := c.LastTransitionTime
+	syncDatastoreMemberAdvisory(r.ko)
+	if got := ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason); got.LastTransitionTime != stamp {
+		t.Error("unchanged advisory was re-stamped")
+	}
+
+	r.ko.Status.GlobalReplicationGroupInfo = nil
+	syncDatastoreMemberAdvisory(r.ko)
+	if ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason) != nil {
+		t.Error("advisory kept after leaving the datastore")
+	}
+	if len(ackcondition.AllOfType(r, ackv1alpha1.ConditionTypeAdvisory)) != 1 {
+		t.Error("unrelated advisory was removed")
 	}
 }
