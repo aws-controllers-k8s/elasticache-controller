@@ -510,7 +510,7 @@ resources:
       # A datastore inherits node type, engine and engine version from its primary,
       # so CreateGlobalReplicationGroup reports them without ever accepting them.
       # Copying the response back would claim fields the user never declared and
-      # overwrite ones they did; the read path populates them only when managed.
+      # overwrite ones they did; an undeclared field is dropped from the delta instead.
       CacheNodeType:
         from:
           operation: ModifyGlobalReplicationGroup

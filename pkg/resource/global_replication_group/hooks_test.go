@@ -45,29 +45,20 @@ func fmtI64p(i *int64) string {
 	return fmt.Sprintf("%d", *i)
 }
 
-// observedNodeGroupCount must never report a count for a field the user does not
-// manage: doing so makes the delta fire and the runtime patch nodeGroupCount into
-// a spec that never declared it.
 func TestObservedNodeGroupCount(t *testing.T) {
 	cases := []struct {
 		name       string
-		desired    *int64
 		nodeGroups int
-		want       *int64
+		want       int64
 	}{
-		{"unmanaged, no shards reported -> nil", nil, 0, nil},
-		{"unmanaged, shards reported -> nil", nil, 3, nil},
-		{"managed, three shards -> 3", i64p(2), 3, i64p(3)},
-		{"managed, matching count -> same", i64p(2), 2, i64p(2)},
-		{"managed, cluster-mode disabled reports none -> 1", i64p(1), 0, i64p(1)},
-		{"managed, cluster-mode disabled but user wants 2 -> 1 so a delta fires", i64p(2), 0, i64p(1)},
+		{"three shards -> 3", 3, 3},
+		{"cluster-mode disabled reports none -> 1", 0, 1},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := observedNodeGroupCount(tc.desired, tc.nodeGroups)
-			if fmtI64p(got) != fmtI64p(tc.want) {
-				t.Fatalf("want %s, got %s", fmtI64p(tc.want), fmtI64p(got))
+			if got := observedNodeGroupCount(tc.nodeGroups); *got != tc.want {
+				t.Fatalf("want %d, got %d", tc.want, *got)
 			}
 		})
 	}
@@ -118,7 +109,8 @@ func TestObservedAutomaticFailover(t *testing.T) {
 		members []*svcapitypes.GlobalReplicationGroupMember
 		want    *bool
 	}{
-		{"unmanaged -> nil regardless of members", nil, []*svcapitypes.GlobalReplicationGroupMember{member(&enabled)}, nil},
+		{"undeclared and derivable -> derived value, so adoption imports it", nil, []*svcapitypes.GlobalReplicationGroupMember{member(&enabled)}, boolp(true)},
+		{"undeclared and undeterminable -> nil", nil, nil, nil},
 		{"managed and derivable -> derived value", boolp(true), []*svcapitypes.GlobalReplicationGroupMember{member(&disabled)}, boolp(false)},
 		{"managed, derivable and agreeing -> no delta", boolp(true), []*svcapitypes.GlobalReplicationGroupMember{member(&enabled)}, boolp(true)},
 		{"managed but undeterminable -> falls back to desired so no Modify is issued", boolp(false), nil, boolp(false)},
@@ -506,119 +498,106 @@ func fmtStrp(s *string) string {
 	return *s
 }
 
-func TestObservedIfManaged(t *testing.T) {
-	cases := []struct {
-		name     string
-		desired  *string
-		observed *string
-		want     *string
-	}{
-		{"unmanaged, value observed -> nil", nil, strp("redis"), nil},
-		{"unmanaged, nothing observed -> nil", nil, nil, nil},
-		{"managed and agreeing -> observed", strp("redis"), strp("redis"), strp("redis")},
-		{"managed and diverged -> observed, so a delta fires", strp("7.1"), strp("7.0.7"), strp("7.0.7")},
-		{"managed but nothing observed -> nil", strp("redis"), nil, nil},
+// The read path reports every observed value whether or not the manifest declares
+// it, so adoption imports the datastore's real configuration.
+func TestCustomDescribeSetOutputReportsObservedValues(t *testing.T) {
+	enabled := string(svcsdktypes.AutomaticFailoverStatusEnabled)
+	resp := &svcsdk.DescribeGlobalReplicationGroupsOutput{
+		GlobalReplicationGroups: []svcsdktypes.GlobalReplicationGroup{{
+			GlobalNodeGroups: []svcsdktypes.GlobalNodeGroup{{}, {}},
+		}},
 	}
+	// What the generated field mapping puts on `latest` before the hook runs.
+	mapped := &svcapitypes.GlobalReplicationGroup{
+		Spec: svcapitypes.GlobalReplicationGroupSpec{
+			Engine:        strp("redis"),
+			EngineVersion: strp("7.0.7"),
+			CacheNodeType: strp("cache.r6g.large"),
+			Description:   strp("set by AWS"),
+		},
+		Status: svcapitypes.GlobalReplicationGroupStatus{
+			Members: []*svcapitypes.GlobalReplicationGroupMember{member(&enabled)},
+		},
+	}
+	desired := &resource{ko: &svcapitypes.GlobalReplicationGroup{}}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := observedIfManaged(tc.desired, tc.observed)
-			if fmtStrp(got) != fmtStrp(tc.want) {
-				t.Fatalf("want %s, got %s", fmtStrp(tc.want), fmtStrp(got))
-			}
-		})
+	got, err := (&resourceManager{}).CustomDescribeGlobalReplicationGroupsSetOutput(
+		context.TODO(), desired, resp, mapped,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, f := range []struct{ name, got, want string }{
+		{"Engine", fmtStrp(got.Spec.Engine), "redis"},
+		{"EngineVersion", fmtStrp(got.Spec.EngineVersion), "7.0.7"},
+		{"CacheNodeType", fmtStrp(got.Spec.CacheNodeType), "cache.r6g.large"},
+		{"Description", fmtStrp(got.Spec.Description), "set by AWS"},
+		{"NodeGroupCount", fmtI64p(got.Spec.NodeGroupCount), "2"},
+		{"AutomaticFailoverEnabled", fmtBoolp(got.Spec.AutomaticFailoverEnabled), "true"},
+	} {
+		if f.got != f.want {
+			t.Errorf("%s: want %s, got %s", f.name, f.want, f.got)
+		}
 	}
 }
 
-// A datastore inherits engine, version and node type from its primary, so AWS
-// reports all three for a manifest that declares none of them. The generated read
-// path maps each one into Spec unconditionally, which leaves a nil-desired versus
-// observed difference that no reconcile can clear: the delta never empties, every
-// pass issues a ModifyGlobalReplicationGroup carrying no field, and the update
-// requeues itself indefinitely. Nothing surfaces on the resource, because IsSynced
-// reads the datastore's status and that stays steady, so this is the read path's
-// own regression test rather than something e2e can catch.
-func TestCustomDescribeSetOutputIgnoresUnmanagedFields(t *testing.T) {
-	observed := svcsdktypes.GlobalReplicationGroup{
-		Engine:                            strp("redis"),
-		EngineVersion:                     strp("7.0.7"),
-		CacheNodeType:                     strp("cache.r6g.large"),
-		GlobalReplicationGroupDescription: strp("set by AWS"),
+// A datastore reports inherited fields for a manifest that declares none of them.
+// Left in the delta, each is a nil-versus-observed difference that no Modify can
+// clear, so the update would requeue indefinitely while IsSynced stays true.
+func TestModifyDeltaIgnoresUnsetFields(t *testing.T) {
+	observed := svcapitypes.GlobalReplicationGroupSpec{
+		AutomaticFailoverEnabled: boolp(true),
+		CacheNodeType:            strp("cache.r6g.large"),
+		Description:              strp("set by AWS"),
+		Engine:                   strp("redis"),
+		EngineVersion:            strp("7.0.7"),
+		NodeGroupCount:           i64p(2),
 	}
-	resp := &svcsdk.DescribeGlobalReplicationGroupsOutput{
-		GlobalReplicationGroups: []svcsdktypes.GlobalReplicationGroup{observed},
-	}
+	latest := grgResource(observed, nil)
 
-	// What the generated field mapping would have put on `latest` before the hook
-	// runs: every value straight out of the response.
-	mapped := func() *svcapitypes.GlobalReplicationGroup {
-		return &svcapitypes.GlobalReplicationGroup{
-			Spec: svcapitypes.GlobalReplicationGroupSpec{
-				Engine:        strp("redis"),
-				EngineVersion: strp("7.0.7"),
-				CacheNodeType: strp("cache.r6g.large"),
-				Description:   strp("set by AWS"),
-			},
-		}
-	}
-
-	rm := &resourceManager{}
-
-	t.Run("a manifest declaring none of them keeps them nil", func(t *testing.T) {
-		desired := &resource{ko: &svcapitypes.GlobalReplicationGroup{}}
-
-		got, err := rm.CustomDescribeGlobalReplicationGroupsSetOutput(
-			context.TODO(), desired, resp, mapped(),
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		for _, f := range []struct {
-			name string
-			got  *string
-		}{
-			{"Engine", got.Spec.Engine},
-			{"EngineVersion", got.Spec.EngineVersion},
-			{"CacheNodeType", got.Spec.CacheNodeType},
-			{"Description", got.Spec.Description},
-		} {
-			if f.got != nil {
-				t.Errorf("%s: want nil for an undeclared field, got %q", f.name, *f.got)
+	t.Run("undeclared fields produce no difference", func(t *testing.T) {
+		desired := grgResource(svcapitypes.GlobalReplicationGroupSpec{}, nil)
+		delta := newResourceDelta(desired, latest)
+		for _, path := range unmanagedWhenUnsetPaths {
+			if delta.DifferentAt(path) {
+				t.Errorf("%s: undeclared field still differs", path)
 			}
 		}
 	})
 
-	t.Run("a declared field still reports the observed value", func(t *testing.T) {
-		desired := &resource{ko: &svcapitypes.GlobalReplicationGroup{
-			Spec: svcapitypes.GlobalReplicationGroupSpec{
-				// Asking for 7.1 while AWS still reports 7.0.7 is the engine-upgrade
-				// delta: it has to survive, or the upgrade is never issued.
-				Engine:        strp("redis"),
-				EngineVersion: strp("7.1"),
-				CacheNodeType: strp("cache.r6g.large"),
-				Description:   strp("set by the user"),
-			},
-		}}
-
-		got, err := rm.CustomDescribeGlobalReplicationGroupsSetOutput(
-			context.TODO(), desired, resp, mapped(),
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		for _, f := range []struct {
-			name string
-			got  *string
-			want string
-		}{
-			{"Engine", got.Spec.Engine, "redis"},
-			{"EngineVersion", got.Spec.EngineVersion, "7.0.7"},
-			{"CacheNodeType", got.Spec.CacheNodeType, "cache.r6g.large"},
-			{"Description", got.Spec.Description, "set by AWS"},
-		} {
-			if fmtStrp(f.got) != f.want {
-				t.Errorf("%s: want %q, got %s", f.name, f.want, fmtStrp(f.got))
+	t.Run("declared fields that differ stay a difference", func(t *testing.T) {
+		desired := grgResource(svcapitypes.GlobalReplicationGroupSpec{
+			AutomaticFailoverEnabled: boolp(false),
+			CacheNodeType:            strp("cache.r6g.xlarge"),
+			Description:              strp("set by the user"),
+			Engine:                   strp("valkey"),
+			EngineVersion:            strp("8.0"),
+			NodeGroupCount:           i64p(3),
+		}, nil)
+		delta := newResourceDelta(desired, latest)
+		for _, path := range unmanagedWhenUnsetPaths {
+			if !delta.DifferentAt(path) {
+				t.Errorf("%s: declared difference was dropped", path)
 			}
 		}
 	})
+}
+
+// With nothing ModifyGlobalReplicationGroup can change, the update returns desired:
+// returning latest would have the runtime patch read-path values into the manifest.
+func TestModifyNoneReturnsDesired(t *testing.T) {
+	desired := grgResource(svcapitypes.GlobalReplicationGroupSpec{CacheParameterGroupName: strp("mine")}, nil)
+	latest := grgResource(svcapitypes.GlobalReplicationGroupSpec{Engine: strp("redis")}, nil)
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.CacheParameterGroupName", desired.ko.Spec.CacheParameterGroupName, nil)
+
+	got, err := (&resourceManager{}).modifyGlobalReplicationGroup(
+		context.TODO(), desired, latest, strp("id"), delta,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != desired {
+		t.Fatal("want desired returned unchanged")
+	}
 }

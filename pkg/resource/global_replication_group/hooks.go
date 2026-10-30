@@ -69,15 +69,35 @@ var (
 	)
 )
 
-// modifyDelta drops differences that are not real. AWS expands a requested engine
-// version ("7.1") to a fully qualified one ("7.1.0") and may echo the engine name
-// with different casing, either of which would otherwise re-issue the same upgrade
-// on every reconcile.
+// unmanagedWhenUnsetPaths are fields a datastore inherits from its primary or that
+// AWS fills in. The read path reports them whether or not the manifest declares
+// them, so an undeclared one would otherwise be a nil-versus-observed difference no
+// Modify can clear.
+var unmanagedWhenUnsetPaths = []string{
+	"Spec.AutomaticFailoverEnabled",
+	"Spec.CacheNodeType",
+	"Spec.Description",
+	"Spec.Engine",
+	"Spec.EngineVersion",
+	"Spec.NodeGroupCount",
+}
+
+// modifyDelta drops differences that are not real: a field the manifest leaves
+// unset, and the normalization AWS applies to engine fields. AWS expands a
+// requested engine version ("7.1") to a fully qualified one ("7.1.0") and may echo
+// the engine name with different casing, either of which would otherwise re-issue
+// the same upgrade on every reconcile.
 func modifyDelta(
 	delta *ackcompare.Delta,
 	desired *resource,
 	latest *resource,
 ) {
+	for _, path := range unmanagedWhenUnsetPaths {
+		if delta.DifferentAt(path) && specFieldUnset(desired, path) {
+			common.RemoveFromDelta(delta, path)
+		}
+	}
+
 	if delta.DifferentAt("Spec.EngineVersion") &&
 		engineVersionsEquivalent(desired.ko.Spec.EngineVersion, latest.ko.Spec.EngineVersion) {
 		common.RemoveFromDelta(delta, "Spec.EngineVersion")
@@ -103,10 +123,10 @@ func engineVersionsEquivalent(desired, latest *string) bool {
 }
 
 // CustomDescribeGlobalReplicationGroupsSetOutput fills in the two Spec fields the
-// Describe response cannot map directly. Both are populated only when the user
-// actually manages the field: writing an observed value into a Spec field left
-// unset would make the controller take ownership of it and then patch it back
-// into the user's manifest.
+// Describe response cannot map directly. Like the generated mapping, it reports
+// the observed value whether or not the manifest declares the field, so adoption
+// imports it; modifyDelta is what keeps an undeclared field from producing a
+// difference.
 func (rm *resourceManager) CustomDescribeGlobalReplicationGroupsSetOutput(
 	ctx context.Context,
 	r *resource,
@@ -118,21 +138,12 @@ func (rm *resourceManager) CustomDescribeGlobalReplicationGroupsSetOutput(
 	}
 
 	ko.Spec.NodeGroupCount = observedNodeGroupCount(
-		r.ko.Spec.NodeGroupCount,
 		len(resp.GlobalReplicationGroups[0].GlobalNodeGroups),
 	)
 	ko.Spec.AutomaticFailoverEnabled = observedAutomaticFailover(
 		r.ko.Spec.AutomaticFailoverEnabled,
 		ko.Status.Members,
 	)
-
-	// The generated read path maps these four straight out of the Describe response
-	// whether or not the user declared them, which reintroduces for them the same
-	// ownership problem the two fields above are guarded against.
-	ko.Spec.Engine = observedIfManaged(r.ko.Spec.Engine, ko.Spec.Engine)
-	ko.Spec.EngineVersion = observedIfManaged(r.ko.Spec.EngineVersion, ko.Spec.EngineVersion)
-	ko.Spec.CacheNodeType = observedIfManaged(r.ko.Spec.CacheNodeType, ko.Spec.CacheNodeType)
-	ko.Spec.Description = observedIfManaged(r.ko.Spec.Description, ko.Spec.Description)
 
 	// spec.cacheParameterGroupName is deliberately untouched. It is an input to an
 	// engine upgrade rather than observable state -- ElastiCache copies it onto the
@@ -170,34 +181,31 @@ func (rm *resourceManager) syncTags(
 		latest.ko.Status.ACKResourceMetadata, convertToOrderedACKTags, rm.sdkapi, rm.metrics)
 }
 
-// observedIfManaged returns the observed value only for a field the user actually
-// manages, and nil otherwise.
-//
-// A datastore inherits engine, version and node type from its primary, so AWS
-// reports all three on a manifest that declares none of them. Mapped into Spec
-// unconditionally, each becomes a nil-desired-versus-observed difference that no
-// reconcile can clear: the delta stays permanently non-empty, every pass issues a
-// ModifyGlobalReplicationGroup carrying no field at all, and because more than one
-// such difference is outstanding the update requeues itself indefinitely. Nothing
-// surfaces on the resource -- IsSynced reads the datastore's status, which stays
-// steady throughout -- so the loop is silent. Leaving an undeclared field nil keeps
-// both sides nil, and also stops the runtime patching an observed value back into a
-// manifest that never asked to own it.
-func observedIfManaged(desired, observed *string) *string {
-	if desired == nil {
-		return nil
+// specFieldUnset reports whether the manifest leaves one of
+// unmanagedWhenUnsetPaths unset.
+func specFieldUnset(r *resource, path string) bool {
+	s := r.ko.Spec
+	switch path {
+	case "Spec.AutomaticFailoverEnabled":
+		return s.AutomaticFailoverEnabled == nil
+	case "Spec.CacheNodeType":
+		return s.CacheNodeType == nil
+	case "Spec.Description":
+		return s.Description == nil
+	case "Spec.Engine":
+		return s.Engine == nil
+	case "Spec.EngineVersion":
+		return s.EngineVersion == nil
+	case "Spec.NodeGroupCount":
+		return s.NodeGroupCount == nil
 	}
-	return observed
+	return false
 }
 
-// observedNodeGroupCount reports the shard count to compare a desired count
-// against, or nil when the user does not manage the field. A cluster-mode
+// observedNodeGroupCount reports the datastore's shard count. A cluster-mode
 // disabled datastore reports no global node groups, which is one logical shard
 // rather than zero.
-func observedNodeGroupCount(desired *int64, globalNodeGroups int) *int64 {
-	if desired == nil {
-		return nil
-	}
+func observedNodeGroupCount(globalNodeGroups int) *int64 {
 	count := int64(globalNodeGroups)
 	if count == 0 {
 		count = 1
@@ -205,17 +213,14 @@ func observedNodeGroupCount(desired *int64, globalNodeGroups int) *int64 {
 	return &count
 }
 
-// observedAutomaticFailover reports the datastore's failover state, or nil when
-// the user does not manage the field. When the state cannot be determined from
-// the members it falls back to the desired value, so an unknown state never
-// produces a delta and never triggers a Modify that AWS would reject as a no-op.
+// observedAutomaticFailover reports the datastore's failover state. When the
+// state cannot be determined from the members it falls back to the desired value,
+// so an unknown state never produces a delta and never triggers a Modify that AWS
+// would reject as a no-op.
 func observedAutomaticFailover(
 	desired *bool,
 	members []*svcapitypes.GlobalReplicationGroupMember,
 ) *bool {
-	if desired == nil {
-		return nil
-	}
 	if derived := deriveAutomaticFailoverEnabled(members); derived != nil {
 		return derived
 	}
@@ -472,10 +477,11 @@ func (rm *resourceManager) modifyGlobalReplicationGroup(
 ) (*resource, error) {
 	next := nextModify(delta)
 	if next == modifyNone {
-		// The delta is entirely in fields this API cannot change. Return the
-		// observed resource rather than nil, which would nil-deref in the
-		// runtime's post-update patch.
-		return latest, nil
+		// The delta is entirely in fields this API cannot change. Return desired
+		// rather than nil, which would nil-deref in the runtime's post-update
+		// patch, and rather than latest, whose read-path Spec the runtime would
+		// then patch into the manifest.
+		return desired, nil
 	}
 
 	input := &svcsdk.ModifyGlobalReplicationGroupInput{
