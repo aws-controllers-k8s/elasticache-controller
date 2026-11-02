@@ -30,13 +30,16 @@ import (
 // datastoreOwnedSpecPaths are the spec fields a Global Datastore owns once a
 // replication group is one of its members. ModifyReplicationGroup rejects them
 // on a member with InvalidParameterValue, even when the value is unchanged, so
-// they can only be changed through the GlobalReplicationGroup.
+// they can only be changed through the GlobalReplicationGroup. AWS also rejects
+// any in-transit encryption change on a member, so TransitEncryptionEnabled is
+// fixed for as long as the group belongs to the datastore.
 var datastoreOwnedSpecPaths = []string{
 	"Spec.CacheNodeType",
 	"Spec.CacheParameterGroupName",
 	"Spec.Engine",
 	"Spec.EngineVersion",
 	"Spec.AutomaticFailoverEnabled",
+	"Spec.TransitEncryptionEnabled",
 }
 
 // isGlobalDatastoreMember reports whether AWS lists the replication group as a
@@ -71,6 +74,12 @@ func reconcileDatastoreOwnedFields(
 		latest.ko.Spec.EngineVersion != nil {
 		v := *latest.ko.Spec.EngineVersion
 		desired.ko.Spec.EngineVersion = &v
+	}
+	if delta.DifferentAt("Spec.TransitEncryptionEnabled") &&
+		desired.ko.Spec.TransitEncryptionEnabled != nil &&
+		latest.ko.Spec.TransitEncryptionEnabled != nil {
+		v := *latest.ko.Spec.TransitEncryptionEnabled
+		desired.ko.Spec.TransitEncryptionEnabled = &v
 	}
 	// AutomaticFailoverEnabled is only observable through status. Adopt it
 	// once settled; a transitional status is left for a later reconcile.
@@ -115,6 +124,8 @@ func stripDatastoreOwnedInput(
 	input.EngineVersion = nil
 	input.AutomaticFailoverEnabled = nil
 	input.AutoMinorVersionUpgrade = nil
+	input.TransitEncryptionEnabled = nil
+	input.TransitEncryptionMode = ""
 }
 
 // datastoreMemberAdvisoryReason keys the ACK.Advisory condition that tells
@@ -127,8 +138,8 @@ func syncDatastoreMemberAdvisory(ko *svcapitypes.ReplicationGroup) {
 	r := &resource{ko: ko}
 	if isGlobalDatastoreMember(r) {
 		msg := fmt.Sprintf("Member of Global Datastore %s: cacheNodeType, "+
-			"cacheParameterGroupName, engine, engineVersion and "+
-			"automaticFailoverEnabled are managed by the GlobalReplicationGroup, "+
+			"cacheParameterGroupName, engine, engineVersion, "+
+			"automaticFailoverEnabled and transitEncryptionEnabled are managed by the GlobalReplicationGroup, "+
 			"and their spec values are replaced with the values AWS reports.",
 			*ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID)
 		// SetAdvisory stamps a new transition time, so only call it on a change.

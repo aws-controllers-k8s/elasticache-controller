@@ -21,6 +21,7 @@ import (
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 	corev1 "k8s.io/api/core/v1"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
@@ -182,6 +183,8 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 			EngineVersion:               aws.String("7.0"),
 			AutomaticFailoverEnabled:    aws.Bool(true),
 			AutoMinorVersionUpgrade:     aws.Bool(true),
+			TransitEncryptionEnabled:    aws.Bool(true),
+			TransitEncryptionMode:       svcsdktypes.TransitEncryptionModePreferred,
 			ReplicationGroupDescription: aws.String("kept"),
 		}
 	}
@@ -189,7 +192,8 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 	in := newInput()
 	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")))
 	if in.CacheNodeType != nil || in.CacheParameterGroupName != nil || in.Engine != nil || in.EngineVersion != nil ||
-		in.AutomaticFailoverEnabled != nil || in.AutoMinorVersionUpgrade != nil {
+		in.AutomaticFailoverEnabled != nil || in.AutoMinorVersionUpgrade != nil ||
+		in.TransitEncryptionEnabled != nil || in.TransitEncryptionMode != "" {
 		t.Errorf("member input still carries datastore-owned fields: %+v", in)
 	}
 	if in.ReplicationGroupDescription == nil {
@@ -244,5 +248,23 @@ func TestSyncDatastoreMemberAdvisory(t *testing.T) {
 	}
 	if len(ackcondition.AllOfType(r, ackv1alpha1.ConditionTypeAdvisory)) != 1 {
 		t.Error("unrelated advisory was removed")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_AdoptsTransitEncryption(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.TransitEncryptionEnabled = aws.Bool(true)
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.TransitEncryptionEnabled = aws.Bool(false)
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.TransitEncryptionEnabled", desired.ko.Spec.TransitEncryptionEnabled, latest.ko.Spec.TransitEncryptionEnabled)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if *desired.ko.Spec.TransitEncryptionEnabled {
+		t.Error("TransitEncryptionEnabled = true, want the observed false")
+	}
+	if delta.DifferentAt("Spec") {
+		t.Errorf("delta still differs: %v", delta.Differences)
 	}
 }
