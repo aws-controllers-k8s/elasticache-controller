@@ -14,7 +14,9 @@
 package replication_group
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
@@ -31,8 +33,8 @@ import (
 // replication group is one of its members. ModifyReplicationGroup rejects them
 // on a member with InvalidParameterValue, even when the value is unchanged, so
 // they can only be changed through the GlobalReplicationGroup. AWS also rejects
-// any in-transit encryption change on a member, so TransitEncryptionEnabled is
-// fixed for as long as the group belongs to the datastore.
+// any in-transit encryption, durability or resharding change on a member, so
+// those are fixed for as long as the group belongs to the datastore.
 var datastoreOwnedSpecPaths = []string{
 	"Spec.CacheNodeType",
 	"Spec.CacheParameterGroupName",
@@ -40,6 +42,8 @@ var datastoreOwnedSpecPaths = []string{
 	"Spec.EngineVersion",
 	"Spec.AutomaticFailoverEnabled",
 	"Spec.TransitEncryptionEnabled",
+	"Spec.Durability",
+	"Spec.NumNodeGroups",
 }
 
 // isGlobalDatastoreMember reports whether AWS lists the replication group as a
@@ -81,6 +85,18 @@ func reconcileDatastoreOwnedFields(
 		v := *latest.ko.Spec.TransitEncryptionEnabled
 		desired.ko.Spec.TransitEncryptionEnabled = &v
 	}
+	if delta.DifferentAt("Spec.Durability") &&
+		desired.ko.Spec.Durability != nil && latest.ko.Spec.Durability != nil {
+		v := *latest.ko.Spec.Durability
+		desired.ko.Spec.Durability = &v
+	}
+	adoptDatastoreShardCount(desired, latest, delta)
+	// PrimaryClusterID can only change with automatic failover off, which a
+	// member cannot turn off. It is a create-time choice of existing node, so
+	// it is left as declared rather than adopted.
+	if delta.DifferentAt("Spec.PrimaryClusterID") {
+		common.RemoveFromDelta(delta, "Spec.PrimaryClusterID")
+	}
 	// AutomaticFailoverEnabled is only observable through status. Adopt it
 	// once settled; a transitional status is left for a later reconcile.
 	if desired.ko.Spec.AutomaticFailoverEnabled != nil &&
@@ -107,6 +123,51 @@ func reconcileDatastoreOwnedFields(
 	}
 }
 
+// adoptDatastoreShardCount adopts the shard count a Global Datastore reshard
+// set. It also refreshes the last-requested annotations, because the
+// resharding-rollback guard reads a shard difference whose annotation still
+// matches spec as a failed reshard and would drive the member Terminal.
+// Per-shard replica settings stay editable, so NodeGroupConfiguration is only
+// adopted when its shard count differs.
+func adoptDatastoreShardCount(
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) {
+	observed := len(latest.ko.Status.NodeGroups)
+	if observed == 0 {
+		return
+	}
+	adopted := false
+	spec := &desired.ko.Spec
+	if spec.NumNodeGroups != nil && *spec.NumNodeGroups != int64(observed) {
+		spec.NumNodeGroups = aws.Int64(int64(observed))
+		adopted = true
+	}
+	if spec.NodeGroupConfiguration != nil && len(spec.NodeGroupConfiguration) != observed &&
+		len(latest.ko.Spec.NodeGroupConfiguration) == observed {
+		ngc := make([]*svcapitypes.NodeGroupConfiguration, 0, observed)
+		for _, c := range latest.ko.Spec.NodeGroupConfiguration {
+			ngc = append(ngc, c.DeepCopy())
+		}
+		spec.NodeGroupConfiguration = ngc
+		common.RemoveFromDelta(delta, "Spec.NodeGroupConfiguration")
+		adopted = true
+	}
+	if !adopted {
+		return
+	}
+	annotations := getAnnotationsFields(desired, desired.ko)
+	if spec.NumNodeGroups != nil {
+		annotations[AnnotationLastRequestedNNG] = strconv.Itoa(int(*spec.NumNodeGroups))
+	}
+	if spec.NodeGroupConfiguration != nil {
+		if b, err := json.Marshal(spec.NodeGroupConfiguration); err == nil {
+			annotations[AnnotationLastRequestedNGC] = string(b)
+		}
+	}
+}
+
 // stripDatastoreOwnedInput removes the datastore-owned fields from a
 // ModifyReplicationGroup request for a member. The generated payload sends
 // every spec field regardless of the delta, plus AutoMinorVersionUpgrade copied
@@ -126,6 +187,8 @@ func stripDatastoreOwnedInput(
 	input.AutoMinorVersionUpgrade = nil
 	input.TransitEncryptionEnabled = nil
 	input.TransitEncryptionMode = ""
+	input.Durability = ""
+	input.PrimaryClusterId = nil
 }
 
 // datastoreMemberAdvisoryReason keys the ACK.Advisory condition that tells
@@ -139,8 +202,9 @@ func syncDatastoreMemberAdvisory(ko *svcapitypes.ReplicationGroup) {
 	if isGlobalDatastoreMember(r) {
 		msg := fmt.Sprintf("Member of Global Datastore %s: cacheNodeType, "+
 			"cacheParameterGroupName, engine, engineVersion, "+
-			"automaticFailoverEnabled and transitEncryptionEnabled are managed by the GlobalReplicationGroup, "+
-			"and their spec values are replaced with the values AWS reports.",
+			"automaticFailoverEnabled, transitEncryptionEnabled, durability and the shard count "+
+			"are managed by the GlobalReplicationGroup, and their spec values are replaced with "+
+			"the values AWS reports. primaryClusterID is not applied while the group is a member.",
 			*ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID)
 		// SetAdvisory stamps a new transition time, so only call it on a change.
 		if c := ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason); c != nil &&

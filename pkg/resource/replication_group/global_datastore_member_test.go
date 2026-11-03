@@ -185,6 +185,8 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 			AutoMinorVersionUpgrade:     aws.Bool(true),
 			TransitEncryptionEnabled:    aws.Bool(true),
 			TransitEncryptionMode:       svcsdktypes.TransitEncryptionModePreferred,
+			Durability:                  svcsdktypes.DurabilityAsync,
+			PrimaryClusterId:            aws.String("node-0001"),
 			ReplicationGroupDescription: aws.String("kept"),
 		}
 	}
@@ -193,7 +195,8 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")))
 	if in.CacheNodeType != nil || in.CacheParameterGroupName != nil || in.Engine != nil || in.EngineVersion != nil ||
 		in.AutomaticFailoverEnabled != nil || in.AutoMinorVersionUpgrade != nil ||
-		in.TransitEncryptionEnabled != nil || in.TransitEncryptionMode != "" {
+		in.TransitEncryptionEnabled != nil || in.TransitEncryptionMode != "" ||
+		in.Durability != "" || in.PrimaryClusterId != nil {
 		t.Errorf("member input still carries datastore-owned fields: %+v", in)
 	}
 	if in.ReplicationGroupDescription == nil {
@@ -266,5 +269,132 @@ func TestReconcileDatastoreOwnedFields_AdoptsTransitEncryption(t *testing.T) {
 	}
 	if delta.DifferentAt("Spec") {
 		t.Errorf("delta still differs: %v", delta.Differences)
+	}
+}
+
+// nodeGroups returns n observed node groups, as Describe reports after a reshard.
+func nodeGroups(n int) []*svcapitypes.NodeGroup {
+	ngs := make([]*svcapitypes.NodeGroup, 0, n)
+	for i := 0; i < n; i++ {
+		ngs = append(ngs, &svcapitypes.NodeGroup{})
+	}
+	return ngs
+}
+
+func TestReconcileDatastoreOwnedFields_AdoptsNumNodeGroups(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.NumNodeGroups = aws.Int64(1)
+	desired.ko.SetAnnotations(map[string]string{AnnotationLastRequestedNNG: "1"})
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.NumNodeGroups = aws.Int64(2)
+	latest.ko.Status.NodeGroups = nodeGroups(2)
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.NumNodeGroups", desired.ko.Spec.NumNodeGroups, latest.ko.Spec.NumNodeGroups)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if got := *desired.ko.Spec.NumNodeGroups; got != 2 {
+		t.Errorf("NumNodeGroups = %d, want the observed 2", got)
+	}
+	if delta.DifferentAt("Spec") {
+		t.Errorf("delta still differs: %v", delta.Differences)
+	}
+	// Without the refreshed annotation, the resharding-rollback guard in
+	// CustomModifyReplicationGroup would return a terminal error.
+	if nodeGroupRequiresUpdate(desired) {
+		t.Error("last-requested NumNodeGroups annotation not refreshed")
+	}
+	if (&resourceManager{}).shardConfigurationsDiffer(desired, latest) {
+		t.Error("shard configurations still differ")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_AdoptsNodeGroupConfigurationShards(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.NodeGroupConfiguration = []*svcapitypes.NodeGroupConfiguration{
+		{NodeGroupID: aws.String("0001"), ReplicaCount: aws.Int64(1)},
+	}
+	desired.ko.SetAnnotations(map[string]string{AnnotationLastRequestedNGC: `[{"nodeGroupID":"0001","replicaCount":1}]`})
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.NodeGroupConfiguration = []*svcapitypes.NodeGroupConfiguration{
+		{NodeGroupID: aws.String("0001"), ReplicaCount: aws.Int64(1)},
+		{NodeGroupID: aws.String("0002"), ReplicaCount: aws.Int64(1)},
+	}
+	latest.ko.Status.NodeGroups = nodeGroups(2)
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.NodeGroupConfiguration", desired.ko.Spec.NodeGroupConfiguration, latest.ko.Spec.NodeGroupConfiguration)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if got := len(desired.ko.Spec.NodeGroupConfiguration); got != 2 {
+		t.Fatalf("NodeGroupConfiguration has %d shards, want the observed 2", got)
+	}
+	if delta.DifferentAt("Spec") {
+		t.Errorf("delta still differs: %v", delta.Differences)
+	}
+	if nodeGroupRequiresUpdate(desired) {
+		t.Error("last-requested NodeGroupConfiguration annotation not refreshed")
+	}
+	*latest.ko.Spec.NodeGroupConfiguration[1].NodeGroupID = "changed"
+	if *desired.ko.Spec.NodeGroupConfiguration[1].NodeGroupID != "0002" {
+		t.Error("desired.NodeGroupConfiguration aliases latest")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_KeepsReplicaOnlyNodeGroupConfiguration(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.NodeGroupConfiguration = []*svcapitypes.NodeGroupConfiguration{
+		{NodeGroupID: aws.String("0001"), ReplicaCount: aws.Int64(2)},
+	}
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.NodeGroupConfiguration = []*svcapitypes.NodeGroupConfiguration{
+		{NodeGroupID: aws.String("0001"), ReplicaCount: aws.Int64(1)},
+	}
+	latest.ko.Status.NodeGroups = nodeGroups(1)
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.NodeGroupConfiguration", desired.ko.Spec.NodeGroupConfiguration, latest.ko.Spec.NodeGroupConfiguration)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if *desired.ko.Spec.NodeGroupConfiguration[0].ReplicaCount != 2 {
+		t.Error("replica-count change was overwritten; replicas stay editable on a member")
+	}
+	if !delta.DifferentAt("Spec.NodeGroupConfiguration") {
+		t.Error("replica-count difference was removed from delta")
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_AdoptsDurability(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.Durability = aws.String("async")
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.Spec.Durability = aws.String("disabled")
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.Durability", desired.ko.Spec.Durability, latest.ko.Spec.Durability)
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if got := *desired.ko.Spec.Durability; got != "disabled" {
+		t.Errorf("Durability = %q, want the observed value", got)
+	}
+	if delta.DifferentAt("Spec") {
+		t.Errorf("delta still differs: %v", delta.Differences)
+	}
+}
+
+func TestReconcileDatastoreOwnedFields_DropsPrimaryClusterID(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	desired.ko.Spec.PrimaryClusterID = aws.String("node-0001")
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.PrimaryClusterID", desired.ko.Spec.PrimaryClusterID, "node-0002")
+
+	reconcileDatastoreOwnedFields(desired, latest, delta)
+	if delta.DifferentAt("Spec") {
+		t.Errorf("delta still differs: %v", delta.Differences)
+	}
+	if got := *desired.ko.Spec.PrimaryClusterID; got != "node-0001" {
+		t.Errorf("PrimaryClusterID = %q, want the declared value kept", got)
 	}
 }
