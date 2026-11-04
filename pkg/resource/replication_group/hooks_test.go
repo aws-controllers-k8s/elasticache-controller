@@ -21,6 +21,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	"github.com/aws/smithy-go/middleware"
+
+	ackmetrics "github.com/aws-controllers-k8s/runtime/pkg/metrics"
 
 	svcapitypes "github.com/aws-controllers-k8s/elasticache-controller/apis/v1alpha1"
 )
@@ -334,6 +337,151 @@ func TestCustomModifyReplicationGroupSetOutputKeepsDesiredUserGroupIDs(t *testin
 	}
 	if got := aws.ToStringSlice(out.Spec.UserGroupIDs); !reflect.DeepEqual(got, []string{"ug-b"}) {
 		t.Errorf("Spec.UserGroupIDs = %v, want the desired [ug-b]", got)
+	}
+}
+
+// stubSDKClient returns an ElastiCache client whose operations never reach the
+// network: each call is answered by respond, and its input is recorded in calls
+// under the operation name.
+func stubSDKClient(calls map[string]interface{}, respond func(op string) interface{}) *svcsdk.Client {
+	return svcsdk.New(svcsdk.Options{
+		Region:      "us-west-2",
+		Credentials: aws.AnonymousCredentials{},
+		APIOptions: []func(*middleware.Stack) error{
+			func(s *middleware.Stack) error {
+				return s.Initialize.Add(middleware.InitializeMiddlewareFunc("stub",
+					func(ctx context.Context, in middleware.InitializeInput, _ middleware.InitializeHandler) (
+						middleware.InitializeOutput, middleware.Metadata, error,
+					) {
+						op := middleware.GetOperationName(ctx)
+						calls[op] = in.Parameters
+						return middleware.InitializeOutput{Result: respond(op)}, middleware.Metadata{}, nil
+					}), middleware.Before)
+			},
+		},
+	})
+}
+
+// The custom update paths (ModifyReplicationGroup for engine changes, replica
+// count and shard changes) return a replication group that still reports the
+// previous AutoMinorVersionUpgrade. If that value reached the spec, the runtime
+// would patch it onto the CR and a change made together with one of these
+// fields would be lost.
+func TestCustomUpdatePathsKeepDesiredAutoMinorVersionUpgrade(t *testing.T) {
+	staleRG := &svcsdktypes.ReplicationGroup{
+		ReplicationGroupId:      aws.String("rg"),
+		Status:                  aws.String("modifying"),
+		AutoMinorVersionUpgrade: aws.Bool(false),
+	}
+	newPair := func() (*resource, *resource) {
+		latest := &resource{ko: &svcapitypes.ReplicationGroup{
+			Spec: svcapitypes.ReplicationGroupSpec{
+				ReplicationGroupID:      aws.String("rg"),
+				Engine:                  aws.String("valkey"),
+				EngineVersion:           aws.String("8.1"),
+				NumNodeGroups:           aws.Int64(1),
+				ReplicasPerNodeGroup:    aws.Int64(1),
+				AutoMinorVersionUpgrade: aws.Bool(false),
+			},
+			Status: svcapitypes.ReplicationGroupStatus{
+				Status: aws.String("available"),
+				NodeGroups: []*svcapitypes.NodeGroup{{
+					NodeGroupID: aws.String("0001"),
+					Status:      aws.String("available"),
+					NodeGroupMembers: []*svcapitypes.NodeGroupMember{
+						{CacheClusterID: aws.String("rg-001")},
+						{CacheClusterID: aws.String("rg-002")},
+					},
+				}},
+			},
+		}}
+		desired := &resource{ko: latest.ko.DeepCopy()}
+		desired.ko.Spec.AutoMinorVersionUpgrade = aws.Bool(true)
+		return desired, latest
+	}
+
+	tests := []struct {
+		name   string
+		op     string
+		change func(desired *resource)
+		call   func(rm *resourceManager, desired, latest *resource) (*resource, error)
+	}{
+		{
+			name:   "engine version change",
+			op:     "ModifyReplicationGroup",
+			change: func(d *resource) { d.ko.Spec.EngineVersion = aws.String("8.2") },
+			call: func(rm *resourceManager, d, l *resource) (*resource, error) {
+				return rm.modifyReplicationGroup(context.TODO(), d, l, newResourceDelta(d, l))
+			},
+		},
+		{
+			name:   "replica count increase",
+			op:     "IncreaseReplicaCount",
+			change: func(d *resource) { d.ko.Spec.ReplicasPerNodeGroup = aws.Int64(2) },
+			call: func(rm *resourceManager, d, l *resource) (*resource, error) {
+				return rm.increaseReplicaCount(context.TODO(), d, l)
+			},
+		},
+		{
+			name:   "replica count decrease",
+			op:     "DecreaseReplicaCount",
+			change: func(d *resource) { d.ko.Spec.ReplicasPerNodeGroup = aws.Int64(0) },
+			call: func(rm *resourceManager, d, l *resource) (*resource, error) {
+				return rm.decreaseReplicaCount(context.TODO(), d, l)
+			},
+		},
+		{
+			name:   "shard count change",
+			op:     "ModifyReplicationGroupShardConfiguration",
+			change: func(d *resource) { d.ko.Spec.NumNodeGroups = aws.Int64(2) },
+			call: func(rm *resourceManager, d, l *resource) (*resource, error) {
+				return rm.updateShardConfiguration(context.TODO(), d, l)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := map[string]interface{}{}
+			rm := &resourceManager{
+				metrics: ackmetrics.NewMetrics("elasticache"),
+				sdkapi: stubSDKClient(calls, func(op string) interface{} {
+					switch op {
+					case "DescribeCacheClusters":
+						return &svcsdk.DescribeCacheClustersOutput{CacheClusters: []svcsdktypes.CacheCluster{{
+							CacheClusterId: aws.String("rg-001"),
+						}}}
+					case "ModifyReplicationGroup":
+						return &svcsdk.ModifyReplicationGroupOutput{ReplicationGroup: staleRG}
+					case "IncreaseReplicaCount":
+						return &svcsdk.IncreaseReplicaCountOutput{ReplicationGroup: staleRG}
+					case "DecreaseReplicaCount":
+						return &svcsdk.DecreaseReplicaCountOutput{ReplicationGroup: staleRG}
+					case "ModifyReplicationGroupShardConfiguration":
+						return &svcsdk.ModifyReplicationGroupShardConfigurationOutput{ReplicationGroup: staleRG}
+					}
+					t.Fatalf("unexpected call to %s", op)
+					return nil
+				}),
+			}
+			desired, latest := newPair()
+			tt.change(desired)
+
+			out, err := tt.call(rm, desired, latest)
+			if err != nil || out == nil {
+				t.Fatalf("update returned (%v, %v)", out, err)
+			}
+			if _, ok := calls[tt.op]; !ok {
+				t.Fatalf("%s was not called, calls: %v", tt.op, calls)
+			}
+			if in, ok := calls["ModifyReplicationGroup"].(*svcsdk.ModifyReplicationGroupInput); ok {
+				if in.AutoMinorVersionUpgrade == nil || !*in.AutoMinorVersionUpgrade {
+					t.Errorf("ModifyReplicationGroup input AutoMinorVersionUpgrade = %v, want true", in.AutoMinorVersionUpgrade)
+				}
+			}
+			if newResourceDelta(desired, out).DifferentAt("Spec.AutoMinorVersionUpgrade") {
+				t.Errorf("returned Spec.AutoMinorVersionUpgrade = %v, want the desired true", *out.ko.Spec.AutoMinorVersionUpgrade)
+			}
+		})
 	}
 }
 
