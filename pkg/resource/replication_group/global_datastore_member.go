@@ -39,6 +39,7 @@ var datastoreOwnedSpecPaths = []string{
 	"Spec.Engine",
 	"Spec.EngineVersion",
 	"Spec.AutomaticFailoverEnabled",
+	"Spec.AutoMinorVersionUpgrade",
 	"Spec.TransitEncryptionEnabled",
 	"Spec.Durability",
 	"Spec.NumNodeGroups",
@@ -94,6 +95,7 @@ func restoreDatastoreOwnedSpec(
 	updated.Spec.Engine = d.Engine
 	updated.Spec.EngineVersion = d.EngineVersion
 	updated.Spec.AutomaticFailoverEnabled = d.AutomaticFailoverEnabled
+	updated.Spec.AutoMinorVersionUpgrade = d.AutoMinorVersionUpgrade
 	updated.Spec.TransitEncryptionEnabled = d.TransitEncryptionEnabled
 	updated.Spec.Durability = d.Durability
 	updated.Spec.NumNodeGroups = d.NumNodeGroups
@@ -135,7 +137,7 @@ func syncDatastoreMemberAdvisory(ko *svcapitypes.ReplicationGroup) {
 	if isGlobalDatastoreMember(r) {
 		msg := fmt.Sprintf("Member of Global Datastore %s: cacheNodeType, "+
 			"cacheParameterGroupName, engine, engineVersion, automaticFailoverEnabled, "+
-			"transitEncryptionEnabled, durability, primaryClusterID and the shard count "+
+			"autoMinorVersionUpgrade, transitEncryptionEnabled, durability, primaryClusterID and the shard count "+
 			"are managed by the GlobalReplicationGroup, and their declared values are not "+
 			"applied while the group is a member. After it leaves the datastore, update "+
 			"these fields to the values AWS reports: a different cacheNodeType or shard "+

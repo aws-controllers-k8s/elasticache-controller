@@ -56,6 +56,13 @@ func newResourceDelta(
 			delta.Add("Spec.AuthToken", a.ko.Spec.AuthToken, b.ko.Spec.AuthToken)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.AutoMinorVersionUpgrade, b.ko.Spec.AutoMinorVersionUpgrade) {
+		delta.Add("Spec.AutoMinorVersionUpgrade", a.ko.Spec.AutoMinorVersionUpgrade, b.ko.Spec.AutoMinorVersionUpgrade)
+	} else if a.ko.Spec.AutoMinorVersionUpgrade != nil && b.ko.Spec.AutoMinorVersionUpgrade != nil {
+		if *a.ko.Spec.AutoMinorVersionUpgrade != *b.ko.Spec.AutoMinorVersionUpgrade {
+			delta.Add("Spec.AutoMinorVersionUpgrade", a.ko.Spec.AutoMinorVersionUpgrade, b.ko.Spec.AutoMinorVersionUpgrade)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.CacheNodeType, b.ko.Spec.CacheNodeType) {
 		delta.Add("Spec.CacheNodeType", a.ko.Spec.CacheNodeType, b.ko.Spec.CacheNodeType)
 	} else if a.ko.Spec.CacheNodeType != nil && b.ko.Spec.CacheNodeType != nil {

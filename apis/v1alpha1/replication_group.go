@@ -50,6 +50,20 @@ type ReplicationGroupSpec struct {
 	//
 	//    * Must be at least 16 characters and no more than 128 characters in length.
 	AuthToken *ackv1alpha1.SecretKeyReference `json:"authToken,omitempty"`
+	// If you are running Valkey 7.2 and above or Redis OSS engine version 6.0 and
+	// above, set this parameter to yes to opt-in to the next auto minor version
+	// upgrade campaign. This parameter is disabled for previous versions.
+	//
+	// While the replication group is a Global Datastore member, this field is
+	// managed by the GlobalReplicationGroup and the declared value is not
+	// applied. Normal reconciliation resumes once the group leaves the
+	// datastore, so update the field to the value AWS reports first: a
+	// different cacheNodeType or shard count fails with
+	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// Drift on any field can also be ignored with the
+	// services.k8s.aws/ignore-field-drift annotation, which requires the
+	// IgnoreFieldDrift feature gate.
+	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Specifies whether a read-only replica is automatically promoted to read/write
 	// primary if the existing primary fails.
 	//
@@ -469,6 +483,16 @@ type ReplicationGroupStatus struct {
 	// If you are running Valkey 7.2 and above, or Redis OSS engine version 6.0
 	// and above, set this parameter to yes if you want to opt-in to the next auto
 	// minor version upgrade campaign. This parameter is disabled for previous versions.
+	//
+	// While the replication group is a Global Datastore member, this field is
+	// managed by the GlobalReplicationGroup and the declared value is not
+	// applied. Normal reconciliation resumes once the group leaves the
+	// datastore, so update the field to the value AWS reports first: a
+	// different cacheNodeType or shard count fails with
+	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// Drift on any field can also be ignored with the
+	// services.k8s.aws/ignore-field-drift annotation, which requires the
+	// IgnoreFieldDrift feature gate.
 	// +kubebuilder:validation:Optional
 	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Indicates the status of automatic failover for this Valkey or Redis OSS replication

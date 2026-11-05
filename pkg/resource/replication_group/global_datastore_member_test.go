@@ -144,6 +144,7 @@ func memberDeltaFixtures(grgID *string) (*resource, *resource) {
 	desired.ko.Spec.Engine = aws.String("redis")
 	desired.ko.Spec.EngineVersion = aws.String("7.0")
 	desired.ko.Spec.AutomaticFailoverEnabled = aws.Bool(false)
+	desired.ko.Spec.AutoMinorVersionUpgrade = aws.Bool(false)
 	desired.ko.Spec.TransitEncryptionEnabled = aws.Bool(false)
 	desired.ko.Spec.Durability = aws.String("async")
 	desired.ko.Spec.NumNodeGroups = aws.Int64(1)
@@ -155,6 +156,7 @@ func memberDeltaFixtures(grgID *string) (*resource, *resource) {
 	latest.ko.Spec.CacheParameterGroupName = aws.String("global-datastore-redis7")
 	latest.ko.Spec.Engine = aws.String("valkey")
 	latest.ko.Spec.EngineVersion = aws.String("7.1")
+	latest.ko.Spec.AutoMinorVersionUpgrade = aws.Bool(true)
 	latest.ko.Spec.TransitEncryptionEnabled = aws.Bool(true)
 	latest.ko.Spec.Durability = aws.String("disabled")
 	latest.ko.Spec.NumNodeGroups = aws.Int64(2)
@@ -189,7 +191,7 @@ func TestNewResourceDelta_MemberDropsDatastoreOwnedDifferences(t *testing.T) {
 func TestNewResourceDelta_NonMemberKeepsDifferences(t *testing.T) {
 	desired, latest := memberDeltaFixtures(nil)
 	delta := newResourceDelta(desired, latest)
-	for _, p := range []string{"Spec.CacheNodeType", "Spec.AutomaticFailoverEnabled", "Spec.PrimaryClusterID"} {
+	for _, p := range []string{"Spec.CacheNodeType", "Spec.AutomaticFailoverEnabled", "Spec.AutoMinorVersionUpgrade", "Spec.PrimaryClusterID"} {
 		if !delta.DifferentAt(p) {
 			t.Errorf("%s dropped for a non-member", p)
 		}

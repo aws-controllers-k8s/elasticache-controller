@@ -16,6 +16,7 @@ resources:
       Engine: *datastoreOwned
       EngineVersion: *datastoreOwned
       AutomaticFailoverEnabled: *datastoreOwned
+      AutoMinorVersionUpgrade: *datastoreOwned
       TransitEncryptionEnabled: *datastoreOwned
       Durability: *datastoreOwned
       NumNodeGroups: *datastoreOwned

@@ -40,6 +40,15 @@ func EngineVersionsMatch(desiredEV, latestEV string) bool {
 	return false
 }
 
+// EngineVersionAutoUpgraded returns true if latestEV is a newer minor release of the same major version as desiredEV,
+// which is what an auto minor version upgrade produces. Only applies to major versions 6 and above.
+// precondition: both desiredEV and latestEV are non-empty
+func EngineVersionAutoUpgraded(desiredEV, latestEV string) bool {
+	dMaj, dMin := versionNumbersFromString(desiredEV)
+	lMaj, lMin := versionNumbersFromString(latestEV)
+	return dMaj > 5 && dMaj == lMaj && dMin >= 0 && lMin > dMin
+}
+
 // versionNumbersFromString takes a version string like "6.2", "6.x" or "7.0.4" and
 // returns the major, minor and patch numbers. If no minor or patch numbers are present
 // or contain the "x" placeholder, -1 is returned for that version number.
