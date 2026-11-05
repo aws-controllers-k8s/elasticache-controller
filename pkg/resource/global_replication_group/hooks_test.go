@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"testing"
 
+	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
@@ -599,5 +600,58 @@ func TestModifyNoneReturnsDesired(t *testing.T) {
 	}
 	if got != desired {
 		t.Fatal("want desired returned unchanged")
+	}
+}
+
+func TestResolveReferences_SkippedOnceDatastoreExists(t *testing.T) {
+	// An adopted datastore: no primary declared, but it exists in AWS.
+	ko := &svcapitypes.GlobalReplicationGroup{}
+	ko.Status.GlobalReplicationGroupID = strp("sgaui-grg")
+
+	_, hasRefs, err := (&resourceManager{}).ResolveReferences(context.TODO(), nil, &resource{ko})
+	if err != nil {
+		t.Fatalf("existing datastore failed reference validation: %v", err)
+	}
+	if hasRefs {
+		t.Error("hasReferences = true, want false once the datastore exists")
+	}
+}
+
+func TestResolveReferences_ValidatedBeforeCreate(t *testing.T) {
+	ko := &svcapitypes.GlobalReplicationGroup{}
+	if _, _, err := (&resourceManager{}).ResolveReferences(context.TODO(), nil, &resource{ko}); err == nil {
+		t.Error("missing primary accepted before the datastore exists")
+	}
+}
+
+func TestFillPrimaryReplicationGroupID(t *testing.T) {
+	members := []*svcapitypes.GlobalReplicationGroupMember{
+		{ReplicationGroupID: strp("rg-secondary"), Role: strp("SECONDARY")},
+		{ReplicationGroupID: strp("rg-primary"), Role: strp("PRIMARY")},
+	}
+
+	ko := &svcapitypes.GlobalReplicationGroup{}
+	ko.Status.Members = members
+	fillPrimaryReplicationGroupID(ko)
+	if ko.Spec.PrimaryReplicationGroupID == nil || *ko.Spec.PrimaryReplicationGroupID != "rg-primary" {
+		t.Errorf("PrimaryReplicationGroupID = %v, want rg-primary", ko.Spec.PrimaryReplicationGroupID)
+	}
+
+	declared := &svcapitypes.GlobalReplicationGroup{}
+	declared.Spec.PrimaryReplicationGroupID = strp("rg-original")
+	declared.Status.Members = members
+	fillPrimaryReplicationGroupID(declared)
+	if *declared.Spec.PrimaryReplicationGroupID != "rg-original" {
+		t.Error("declared primary was overwritten")
+	}
+
+	ref := &svcapitypes.GlobalReplicationGroup{}
+	ref.Spec.PrimaryReplicationGroupRef = &ackv1alpha1.AWSResourceReferenceWrapper{
+		From: &ackv1alpha1.AWSResourceReference{Name: strp("primary")},
+	}
+	ref.Status.Members = members
+	fillPrimaryReplicationGroupID(ref)
+	if ref.Spec.PrimaryReplicationGroupID != nil {
+		t.Error("ID filled alongside a declared ref")
 	}
 }

@@ -21,6 +21,9 @@ spec:
     - jsonPath: .spec.cacheNodeType
       name: NODE-TYPE
       type: string
+    - jsonPath: .status.members[?(@.role=="PRIMARY")].replicationGroupID
+      name: PRIMARY
+      type: string
     - jsonPath: .status.conditions[?(@.type=="ACK.ResourceSynced")].status
       name: Synced
       type: string
@@ -111,15 +114,25 @@ spec:
                 description: |-
                   The name of the primary cluster that accepts writes and will replicate updates
                   to the secondary cluster. This value is stored as a lowercase string.
+
+                  Used only to create the Global Datastore. It is not resolved or
+                  compared afterwards, so after a failover it still names the original
+                  primary; an adopted datastore records the primary at adoption time.
+                  status.members and the PRIMARY column show the current primary. The
+                  adopt-or-create adoption policy requires this field or
+                  primaryReplicationGroupRef.
                 type: string
                 x-kubernetes-validations:
                 - message: Value is immutable once set
                   rule: self == oldSelf
               primaryReplicationGroupRef:
-                description: "AWSResourceReferenceWrapper provides a wrapper around
-                  *AWSResourceReference\ntype to provide more user friendly syntax
-                  for references using 'from' field\nEx:\nAPIIDRef:\n\n\tfrom:\n\t
-                  \ name: my-api"
+                description: |-
+                  Used only to create the Global Datastore. It is not resolved or
+                  compared afterwards, so after a failover it still names the original
+                  primary; an adopted datastore records the primary at adoption time.
+                  status.members and the PRIMARY column show the current primary. The
+                  adopt-or-create adoption policy requires this field or
+                  primaryReplicationGroupRef.
                 properties:
                   from:
                     description: |-

@@ -572,6 +572,9 @@ resources:
     hooks:
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"
+      # The primary is only a Create input; see skipReferenceResolution.
+      references_pre_resolve:
+        code: "if skipReferenceResolution(ko) { return \u0026resource{ko}, false, nil }"
     update_operation:
       custom_method_name: customUpdateGlobalReplicationGroup
     delete_operation:
@@ -589,6 +592,10 @@ resources:
         json_path: .spec.cacheNodeType
         type: string
         index: 20
+      - name: PRIMARY
+        json_path: .status.members[?(@.role=="PRIMARY")].replicationGroupID
+        type: string
+        index: 30
     # A global datastore has two steady states: "primary-only" (no secondary
     # members attached) and "available" (secondaries attached). Both are ready.
     synced:

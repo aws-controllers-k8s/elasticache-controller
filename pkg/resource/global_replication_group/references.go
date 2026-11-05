@@ -61,6 +61,9 @@ func (rm *resourceManager) ResolveReferences(
 
 	resourceHasReferences := false
 	err := validateReferenceFields(ko)
+	if skipReferenceResolution(ko) {
+		return &resource{ko}, false, nil
+	}
 	if fieldHasReferences, err := rm.resolveReferenceForPrimaryReplicationGroupID(ctx, apiReader, ko); err != nil {
 		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
 	} else {

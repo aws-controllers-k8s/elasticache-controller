@@ -62,8 +62,21 @@ type GlobalReplicationGroupSpec struct {
 	NodeGroupCount                 *int64  `json:"nodeGroupCount,omitempty"`
 	// The name of the primary cluster that accepts writes and will replicate updates
 	// to the secondary cluster. This value is stored as a lowercase string.
+	//
+	// Used only to create the Global Datastore. It is not resolved or
+	// compared afterwards, so after a failover it still names the original
+	// primary; an adopted datastore records the primary at adoption time.
+	// status.members and the PRIMARY column show the current primary. The
+	// adopt-or-create adoption policy requires this field or
+	// primaryReplicationGroupRef.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
-	PrimaryReplicationGroupID  *string                                  `json:"primaryReplicationGroupID,omitempty"`
+	PrimaryReplicationGroupID *string `json:"primaryReplicationGroupID,omitempty"`
+	// Used only to create the Global Datastore. It is not resolved or
+	// compared afterwards, so after a failover it still names the original
+	// primary; an adopted datastore records the primary at adoption time.
+	// status.members and the PRIMARY column show the current primary. The
+	// adopt-or-create adoption policy requires this field or
+	// primaryReplicationGroupRef.
 	PrimaryReplicationGroupRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"primaryReplicationGroupRef,omitempty"`
 	// A list of tags to be added to this resource. A tag is a key-value pair. A
 	// tag key must be accompanied by a tag value, although null is accepted.
@@ -128,6 +141,7 @@ type GlobalReplicationGroupStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="STATUS",type=string,priority=0,JSONPath=`.status.status`
 // +kubebuilder:printcolumn:name="NODE-TYPE",type=string,priority=0,JSONPath=`.spec.cacheNodeType`
+// +kubebuilder:printcolumn:name="PRIMARY",type=string,priority=0,JSONPath=`.status.members[?(@.role=="PRIMARY")].replicationGroupID`
 // +kubebuilder:printcolumn:name="Synced",type="string",priority=0,JSONPath=".status.conditions[?(@.type==\"ACK.ResourceSynced\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",priority=0,JSONPath=".metadata.creationTimestamp"
 type GlobalReplicationGroup struct {

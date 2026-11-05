@@ -95,6 +95,16 @@ spec:
                   mode enabled) replication groups.
 
                   Default: false
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: boolean
               cacheNodeType:
                 description: |-
@@ -156,6 +166,16 @@ spec:
 
                      * The configuration variables appendonly and appendfsync are not supported
                      on Valkey, or on Redis OSS version 2.8.22 and later.
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: string
               cacheParameterGroupName:
                 description: |-
@@ -172,6 +192,16 @@ spec:
 
                      * To create a Valkey or Redis OSS (cluster mode enabled) replication group,
                      use CacheParameterGroupName=default.redis3.2.cluster.on.
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: string
               cacheParameterGroupRef:
                 description: "AWSResourceReferenceWrapper provides a wrapper around
@@ -237,11 +267,31 @@ spec:
                   cluster mode, and other parameters. The resolved setting is reflected in
                   the EffectiveDurability property of the replication group. For more information,
                   see Durability (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/durability.html).
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: string
               engine:
                 description: |-
                   The name of the cache engine to be used for the clusters in this replication
                   group. The value must be set to valkey or redis.
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: string
               engineVersion:
                 description: |-
@@ -255,6 +305,16 @@ spec:
                   version. If you want to use an earlier engine version, you must delete the
                   existing cluster or replication group and create it anew with the earlier
                   engine version.
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: string
               ipDiscovery:
                 description: |-
@@ -349,6 +409,11 @@ spec:
                   However, it is required when seeding a Valkey or Redis OSS (cluster mode
                   enabled) cluster from a S3 rdb file. You must configure each node group (shard)
                   using this parameter because you must specify the slots for each node group.
+
+                  While the replication group is a Global Datastore member, its shard
+                  count is managed by the GlobalReplicationGroup. A configuration whose
+                  shard count differs from the group's is not applied, including its
+                  per-shard replica settings.
                 items:
                   description: |-
                     Node group (shard) configuration options. Each node group (shard) configuration
@@ -408,6 +473,16 @@ spec:
                   to 1.
 
                   Default: 1
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 format: int64
                 type: integer
               port:
@@ -466,6 +541,16 @@ spec:
 
                   This parameter is not required if NumCacheClusters, NumNodeGroups, or ReplicasPerNodeGroup
                   is specified.
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: string
               replicasPerNodeGroup:
                 description: |-
@@ -610,6 +695,16 @@ spec:
 
                   For HIPAA compliance, you must specify TransitEncryptionEnabled as true,
                   an AuthToken, and a CacheSubnetGroup.
+
+                  While the replication group is a Global Datastore member, this field is
+                  managed by the GlobalReplicationGroup and the declared value is not
+                  applied. Normal reconciliation resumes once the group leaves the
+                  datastore, so update the field to the value AWS reports first: a
+                  different cacheNodeType or shard count fails with
+                  InvalidParameterCombination, and a lower engineVersion is rejected.
+                  Drift on any field can also be ignored with the
+                  services.k8s.aws/ignore-field-drift annotation, which requires the
+                  IgnoreFieldDrift feature gate.
                 type: boolean
               userGroupIDs:
                 description: The user group to associate with the replication group.

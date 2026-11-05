@@ -199,6 +199,12 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 	// back on the next reconcile.
 	ko.Spec.UserGroupIDs = r.ko.Spec.UserGroupIDs
 
+	// r's status is copied from latest before an update, so it carries the
+	// membership.
+	if isGlobalDatastoreMember(r) {
+		restoreDatastoreOwnedSpec(r.ko, ko)
+	}
+
 	rm.setAnnotationsFields(r, ko)
 	return ko, nil
 }
@@ -471,6 +477,19 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	latest *resource,
 	delta *ackcompare.Delta,
 ) (*resource, error) {
+	updated, err := rm.customModifyReplicationGroup(ctx, desired, latest, delta)
+	if err == nil && updated != nil && isGlobalDatastoreMember(latest) {
+		restoreDatastoreOwnedSpec(desired.ko, updated.ko)
+	}
+	return updated, err
+}
+
+func (rm *resourceManager) customModifyReplicationGroup(
+	ctx context.Context,
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) (*resource, error) {
 
 	latestRGStatus := latest.ko.Status.Status
 
@@ -508,19 +527,11 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 			requeue.DefaultRequeueAfterDuration)
 	}
 
-	// A Global Datastore member cannot modify the fields the datastore owns.
-	// Adopt the observed values rather than reverting them, and stop here when
-	// nothing else differs, so the refreshed spec is persisted.
-	if isGlobalDatastoreMember(latest) {
-		if owned := datastoreOwnedDifferences(delta); len(owned) > 0 {
-			rm.log.Info("adopting Global Datastore values for datastore-owned fields",
-				"fields", owned)
-		}
-		reconcileDatastoreOwnedFields(desired, latest, delta)
-		if !delta.DifferentAt("Spec") {
-			return &resource{ko: desired.ko.DeepCopy()}, nil
-		}
-	}
+	// modifyDelta drops a Global Datastore member's datastore-owned differences,
+	// but the checks below compare desired against latest directly. For a
+	// member, the shard and failover paths would act on those stale values, so
+	// they are skipped.
+	member := isGlobalDatastoreMember(latest)
 
 	// Handle the asynchronous rollback case for while Scaling down.
 	// This means that we have already attempted to apply the CacheNodeType once and
@@ -532,7 +543,7 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	}
 
 	// Handle the asynchronous rollback for Resharding.
-	if !nodeGroupRequiresUpdate(desired) && rm.shardConfigurationsDiffer(desired, latest) {
+	if !member && !nodeGroupRequiresUpdate(desired) && rm.shardConfigurationsDiffer(desired, latest) {
 
 		return nil, &smithy.GenericAPIError{Code: "InvalidParameterCombination", Message: "Cannot update NodeGroups, " +
 			"Please refer to Events for more details"}
@@ -554,11 +565,8 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	// 3. updateReplicaCount() is invoked Before updateShardConfiguration()
 	//		because both accept availability zones, however the number of
 	//		values depend on replica count.
-	if desired.ko.Spec.AutomaticFailoverEnabled != nil && *desired.ko.Spec.AutomaticFailoverEnabled == false {
-		latestAutomaticFailoverEnabled := latest.ko.Status.AutomaticFailover != nil && *latest.ko.Status.AutomaticFailover == "enabled"
-		if latestAutomaticFailoverEnabled != *desired.ko.Spec.AutomaticFailoverEnabled {
-			return rm.modifyReplicationGroup(ctx, desired, latest, delta)
-		}
+	if disableFailoverFirst(desired, latest) {
+		return rm.modifyReplicationGroup(ctx, desired, latest, delta)
 	}
 	if desired.ko.Spec.MultiAZEnabled != nil && *desired.ko.Spec.MultiAZEnabled == false {
 		latestMultiAZEnabled := latest.ko.Status.MultiAZ != nil && *latest.ko.Status.MultiAZ == "enabled"
@@ -589,11 +597,25 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	}
 
 	// increase/decrease shards
-	if rm.shardConfigurationsDiffer(desired, latest) {
+	if !member && rm.shardConfigurationsDiffer(desired, latest) {
 		return rm.updateShardConfiguration(ctx, desired, latest)
 	}
 
 	return rm.modifyReplicationGroup(ctx, desired, latest, delta)
+}
+
+// disableFailoverFirst reports whether automatic failover must be turned off
+// before any other change. A Global Datastore member cannot change automatic
+// failover, so its declared value is not acted on.
+func disableFailoverFirst(desired *resource, latest *resource) bool {
+	if isGlobalDatastoreMember(latest) {
+		return false
+	}
+	if desired.ko.Spec.AutomaticFailoverEnabled == nil || *desired.ko.Spec.AutomaticFailoverEnabled {
+		return false
+	}
+	return latest.ko.Status.AutomaticFailover != nil &&
+		*latest.ko.Status.AutomaticFailover == "enabled"
 }
 
 // modifyReplicationGroup updates replication group
@@ -1418,6 +1440,9 @@ func modifyDelta(
 	if updateRequired, current := primaryClusterIDRequiresUpdate(desired, latest); updateRequired {
 		delta.Add("Spec.PrimaryClusterID", desired.ko.Spec.PrimaryClusterID, *current)
 	}
+
+	// Last, so it also drops the differences added above.
+	dropDatastoreOwnedDifferences(delta, desired, latest)
 }
 
 // logDeliveryRequiresUpdate returns true if a desired log delivery request is

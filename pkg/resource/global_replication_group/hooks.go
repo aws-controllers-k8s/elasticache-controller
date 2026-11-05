@@ -144,6 +144,7 @@ func (rm *resourceManager) CustomDescribeGlobalReplicationGroupsSetOutput(
 		r.ko.Spec.AutomaticFailoverEnabled,
 		ko.Status.Members,
 	)
+	fillPrimaryReplicationGroupID(ko)
 
 	// spec.cacheParameterGroupName is deliberately untouched. It is an input to an
 	// engine upgrade rather than observable state -- ElastiCache copies it onto the
@@ -160,6 +161,35 @@ func (rm *resourceManager) CustomDescribeGlobalReplicationGroupsSetOutput(
 		ko.Spec.Tags = tags
 	}
 	return ko, nil
+}
+
+// fillPrimaryReplicationGroupID sets spec.primaryReplicationGroupID from the
+// current PRIMARY member when the spec names no primary. Describe has no
+// primary-ID field, so without this an adopted datastore would never carry one.
+// A value read here only persists during adoption, and it records the primary
+// at adoption time: like the field itself, it does not follow a failover.
+func fillPrimaryReplicationGroupID(ko *svcapitypes.GlobalReplicationGroup) {
+	if ko.Spec.PrimaryReplicationGroupID != nil || ko.Spec.PrimaryReplicationGroupRef != nil {
+		return
+	}
+	for _, m := range ko.Status.Members {
+		if m != nil && m.Role != nil && strings.EqualFold(*m.Role, rolePrimary) &&
+			m.ReplicationGroupID != nil {
+			id := *m.ReplicationGroupID
+			ko.Spec.PrimaryReplicationGroupID = &id
+			return
+		}
+	}
+}
+
+// skipReferenceResolution reports whether the datastore already exists in AWS.
+// The primary replication group is only an input to CreateGlobalReplicationGroup,
+// so once the datastore exists its reference is not resolved again: a failover
+// or a primary ReplicationGroup that is not Synced would otherwise block the
+// datastore, and an adopted datastore with no primary declared would fail
+// reference validation on every reconcile.
+func skipReferenceResolution(ko *svcapitypes.GlobalReplicationGroup) bool {
+	return ko.Status.GlobalReplicationGroupID != nil && *ko.Status.GlobalReplicationGroupID != ""
 }
 
 // getTags retrieves the datastore's tags.
