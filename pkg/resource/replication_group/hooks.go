@@ -1408,6 +1408,16 @@ func setCacheParameterGroup(
 	}
 }
 
+// kmsKeysMatch reports whether two KMS key references name the same key: the
+// same string, or a bare key ID and the key ARN that ends in that ID.
+func kmsKeysMatch(a, b string) bool {
+	if a == b {
+		return true
+	}
+	isID := func(s string) bool { return !strings.ContainsAny(s, ":/") }
+	return (isID(b) && strings.HasSuffix(a, "/"+b)) || (isID(a) && strings.HasSuffix(b, "/"+a))
+}
+
 // modifyDelta removes non-meaningful differences from the delta and adds additional differences if necessary
 func modifyDelta(
 	delta *ackcompare.Delta,
@@ -1430,6 +1440,15 @@ func modifyDelta(
 		if desired.ko.Spec.Engine != nil && latest.ko.Spec.Engine != nil &&
 			strings.EqualFold(*desired.ko.Spec.Engine, *latest.ko.Spec.Engine) {
 			common.RemoveFromDelta(delta, "Spec.Engine")
+		}
+	}
+
+	// the API reports the KMS key as an ARN, so a spec that holds the bare
+	// key ID refers to the same key and is not a change
+	if delta.DifferentAt("Spec.KMSKeyID") {
+		if desired.ko.Spec.KMSKeyID != nil && latest.ko.Spec.KMSKeyID != nil &&
+			kmsKeysMatch(*desired.ko.Spec.KMSKeyID, *latest.ko.Spec.KMSKeyID) {
+			common.RemoveFromDelta(delta, "Spec.KMSKeyID")
 		}
 	}
 

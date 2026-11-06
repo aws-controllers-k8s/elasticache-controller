@@ -1267,11 +1267,6 @@ func (rm *resourceManager) sdkUpdate(
 	} else {
 		ko.Status.EffectiveDurability = nil
 	}
-	if resp.ReplicationGroup.Engine != nil {
-		ko.Spec.Engine = resp.ReplicationGroup.Engine
-	} else {
-		ko.Spec.Engine = nil
-	}
 	if resp.ReplicationGroup.GlobalReplicationGroupInfo != nil {
 		f14 := &svcapitypes.GlobalReplicationGroupInfo{}
 		if resp.ReplicationGroup.GlobalReplicationGroupInfo.GlobalReplicationGroupId != nil {

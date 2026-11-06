@@ -189,8 +189,10 @@ resources:
             ignore: from
       Engine:
         set:
-          # the API lowercases the engine name in the create response
+          # the API lowercases the engine name in the create and modify responses
           - method: Create
+            ignore: from
+          - method: Update
             ignore: from
       NotificationTopicARN:
         references:
