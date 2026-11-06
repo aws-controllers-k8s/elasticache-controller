@@ -1,0 +1,40 @@
+resources:
+  ReplicationGroup:
+    fields:
+      CacheNodeType: &datastoreOwned
+        append: |
+          While the replication group is a Global Datastore member, this field is
+          managed by the GlobalReplicationGroup and the declared value is not
+          applied. Normal reconciliation resumes once the group leaves the
+          datastore, so update the field to the value AWS reports first: a
+          different cacheNodeType or shard count fails with
+          InvalidParameterCombination, and a lower engineVersion is rejected.
+          Drift on any field can also be ignored with the
+          services.k8s.aws/ignore-field-drift annotation, which requires the
+          IgnoreFieldDrift feature gate.
+      CacheParameterGroupName: *datastoreOwned
+      Engine: *datastoreOwned
+      EngineVersion: *datastoreOwned
+      AutomaticFailoverEnabled: *datastoreOwned
+      AutoMinorVersionUpgrade: *datastoreOwned
+      TransitEncryptionEnabled: *datastoreOwned
+      Durability: *datastoreOwned
+      NumNodeGroups: *datastoreOwned
+      PrimaryClusterID: *datastoreOwned
+      NodeGroupConfiguration:
+        append: |
+          While the replication group is a Global Datastore member, its shard
+          count is managed by the GlobalReplicationGroup. A configuration whose
+          shard count differs from the group's is not applied, including its
+          per-shard replica settings.
+  GlobalReplicationGroup:
+    fields:
+      PrimaryReplicationGroupID: &createOnly
+        append: |
+          Used only to create the Global Datastore. It is not resolved or
+          compared afterwards, so after a failover it still names the original
+          primary; an adopted datastore records the primary at adoption time.
+          status.members and the PRIMARY column show the current primary. The
+          adopt-or-create adoption policy requires this field or
+          primaryReplicationGroupRef.
+      PrimaryReplicationGroupRef: *createOnly

@@ -1,3 +1,4 @@
+	stripDatastoreOwnedInput(input, latest)
 	if !delta.DifferentAt("Spec.LogDeliveryConfigurations") {
 		input.LogDeliveryConfigurations = nil
 	}
