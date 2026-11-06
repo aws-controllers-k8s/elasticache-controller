@@ -204,6 +204,7 @@ func (rm *resourceManager) CustomModifyReplicationGroupSetOutput(
 	if isGlobalDatastoreMember(r) {
 		restoreDatastoreOwnedSpec(r.ko, ko)
 	}
+	syncDatastoreMemberAdvisory(ko)
 
 	rm.setAnnotationsFields(r, ko)
 	return ko, nil
@@ -484,8 +485,13 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	delta *ackcompare.Delta,
 ) (*resource, error) {
 	updated, err := rm.customModifyReplicationGroup(ctx, desired, latest, delta)
-	if err == nil && updated != nil && isGlobalDatastoreMember(latest) {
-		restoreDatastoreOwnedSpec(desired.ko, updated.ko)
+	if err == nil && updated != nil {
+		if isGlobalDatastoreMember(latest) {
+			restoreDatastoreOwnedSpec(desired.ko, updated.ko)
+		}
+		// An update result starts from desired, whose conditions the runtime
+		// cleared, so the advisory is set again here as on the read path.
+		syncDatastoreMemberAdvisory(updated.ko)
 	}
 	return updated, err
 }

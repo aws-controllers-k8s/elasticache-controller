@@ -123,6 +123,11 @@ resources:
       sdk_read_many_post_set_output:
         template_path: hooks/cache_subnet_group/sdk_read_many_post_set_output.go.tpl
   ReplicationGroup:
+    # Joining, leaving or failing over a Global Datastore happens outside this
+    # resource, so re-read regularly to keep status.globalReplicationGroupInfo
+    # and the member advisory current instead of waiting for the default resync.
+    reconcile:
+      requeue_on_success_seconds: 600
     exceptions:
       terminal_codes:
         - InvalidParameter

@@ -315,3 +315,34 @@ func TestRestoreDatastoreOwnedSpec(t *testing.T) {
 		t.Error("restored NodeGroupConfiguration aliases desired")
 	}
 }
+
+func TestCustomModifyReplicationGroupSetOutput_SetsMemberAdvisory(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	resp := &svcsdk.ModifyReplicationGroupOutput{ReplicationGroup: &svcsdktypes.ReplicationGroup{}}
+	// The runtime clears conditions before an update, so ko arrives without them.
+	ko := desired.ko.DeepCopy()
+
+	got, err := (&resourceManager{}).CustomModifyReplicationGroupSetOutput(context.TODO(), desired, resp, ko)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ackcondition.AdvisoryWithReason(&resource{ko: got}, datastoreMemberAdvisoryReason) == nil {
+		t.Error("member advisory dropped from the update result")
+	}
+}
+
+// requeue_on_success makes the generated updateConditions add Synced=True
+// after any successful call that left no Synced condition. customSetOutput
+// always sets one from the group's status, so a modifying group stays unsynced.
+func TestUpdateConditions_RequeueOnSuccessKeepsStatusBasedSynced(t *testing.T) {
+	rm := &resourceManager{}
+	ko := &svcapitypes.ReplicationGroup{}
+	rm.customSetOutput(context.TODO(), svcsdktypes.ReplicationGroup{Status: aws.String("modifying")}, ko)
+
+	got, _ := rm.updateConditions(&resource{ko: ko}, true, nil)
+	for _, c := range got.ko.Status.Conditions {
+		if c.Type == ackv1alpha1.ConditionTypeResourceSynced && c.Status == corev1.ConditionTrue {
+			t.Fatal("modifying replication group reported Synced=True")
+		}
+	}
+}
