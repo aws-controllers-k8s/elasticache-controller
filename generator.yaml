@@ -180,6 +180,20 @@ resources:
           resource: Key
           service_name: kms
           path: Status.ACKResourceMetadata.ARN
+        set:
+          # neither the create nor the modify response carries the key; keep
+          # the spec value and let DescribeReplicationGroups populate latest
+          - method: Create
+            ignore: from
+          - method: Update
+            ignore: from
+      Engine:
+        set:
+          # the API lowercases the engine name in the create and modify responses
+          - method: Create
+            ignore: from
+          - method: Update
+            ignore: from
       NotificationTopicARN:
         references:
           service_name: sns
