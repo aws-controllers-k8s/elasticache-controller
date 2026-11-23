@@ -551,9 +551,7 @@ func (rm *resourceManager) terminalAWSError(err error) bool {
 	}
 	switch terminalErr.ErrorCode() {
 	case "GlobalReplicationGroupAlreadyExistsFault",
-		"InvalidParameterValue",
-		"InvalidParameterCombination",
-		"ServiceLinkedRoleNotFoundFault":
+		"InvalidParameterCombination":
 		return true
 	default:
 		return false

@@ -123,11 +123,6 @@ resources:
       sdk_read_many_post_set_output:
         template_path: hooks/cache_subnet_group/sdk_read_many_post_set_output.go.tpl
   ReplicationGroup:
-    # Joining, leaving or failing over a Global Datastore happens outside this
-    # resource, so re-read regularly to keep status.globalReplicationGroupInfo
-    # and the member advisory current instead of waiting for the default resync.
-    reconcile:
-      requeue_on_success_seconds: 600
     exceptions:
       terminal_codes:
         - InvalidParameter
@@ -572,13 +567,13 @@ resources:
           code: GlobalReplicationGroupNotFoundFault
       terminal_codes:
         - GlobalReplicationGroupAlreadyExistsFault
-        - InvalidParameterValue
         - InvalidParameterCombination
-        - ServiceLinkedRoleNotFoundFault
         # ReplicationGroupNotFoundFault and CacheParameterGroupNotFound name a
         # dependency rather than this resource, so either can mean "not created
-        # yet" instead of "wrong". They retry rather than stranding the resource
-        # until its spec changes; InvalidParameterValue still catches a bad value.
+        # yet" instead of "wrong". InvalidParameterValue (e.g. a primary whose node
+        # type a Global Datastore does not support) and
+        # ServiceLinkedRoleNotFoundFault are fixed outside this spec too. All of
+        # them retry rather than stranding the resource until its spec changes.
     hooks:
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"

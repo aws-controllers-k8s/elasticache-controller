@@ -171,7 +171,10 @@ type ReplicationGroupSpec struct {
 	// datastore, so update the field to the value AWS reports first: a
 	// different cacheNodeType or shard count fails with
 	// InvalidParameterCombination, and a lower engineVersion is rejected.
-	// Drift on any field can also be ignored with the
+	// After leaving, AWS keeps the group on its global-datastore parameter
+	// group, while this field can still hold the value late-initialized at
+	// create even if the manifest never set it; set it to the group AWS
+	// reports. Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.
 	CacheParameterGroupName *string                                  `json:"cacheParameterGroupName,omitempty"`

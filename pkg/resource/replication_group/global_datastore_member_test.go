@@ -330,19 +330,3 @@ func TestCustomModifyReplicationGroupSetOutput_SetsMemberAdvisory(t *testing.T) 
 		t.Error("member advisory dropped from the update result")
 	}
 }
-
-// requeue_on_success makes the generated updateConditions add Synced=True
-// after any successful call that left no Synced condition. customSetOutput
-// always sets one from the group's status, so a modifying group stays unsynced.
-func TestUpdateConditions_RequeueOnSuccessKeepsStatusBasedSynced(t *testing.T) {
-	rm := &resourceManager{}
-	ko := &svcapitypes.ReplicationGroup{}
-	rm.customSetOutput(context.TODO(), svcsdktypes.ReplicationGroup{Status: aws.String("modifying")}, ko)
-
-	got, _ := rm.updateConditions(&resource{ko: ko}, true, nil)
-	for _, c := range got.ko.Status.Conditions {
-		if c.Type == ackv1alpha1.ConditionTypeResourceSynced && c.Status == corev1.ConditionTrue {
-			t.Fatal("modifying replication group reported Synced=True")
-		}
-	}
-}
