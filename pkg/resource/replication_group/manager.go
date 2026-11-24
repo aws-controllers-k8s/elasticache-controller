@@ -229,6 +229,7 @@ func (rm *resourceManager) LateInitialize(
 		ackcondition.SetSynced(latestCopy, corev1.ConditionFalse, nil, nil)
 		return latestCopy, err
 	}
+	syncGlobalDatastoreMembershipAnnotation(observed, latestCopy)
 	lateInitializedRes := rm.lateInitializeFromReadOneOutput(observed, latestCopy)
 	incompleteInitialization := rm.incompleteLateInitialization(lateInitializedRes)
 	if incompleteInitialization {

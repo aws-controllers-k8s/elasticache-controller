@@ -69,10 +69,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.
@@ -138,10 +137,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.
@@ -162,10 +160,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// After leaving, AWS keeps the group on its global-datastore parameter
 	// group, while this field can still hold the value late-initialized at
 	// create even if the manifest never set it; set it to the group AWS
@@ -206,10 +203,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.
@@ -227,10 +223,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.
@@ -286,10 +281,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.
@@ -342,10 +336,9 @@ type ReplicationGroupSpec struct {
 	//
 	// While the replication group is a Global Datastore member, this field is
 	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
+	// applied. After the group leaves the datastore, an update fails with
+	// a terminal error naming each such field whose declared value differs
+	// from AWS; set them to the values AWS reports.
 	// Drift on any field can also be ignored with the
 	// services.k8s.aws/ignore-field-drift annotation, which requires the
 	// IgnoreFieldDrift feature gate.

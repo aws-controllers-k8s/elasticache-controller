@@ -15,10 +15,13 @@ package replication_group
 
 import (
 	"fmt"
+	"strings"
 
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
+	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
+	acktypes "github.com/aws-controllers-k8s/runtime/pkg/types"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 	corev1 "k8s.io/api/core/v1"
 
@@ -144,6 +147,78 @@ func stripDatastoreOwnedInput(
 	}
 }
 
+// AnnotationGlobalDatastoreMember records the Global Datastore a replication
+// group belongs to. Nothing else survives into the reconcile after the group
+// leaves: the runtime replaces status with what AWS reports and clears
+// conditions. The annotation is what lets that reconcile report the declared
+// datastore-managed values as stale instead of sending them.
+var AnnotationGlobalDatastoreMember = svcapitypes.AnnotationPrefix + "global-replication-group-id"
+
+// syncGlobalDatastoreMembershipAnnotation runs during late initialization, which
+// persists metadata on every reconcile, update or not. It sets the annotation
+// while the group is a member. Once the group has left, reaching late
+// initialization means no update was refused for stale values, since that
+// returns before it, so the annotation is removed.
+func syncGlobalDatastoreMembershipAnnotation(
+	observed acktypes.AWSResource,
+	latest acktypes.AWSResource,
+) {
+	obs := observed.(*resource)
+	ko := latest.(*resource).ko
+	annotations := ko.GetAnnotations()
+	if isGlobalDatastoreMember(obs) {
+		id := *obs.ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID
+		if annotations[AnnotationGlobalDatastoreMember] == id {
+			return
+		}
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations[AnnotationGlobalDatastoreMember] = id
+		ko.SetAnnotations(annotations)
+		return
+	}
+	if _, ok := annotations[AnnotationGlobalDatastoreMember]; ok {
+		delete(annotations, AnnotationGlobalDatastoreMember)
+		ko.SetAnnotations(annotations)
+	}
+}
+
+// staleAfterLeavingDatastore returns a terminal error when the group has left
+// the Global Datastore named by its annotation and the delta still carries
+// datastore-managed fields. Those values predate the datastore's changes, and
+// sending them would downgrade or reshard the now-standalone group, so the
+// update is refused until the spec is updated. PrimaryClusterID is left out:
+// its difference comes from a node failover, not from the datastore.
+func staleAfterLeavingDatastore(
+	desired *resource,
+	latest *resource,
+	delta *ackcompare.Delta,
+) error {
+	id, ok := desired.ko.GetAnnotations()[AnnotationGlobalDatastoreMember]
+	if !ok || isGlobalDatastoreMember(latest) {
+		return nil
+	}
+	stale := []string{}
+	for _, path := range datastoreManagedSpecPaths {
+		if path != "Spec.PrimaryClusterID" && delta.DifferentAt(path) {
+			stale = append(stale, path)
+		}
+	}
+	if delta.DifferentAt("Spec.NodeGroupConfiguration") &&
+		len(desired.ko.Spec.NodeGroupConfiguration) != len(latest.ko.Status.NodeGroups) {
+		stale = append(stale, "Spec.NodeGroupConfiguration")
+	}
+	if len(stale) == 0 {
+		return nil
+	}
+	return ackerr.NewTerminalError(fmt.Errorf(
+		"the replication group is no longer a member of Global Datastore %s, and %s "+
+			"still hold values from before it left; update them to the values AWS "+
+			"reports before any other change is applied",
+		id, strings.Join(stale, ", ")))
+}
+
 // datastoreMemberAdvisoryReason keys the ACK.Advisory condition that tells
 // users a member's datastore-owned fields are not applied.
 const datastoreMemberAdvisoryReason = "GlobalDatastoreMember"
@@ -158,10 +233,8 @@ func syncDatastoreMemberAdvisory(ko *svcapitypes.ReplicationGroup) {
 			"primaryClusterID and the shard count are managed by the GlobalReplicationGroup, "+
 			"and their declared values are not applied while the group is a member. "+
 			"autoMinorVersionUpgrade, transitEncryptionEnabled and durability cannot be "+
-			"changed while the group is a member. After it leaves the datastore, update "+
-			"the managed fields to the values AWS reports: a different cacheNodeType or "+
-			"shard count fails with InvalidParameterCombination, and a lower engineVersion "+
-			"is rejected.",
+			"changed while the group is a member. After it leaves the datastore, updates "+
+			"are refused until the managed fields are set to the values AWS reports.",
 			*ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID)
 		// SetAdvisory stamps a new transition time, so only call it on a change.
 		if c := ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason); c != nil &&

@@ -15,12 +15,15 @@ package replication_group
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	ackcondition "github.com/aws-controllers-k8s/runtime/pkg/condition"
+	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/elasticache"
 	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
@@ -349,5 +352,52 @@ func TestCustomModifyReplicationGroupSetOutput_SetsMemberAdvisory(t *testing.T) 
 	}
 	if ackcondition.AdvisoryWithReason(&resource{ko: got}, datastoreMemberAdvisoryReason) == nil {
 		t.Error("member advisory dropped from the update result")
+	}
+}
+
+func TestSyncGlobalDatastoreMembershipAnnotation(t *testing.T) {
+	latest := newMemberTestRG(nil)
+	syncGlobalDatastoreMembershipAnnotation(newMemberTestRG(aws.String("sgaui-grg")), latest)
+	if got := latest.ko.GetAnnotations()[AnnotationGlobalDatastoreMember]; got != "sgaui-grg" {
+		t.Fatalf("annotation = %q, want sgaui-grg while a member", got)
+	}
+	syncGlobalDatastoreMembershipAnnotation(newMemberTestRG(nil), latest)
+	if _, ok := latest.ko.GetAnnotations()[AnnotationGlobalDatastoreMember]; ok {
+		t.Error("annotation kept after leaving with nothing stale")
+	}
+}
+
+func TestCustomModifyReplicationGroup_StaleAfterLeavingDatastore(t *testing.T) {
+	desired := newMemberTestRG(nil)
+	desired.ko.SetAnnotations(map[string]string{AnnotationGlobalDatastoreMember: "sgaui-grg"})
+	desired.ko.Spec.CacheNodeType = aws.String("cache.r6g.large")
+	desired.ko.Spec.EngineVersion = aws.String("6.2")
+	latest := availableRG(nil, 1)
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.CacheNodeType", desired.ko.Spec.CacheNodeType, aws.String("cache.r6g.xlarge"))
+	delta.Add("Spec.EngineVersion", desired.ko.Spec.EngineVersion, aws.String("7.1"))
+	delta.Add("Spec.PrimaryClusterID", nil, nil)
+
+	// rm has no client, so any AWS call would panic.
+	_, err := (&resourceManager{}).CustomModifyReplicationGroup(context.TODO(), desired, latest, delta)
+	var terminal *ackerr.TerminalError
+	if !errors.As(err, &terminal) {
+		t.Fatalf("err = %v, want a terminal error", err)
+	}
+	for _, want := range []string{"sgaui-grg", "Spec.CacheNodeType", "Spec.EngineVersion"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q does not name %s", err, want)
+		}
+	}
+	if strings.Contains(err.Error(), "PrimaryClusterID") {
+		t.Error("primaryClusterID reported as stale; its difference comes from a node failover")
+	}
+
+	// With only non-managed differences the update proceeds.
+	delta = ackcompare.NewDelta()
+	delta.Add("Spec.Description", aws.String("new"), aws.String("old"))
+	if err := staleAfterLeavingDatastore(desired, latest, delta); err != nil {
+		t.Errorf("non-managed change refused: %v", err)
 	}
 }

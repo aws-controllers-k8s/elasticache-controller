@@ -484,6 +484,9 @@ func (rm *resourceManager) CustomModifyReplicationGroup(
 	latest *resource,
 	delta *ackcompare.Delta,
 ) (*resource, error) {
+	if err := staleAfterLeavingDatastore(desired, latest, delta); err != nil {
+		return nil, err
+	}
 	updated, err := rm.customModifyReplicationGroup(ctx, desired, latest, delta)
 	if err == nil && updated != nil {
 		if isGlobalDatastoreMember(latest) {

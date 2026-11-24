@@ -242,6 +242,8 @@ resources:
         template_path: hooks/replication_group/sdk_update_post_set_output.go.tpl
       delta_post_compare:
         code: "modifyDelta(delta, a, b)"
+      late_initialize_post_read_one:
+        code: "syncGlobalDatastoreMembershipAnnotation(observed, latestCopy)"
       sdk_file_end:
         template_path: hooks/replication_group/sdk_file_end.go.tpl
       sdk_file_end_set_output_post_populate:
@@ -489,14 +491,6 @@ resources:
         - available
         - create_failed
   GlobalReplicationGroup:
-    # Member roles change outside the controller (failover, a secondary joining
-    # or leaving), so re-read the datastore regularly to keep status.members
-    # current instead of waiting for the default resync.
-    reconcile:
-      requeue_on_success_seconds: 60
-    # requeue_on_success makes the generated updateConditions report Synced after
-    # any successful call, bypassing synced.when below; this re-applies that rule.
-    update_conditions_custom_method_name: CustomUpdateConditions
     fields:
       # CreateGlobalReplicationGroup accepts only a suffix; ElastiCache prepends a
       # region-specific prefix. The resulting full ID is what every later call uses
@@ -508,7 +502,12 @@ resources:
         references:
           resource: ReplicationGroup
           path: Spec.ReplicationGroupID
+      # The datastore reports these whether or not the manifest sets them, so an
+      # unset one is late-initialized from AWS. cacheParameterGroupName is not
+      # reported back, so it cannot be.
       AutomaticFailoverEnabled:
+        late_initialize:
+          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: AutomaticFailoverEnabled
@@ -517,6 +516,8 @@ resources:
       # Copying the response back would claim fields the user never declared and
       # overwrite ones they did; an undeclared field is dropped from the delta instead.
       CacheNodeType:
+        late_initialize:
+          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: CacheNodeType
@@ -528,6 +529,8 @@ resources:
           operation: ModifyGlobalReplicationGroup
           path: CacheParameterGroupName
       Engine:
+        late_initialize:
+          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: Engine
@@ -535,6 +538,8 @@ resources:
           - method: Create
             ignore: from
       EngineVersion:
+        late_initialize:
+          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: EngineVersion
@@ -546,6 +551,11 @@ resources:
       # in customUpdateGlobalReplicationGroup.
       NodeGroupCount:
         type: "*int64"
+        late_initialize:
+          skip_incomplete_check: {}
+      Description:
+        late_initialize:
+          skip_incomplete_check: {}
     renames:
       operations:
         CreateGlobalReplicationGroup:
