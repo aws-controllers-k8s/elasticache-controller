@@ -401,3 +401,42 @@ func TestCustomModifyReplicationGroup_StaleAfterLeavingDatastore(t *testing.T) {
 		t.Errorf("non-managed change refused: %v", err)
 	}
 }
+
+// If the reconcile's first read still saw the group as a member, the update gate
+// never checked for stale values, so the annotation must survive.
+func TestSyncGlobalDatastoreMembershipAnnotation_KeptWhenFirstReadWasMember(t *testing.T) {
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	latest.ko.SetAnnotations(map[string]string{AnnotationGlobalDatastoreMember: "sgaui-grg"})
+	syncGlobalDatastoreMembershipAnnotation(newMemberTestRG(nil), latest)
+	if _, ok := latest.ko.GetAnnotations()[AnnotationGlobalDatastoreMember]; !ok {
+		t.Error("annotation removed although the update gate saw a member")
+	}
+}
+
+func TestDropDatastoreOwnedDifferences_UnsetLockedFieldsDropped(t *testing.T) {
+	desired := newMemberTestRG(aws.String("sgaui-grg"))
+	latest := newMemberTestRG(aws.String("sgaui-grg"))
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.TransitEncryptionEnabled", nil, aws.Bool(true))
+	delta.Add("Spec.Durability", nil, aws.String("disabled"))
+	dropDatastoreOwnedDifferences(delta, desired, latest)
+	if delta.DifferentAt("Spec") {
+		t.Errorf("unset locked fields left in delta: %v", delta.Differences)
+	}
+}
+
+func TestStaleAfterLeavingDatastore_ShardCount(t *testing.T) {
+	desired := newMemberTestRG(nil)
+	desired.ko.SetAnnotations(map[string]string{AnnotationGlobalDatastoreMember: "sgaui-grg"})
+	desired.ko.Spec.NodeGroupConfiguration = []*svcapitypes.NodeGroupConfiguration{{}}
+	latest := availableRG(nil, 2)
+
+	delta := ackcompare.NewDelta()
+	delta.Add("Spec.NumNodeGroups", aws.Int64(1), aws.Int64(2))
+	delta.Add("Spec.NodeGroupConfiguration", desired.ko.Spec.NodeGroupConfiguration, nil)
+	err := staleAfterLeavingDatastore(desired, latest, delta)
+	if err == nil || !strings.Contains(err.Error(), "Spec.NumNodeGroups") ||
+		!strings.Contains(err.Error(), "Spec.NodeGroupConfiguration") {
+		t.Errorf("err = %v, want both shard fields named", err)
+	}
+}

@@ -85,6 +85,14 @@ func dropDatastoreOwnedDifferences(
 			common.RemoveFromDelta(delta, path)
 		}
 	}
+	// A locked field the manifest leaves unset is not an edit. Sending nothing
+	// would never clear the difference, so it is dropped rather than retried.
+	if delta.DifferentAt("Spec.TransitEncryptionEnabled") && desired.ko.Spec.TransitEncryptionEnabled == nil {
+		common.RemoveFromDelta(delta, "Spec.TransitEncryptionEnabled")
+	}
+	if delta.DifferentAt("Spec.Durability") && desired.ko.Spec.Durability == nil {
+		common.RemoveFromDelta(delta, "Spec.Durability")
+	}
 	// Status is the reliable shard count: the read path does not rebuild
 	// Spec.NodeGroupConfiguration.
 	ngc := desired.ko.Spec.NodeGroupConfiguration
@@ -158,13 +166,16 @@ var AnnotationGlobalDatastoreMember = svcapitypes.AnnotationPrefix + "global-rep
 // persists metadata on every reconcile, update or not. It sets the annotation
 // while the group is a member. Once the group has left, reaching late
 // initialization means no update was refused for stale values, since that
-// returns before it, so the annotation is removed.
+// returns before it, so the annotation is removed. Removal needs both reads in
+// the reconcile to agree: if only the second one saw the group leave, the
+// update gate never checked for stale values.
 func syncGlobalDatastoreMembershipAnnotation(
 	observed acktypes.AWSResource,
 	latest acktypes.AWSResource,
 ) {
 	obs := observed.(*resource)
-	ko := latest.(*resource).ko
+	lat := latest.(*resource)
+	ko := lat.ko
 	annotations := ko.GetAnnotations()
 	if isGlobalDatastoreMember(obs) {
 		id := *obs.ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID
@@ -178,7 +189,7 @@ func syncGlobalDatastoreMembershipAnnotation(
 		ko.SetAnnotations(annotations)
 		return
 	}
-	if _, ok := annotations[AnnotationGlobalDatastoreMember]; ok {
+	if _, ok := annotations[AnnotationGlobalDatastoreMember]; ok && !isGlobalDatastoreMember(lat) {
 		delete(annotations, AnnotationGlobalDatastoreMember)
 		ko.SetAnnotations(annotations)
 	}
