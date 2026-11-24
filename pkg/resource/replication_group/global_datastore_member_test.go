@@ -81,7 +81,7 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 	}
 
 	in := newInput()
-	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")))
+	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")), ackcompare.NewDelta())
 	if in.CacheNodeType != nil || in.CacheParameterGroupName != nil || in.Engine != nil || in.EngineVersion != nil ||
 		in.AutomaticFailoverEnabled != nil || in.AutoMinorVersionUpgrade != nil ||
 		in.TransitEncryptionEnabled != nil || in.TransitEncryptionMode != "" ||
@@ -93,9 +93,23 @@ func TestStripDatastoreOwnedInput(t *testing.T) {
 	}
 
 	in = newInput()
-	stripDatastoreOwnedInput(in, newMemberTestRG(nil))
+	stripDatastoreOwnedInput(in, newMemberTestRG(nil), ackcompare.NewDelta())
 	if in.CacheNodeType == nil || in.AutoMinorVersionUpgrade == nil {
 		t.Error("non-member input was modified")
+	}
+
+	// A changed member-locked field is sent, so AWS's rejection surfaces.
+	in = newInput()
+	delta := ackcompare.NewDelta()
+	for _, p := range memberLockedSpecPaths {
+		delta.Add(p, nil, nil)
+	}
+	stripDatastoreOwnedInput(in, newMemberTestRG(aws.String("sgaui-grg")), delta)
+	if in.AutoMinorVersionUpgrade == nil || in.TransitEncryptionEnabled == nil || in.Durability == "" {
+		t.Errorf("changed member-locked fields were stripped: %+v", in)
+	}
+	if in.CacheNodeType != nil || in.PrimaryClusterId != nil {
+		t.Error("datastore-managed fields were sent")
 	}
 }
 
@@ -175,13 +189,20 @@ func TestNewResourceDelta_MemberDropsDatastoreOwnedDifferences(t *testing.T) {
 	before := desired.ko.DeepCopy()
 
 	delta := newResourceDelta(desired, latest)
-	for _, p := range datastoreOwnedSpecPaths {
+	for _, p := range datastoreManagedSpecPaths {
 		if delta.DifferentAt(p) {
 			t.Errorf("%s still in delta", p)
 		}
 	}
+	// Nothing can change these on a member, so the edit must reach AWS and its
+	// rejection surface rather than be ignored.
+	for _, p := range memberLockedSpecPaths {
+		if !delta.DifferentAt(p) {
+			t.Errorf("member-locked %s was dropped", p)
+		}
+	}
 	if !delta.DifferentAt("Spec.Description") {
-		t.Error("Spec.Description was dropped; only datastore-owned paths may be")
+		t.Error("Spec.Description was dropped; only datastore-managed paths may be")
 	}
 	if !equality.Semantic.DeepEqual(before, desired.ko) {
 		t.Error("desired was modified; declared values must stay in spec")

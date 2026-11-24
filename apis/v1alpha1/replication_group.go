@@ -54,15 +54,10 @@ type ReplicationGroupSpec struct {
 	// above, set this parameter to yes to opt-in to the next auto minor version
 	// upgrade campaign. This parameter is disabled for previous versions.
 	//
-	// While the replication group is a Global Datastore member, this field is
-	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
-	// Drift on any field can also be ignored with the
-	// services.k8s.aws/ignore-field-drift annotation, which requires the
-	// IgnoreFieldDrift feature gate.
+	// This field cannot be changed while the replication group is a Global
+	// Datastore member: the GlobalReplicationGroup has no API for it and AWS
+	// rejects the change on the member. The error is reported on the resource;
+	// revert the field, or change it after the group leaves the datastore.
 	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Specifies whether a read-only replica is automatically promoted to read/write
 	// primary if the existing primary fails.
@@ -201,15 +196,10 @@ type ReplicationGroupSpec struct {
 	// the EffectiveDurability property of the replication group. For more information,
 	// see Durability (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/durability.html).
 	//
-	// While the replication group is a Global Datastore member, this field is
-	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
-	// Drift on any field can also be ignored with the
-	// services.k8s.aws/ignore-field-drift annotation, which requires the
-	// IgnoreFieldDrift feature gate.
+	// This field cannot be changed while the replication group is a Global
+	// Datastore member: the GlobalReplicationGroup has no API for it and AWS
+	// rejects the change on the member. The error is reported on the resource;
+	// revert the field, or change it after the group leaves the datastore.
 	Durability *string `json:"durability,omitempty"`
 	// The name of the cache engine to be used for the clusters in this replication
 	// group. The value must be set to valkey or redis.
@@ -432,15 +422,10 @@ type ReplicationGroupSpec struct {
 	// For HIPAA compliance, you must specify TransitEncryptionEnabled as true,
 	// an AuthToken, and a CacheSubnetGroup.
 	//
-	// While the replication group is a Global Datastore member, this field is
-	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
-	// Drift on any field can also be ignored with the
-	// services.k8s.aws/ignore-field-drift annotation, which requires the
-	// IgnoreFieldDrift feature gate.
+	// This field cannot be changed while the replication group is a Global
+	// Datastore member: the GlobalReplicationGroup has no API for it and AWS
+	// rejects the change on the member. The error is reported on the resource;
+	// revert the field, or change it after the group leaves the datastore.
 	TransitEncryptionEnabled *bool `json:"transitEncryptionEnabled,omitempty"`
 	// The user group to associate with the replication group.
 	UserGroupIDs  []*string                                  `json:"userGroupIDs,omitempty"`
@@ -487,15 +472,10 @@ type ReplicationGroupStatus struct {
 	// and above, set this parameter to yes if you want to opt-in to the next auto
 	// minor version upgrade campaign. This parameter is disabled for previous versions.
 	//
-	// While the replication group is a Global Datastore member, this field is
-	// managed by the GlobalReplicationGroup and the declared value is not
-	// applied. Normal reconciliation resumes once the group leaves the
-	// datastore, so update the field to the value AWS reports first: a
-	// different cacheNodeType or shard count fails with
-	// InvalidParameterCombination, and a lower engineVersion is rejected.
-	// Drift on any field can also be ignored with the
-	// services.k8s.aws/ignore-field-drift annotation, which requires the
-	// IgnoreFieldDrift feature gate.
+	// This field cannot be changed while the replication group is a Global
+	// Datastore member: the GlobalReplicationGroup has no API for it and AWS
+	// rejects the change on the member. The error is reported on the resource;
+	// revert the field, or change it after the group leaves the datastore.
 	// +kubebuilder:validation:Optional
 	AutoMinorVersionUpgrade *bool `json:"autoMinorVersionUpgrade,omitempty"`
 	// Indicates the status of automatic failover for this Valkey or Redis OSS replication

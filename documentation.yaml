@@ -29,9 +29,14 @@ resources:
       Engine: *datastoreOwned
       EngineVersion: *datastoreOwned
       AutomaticFailoverEnabled: *datastoreOwned
-      AutoMinorVersionUpgrade: *datastoreOwned
-      TransitEncryptionEnabled: *datastoreOwned
-      Durability: *datastoreOwned
+      AutoMinorVersionUpgrade: &memberLocked
+        append: |
+          This field cannot be changed while the replication group is a Global
+          Datastore member: the GlobalReplicationGroup has no API for it and AWS
+          rejects the change on the member. The error is reported on the resource;
+          revert the field, or change it after the group leaves the datastore.
+      TransitEncryptionEnabled: *memberLocked
+      Durability: *memberLocked
       NumNodeGroups: *datastoreOwned
       PrimaryClusterID: *datastoreOwned
       NodeGroupConfiguration:

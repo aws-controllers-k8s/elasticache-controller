@@ -26,24 +26,34 @@ import (
 	"github.com/aws-controllers-k8s/elasticache-controller/pkg/common"
 )
 
-// datastoreOwnedSpecPaths are the spec fields a Global Datastore owns once a
-// replication group is one of its members. AWS rejects changing them through
-// ModifyReplicationGroup on a member, even to the current value, so they can
-// only change through the GlobalReplicationGroup. While the group is a member,
-// differences on them are ignored and the declared values are left in spec.
-// The shard count in NodeGroupConfiguration is owned too; per-shard replica
-// settings are not, so that field is handled separately.
-var datastoreOwnedSpecPaths = []string{
+// AWS rejects changing any of these fields through ModifyReplicationGroup on a
+// Global Datastore member, primary or secondary, even to the current value.
+
+// datastoreManagedSpecPaths are the fields the GlobalReplicationGroup changes for
+// every member. While the group is a member, differences on them are ignored and
+// the declared values are left in spec. The shard count in
+// NodeGroupConfiguration is managed too; per-shard replica settings are not, so
+// that field is handled separately. PrimaryClusterID is here because its
+// difference comes from comparing the declared node with the current primary
+// node, so a failover inside the group produces one without any edit.
+var datastoreManagedSpecPaths = []string{
 	"Spec.CacheNodeType",
 	"Spec.CacheParameterGroupName",
 	"Spec.Engine",
 	"Spec.EngineVersion",
 	"Spec.AutomaticFailoverEnabled",
+	"Spec.NumNodeGroups",
+	"Spec.PrimaryClusterID",
+}
+
+// memberLockedSpecPaths are the fields nothing can change while the group is a
+// member: the GlobalReplicationGroup has no API for them. A change to one is
+// sent, so AWS's rejection surfaces on the resource instead of the edit being
+// silently ignored; an unchanged value is never sent.
+var memberLockedSpecPaths = []string{
 	"Spec.AutoMinorVersionUpgrade",
 	"Spec.TransitEncryptionEnabled",
 	"Spec.Durability",
-	"Spec.NumNodeGroups",
-	"Spec.PrimaryClusterID",
 }
 
 // isGlobalDatastoreMember reports whether AWS lists the replication group as a
@@ -56,7 +66,7 @@ func isGlobalDatastoreMember(r *resource) bool {
 		*info.GlobalReplicationGroupID != ""
 }
 
-// dropDatastoreOwnedDifferences removes the datastore-owned differences from a
+// dropDatastoreOwnedDifferences removes the datastore-managed differences from a
 // member's delta, so they never trigger an update. It runs last in modifyDelta,
 // after the differences modifyDelta itself adds.
 func dropDatastoreOwnedDifferences(
@@ -67,7 +77,7 @@ func dropDatastoreOwnedDifferences(
 	if !isGlobalDatastoreMember(latest) {
 		return
 	}
-	for _, path := range datastoreOwnedSpecPaths {
+	for _, path := range datastoreManagedSpecPaths {
 		if delta.DifferentAt(path) {
 			common.RemoveFromDelta(delta, path)
 		}
@@ -105,11 +115,13 @@ func restoreDatastoreOwnedSpec(
 
 // stripDatastoreOwnedInput removes the datastore-owned fields from a
 // ModifyReplicationGroup request for a member. The generated payload sends
-// every spec field regardless of the delta, plus AutoMinorVersionUpgrade copied
-// from status, so without this any member update is rejected.
+// every spec field that is set, regardless of the delta, so without this any
+// member update is rejected. A member-locked field is kept when it changed, so
+// AWS's rejection reaches the user.
 func stripDatastoreOwnedInput(
 	input *svcsdk.ModifyReplicationGroupInput,
 	latest *resource,
+	delta *ackcompare.Delta,
 ) {
 	if !isGlobalDatastoreMember(latest) {
 		return
@@ -119,11 +131,17 @@ func stripDatastoreOwnedInput(
 	input.Engine = nil
 	input.EngineVersion = nil
 	input.AutomaticFailoverEnabled = nil
-	input.AutoMinorVersionUpgrade = nil
-	input.TransitEncryptionEnabled = nil
-	input.TransitEncryptionMode = ""
-	input.Durability = ""
 	input.PrimaryClusterId = nil
+	if !delta.DifferentAt("Spec.AutoMinorVersionUpgrade") {
+		input.AutoMinorVersionUpgrade = nil
+	}
+	if !delta.DifferentAt("Spec.TransitEncryptionEnabled") {
+		input.TransitEncryptionEnabled = nil
+		input.TransitEncryptionMode = ""
+	}
+	if !delta.DifferentAt("Spec.Durability") {
+		input.Durability = ""
+	}
 }
 
 // datastoreMemberAdvisoryReason keys the ACK.Advisory condition that tells
@@ -137,12 +155,13 @@ func syncDatastoreMemberAdvisory(ko *svcapitypes.ReplicationGroup) {
 	if isGlobalDatastoreMember(r) {
 		msg := fmt.Sprintf("Member of Global Datastore %s: cacheNodeType, "+
 			"cacheParameterGroupName, engine, engineVersion, automaticFailoverEnabled, "+
-			"autoMinorVersionUpgrade, transitEncryptionEnabled, durability, primaryClusterID and the shard count "+
-			"are managed by the GlobalReplicationGroup, and their declared values are not "+
-			"applied while the group is a member. After it leaves the datastore, update "+
-			"these fields to the values AWS reports: a different cacheNodeType or shard "+
-			"count fails with InvalidParameterCombination, and a lower engineVersion is "+
-			"rejected.",
+			"primaryClusterID and the shard count are managed by the GlobalReplicationGroup, "+
+			"and their declared values are not applied while the group is a member. "+
+			"autoMinorVersionUpgrade, transitEncryptionEnabled and durability cannot be "+
+			"changed while the group is a member. After it leaves the datastore, update "+
+			"the managed fields to the values AWS reports: a different cacheNodeType or "+
+			"shard count fails with InvalidParameterCombination, and a lower engineVersion "+
+			"is rejected.",
 			*ko.Status.GlobalReplicationGroupInfo.GlobalReplicationGroupID)
 		// SetAdvisory stamps a new transition time, so only call it on a change.
 		if c := ackcondition.AdvisoryWithReason(r, datastoreMemberAdvisoryReason); c != nil &&
