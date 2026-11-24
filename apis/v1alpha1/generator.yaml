@@ -216,6 +216,12 @@ resources:
           is_ignored: true
       NetworkType:
         is_immutable: true
+      GlobalReplicationGroupId:
+        # Create-only: ModifyReplicationGroup has no such member. The CEL rule
+        # (self == oldSelf) only runs when an old value exists, so adding or clearing
+        # the field on an existing CR passes admission and has no effect in AWS.
+        # Membership is reported in status.globalReplicationGroupInfo.
+        is_immutable: true
       Durability:
         late_initialize:
               skip_incomplete_check: {}
@@ -543,7 +549,6 @@ ignore:
     - ModifyUserInput.Passwords
     - ModifyReplicationGroupInput.SecurityGroupIds
     - ModifyReplicationGroupInput.EngineVersion
-    - CreateReplicationGroupInput.GlobalReplicationGroupId
     - CreateReplicationGroupInput.NumCacheClusters
     - CacheCluster.LogDeliveryConfigurations
     - CacheCluster.PendingModifiedValues.ScaleConfig

@@ -8,3 +8,4 @@
 		input.Durability = ""
 	}
 	rm.updateUserGroupIDsPayload(input, desired, latest, delta)
+	stripGlobalDatastoreMemberFields(input, desired, delta)

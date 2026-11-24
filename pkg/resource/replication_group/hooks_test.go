@@ -507,3 +507,118 @@ func TestSetAnnotationsFieldsDropsLegacyLogDeliveryAnnotation(t *testing.T) {
 		t.Errorf("cache node type annotation = %q", ko.ObjectMeta.Annotations[AnnotationLastRequestedCNT])
 	}
 }
+
+func TestStripGlobalDatastoreMemberFields(t *testing.T) {
+	newInput := func() *svcsdk.ModifyReplicationGroupInput {
+		return &svcsdk.ModifyReplicationGroupInput{
+			AutoMinorVersionUpgrade:     aws.Bool(true),
+			CacheNodeType:               aws.String("cache.r6g.large"),
+			CacheParameterGroupName:     aws.String("default.redis7"),
+			ReplicationGroupDescription: aws.String("new"),
+		}
+	}
+	newPair := func(grgID *string) (*resource, *resource) {
+		latest := &resource{ko: &svcapitypes.ReplicationGroup{Spec: svcapitypes.ReplicationGroupSpec{
+			GlobalReplicationGroupID: grgID,
+			AutoMinorVersionUpgrade:  aws.Bool(true),
+			CacheNodeType:            aws.String("cache.r6g.large"),
+			CacheParameterGroupName:  aws.String("default.redis7"),
+			Description:              aws.String("old"),
+		}}}
+		return &resource{ko: latest.ko.DeepCopy()}, latest
+	}
+
+	t.Run("field set, members unchanged: stripped", func(t *testing.T) {
+		desired, latest := newPair(aws.String("abcde-grg"))
+		desired.ko.Spec.Description = aws.String("new")
+		input := newInput()
+		stripGlobalDatastoreMemberFields(input, desired, newResourceDelta(desired, latest))
+		if input.AutoMinorVersionUpgrade != nil || input.CacheNodeType != nil || input.CacheParameterGroupName != nil {
+			t.Errorf("expected the three members stripped, got %+v", input)
+		}
+		if aws.ToString(input.ReplicationGroupDescription) != "new" {
+			t.Errorf("ReplicationGroupDescription must be kept, got %v", input.ReplicationGroupDescription)
+		}
+	})
+
+	t.Run("field set, member edited: edited member kept", func(t *testing.T) {
+		desired, latest := newPair(aws.String("abcde-grg"))
+		desired.ko.Spec.CacheNodeType = aws.String("cache.r6g.xlarge")
+		desired.ko.Spec.AutoMinorVersionUpgrade = aws.Bool(false)
+		desired.ko.Spec.CacheParameterGroupName = aws.String("custom")
+		input := newInput()
+		stripGlobalDatastoreMemberFields(input, desired, newResourceDelta(desired, latest))
+		if input.CacheNodeType == nil || input.AutoMinorVersionUpgrade == nil || input.CacheParameterGroupName == nil {
+			t.Errorf("a deliberate edit must reach AWS, got %+v", input)
+		}
+	})
+
+	t.Run("field nil: nothing stripped", func(t *testing.T) {
+		desired, latest := newPair(nil)
+		desired.ko.Spec.Description = aws.String("new")
+		input := newInput()
+		stripGlobalDatastoreMemberFields(input, desired, newResourceDelta(desired, latest))
+		if input.AutoMinorVersionUpgrade == nil || input.CacheNodeType == nil || input.CacheParameterGroupName == nil {
+			t.Errorf("expected all members kept, got %+v", input)
+		}
+	})
+}
+
+// sdkUpdate must call stripGlobalDatastoreMemberFields, so that a description
+// edit on a group created with Spec.GlobalReplicationGroupID does not carry the
+// members AWS rejects on a Global Datastore member.
+func TestSDKUpdateStripsGlobalDatastoreMemberFields(t *testing.T) {
+	latest := &resource{ko: &svcapitypes.ReplicationGroup{
+		Spec: svcapitypes.ReplicationGroupSpec{
+			ReplicationGroupID:       aws.String("rg"),
+			GlobalReplicationGroupID: aws.String("abcde-grg"),
+			AutoMinorVersionUpgrade:  aws.Bool(true),
+			CacheNodeType:            aws.String("cache.r6g.large"),
+			CacheParameterGroupName:  aws.String("default.redis7"),
+			Description:              aws.String("old"),
+		},
+		Status: svcapitypes.ReplicationGroupStatus{
+			Status:         aws.String("available"),
+			MemberClusters: []*string{aws.String("rg-001")},
+			NodeGroups: []*svcapitypes.NodeGroup{{
+				NodeGroupID: aws.String("0001"),
+				Status:      aws.String("available"),
+				NodeGroupMembers: []*svcapitypes.NodeGroupMember{
+					{CacheClusterID: aws.String("rg-001")},
+				},
+			}},
+		},
+	}}
+	desired := &resource{ko: latest.ko.DeepCopy()}
+	desired.ko.Spec.Description = aws.String("new")
+
+	calls := map[string]interface{}{}
+	rm := &resourceManager{
+		metrics: ackmetrics.NewMetrics("elasticache"),
+		sdkapi: stubSDKClient(calls, func(op string) interface{} {
+			if op == "ModifyReplicationGroup" {
+				return &svcsdk.ModifyReplicationGroupOutput{ReplicationGroup: &svcsdktypes.ReplicationGroup{
+					ARN:                aws.String("arn:aws:elasticache:us-west-2:123456789012:replicationgroup:rg"),
+					ReplicationGroupId: aws.String("rg"),
+					Status:             aws.String("modifying"),
+				}}
+			}
+			t.Fatalf("unexpected call to %s", op)
+			return nil
+		}),
+	}
+
+	if _, err := rm.sdkUpdate(context.TODO(), desired, latest, newResourceDelta(desired, latest)); err != nil {
+		t.Fatal(err)
+	}
+	input, ok := calls["ModifyReplicationGroup"].(*svcsdk.ModifyReplicationGroupInput)
+	if !ok {
+		t.Fatalf("ModifyReplicationGroup was not called, calls: %v", calls)
+	}
+	if input.AutoMinorVersionUpgrade != nil || input.CacheNodeType != nil || input.CacheParameterGroupName != nil {
+		t.Errorf("expected the three members stripped from the update payload, got %+v", input)
+	}
+	if aws.ToString(input.ReplicationGroupDescription) != "new" {
+		t.Errorf("ReplicationGroupDescription = %v, want new", input.ReplicationGroupDescription)
+	}
+}

@@ -988,6 +988,9 @@ func (rm *resourceManager) newCreateRequestPayload(
 	if r.ko.Spec.EngineVersion != nil {
 		res.EngineVersion = r.ko.Spec.EngineVersion
 	}
+	if r.ko.Spec.GlobalReplicationGroupID != nil {
+		res.GlobalReplicationGroupId = r.ko.Spec.GlobalReplicationGroupID
+	}
 	if r.ko.Spec.IPDiscovery != nil {
 		res.IpDiscovery = svcsdktypes.IpDiscovery(*r.ko.Spec.IPDiscovery)
 	}
@@ -995,42 +998,42 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.KmsKeyId = r.ko.Spec.KMSKeyID
 	}
 	if r.ko.Spec.LogDeliveryConfigurations != nil {
-		f14 := []svcsdktypes.LogDeliveryConfigurationRequest{}
-		for _, f14iter := range r.ko.Spec.LogDeliveryConfigurations {
-			f14elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
-			if f14iter.DestinationDetails != nil {
-				f14elemf0 := &svcsdktypes.DestinationDetails{}
-				if f14iter.DestinationDetails.CloudWatchLogsDetails != nil {
-					f14elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
-					if f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
-						f14elemf0f0.LogGroup = f14iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
+		f15 := []svcsdktypes.LogDeliveryConfigurationRequest{}
+		for _, f15iter := range r.ko.Spec.LogDeliveryConfigurations {
+			f15elem := &svcsdktypes.LogDeliveryConfigurationRequest{}
+			if f15iter.DestinationDetails != nil {
+				f15elemf0 := &svcsdktypes.DestinationDetails{}
+				if f15iter.DestinationDetails.CloudWatchLogsDetails != nil {
+					f15elemf0f0 := &svcsdktypes.CloudWatchLogsDestinationDetails{}
+					if f15iter.DestinationDetails.CloudWatchLogsDetails.LogGroup != nil {
+						f15elemf0f0.LogGroup = f15iter.DestinationDetails.CloudWatchLogsDetails.LogGroup
 					}
-					f14elemf0.CloudWatchLogsDetails = f14elemf0f0
+					f15elemf0.CloudWatchLogsDetails = f15elemf0f0
 				}
-				if f14iter.DestinationDetails.KinesisFirehoseDetails != nil {
-					f14elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
-					if f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
-						f14elemf0f1.DeliveryStream = f14iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
+				if f15iter.DestinationDetails.KinesisFirehoseDetails != nil {
+					f15elemf0f1 := &svcsdktypes.KinesisFirehoseDestinationDetails{}
+					if f15iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream != nil {
+						f15elemf0f1.DeliveryStream = f15iter.DestinationDetails.KinesisFirehoseDetails.DeliveryStream
 					}
-					f14elemf0.KinesisFirehoseDetails = f14elemf0f1
+					f15elemf0.KinesisFirehoseDetails = f15elemf0f1
 				}
-				f14elem.DestinationDetails = f14elemf0
+				f15elem.DestinationDetails = f15elemf0
 			}
-			if f14iter.DestinationType != nil {
-				f14elem.DestinationType = svcsdktypes.DestinationType(*f14iter.DestinationType)
+			if f15iter.DestinationType != nil {
+				f15elem.DestinationType = svcsdktypes.DestinationType(*f15iter.DestinationType)
 			}
-			if f14iter.Enabled != nil {
-				f14elem.Enabled = f14iter.Enabled
+			if f15iter.Enabled != nil {
+				f15elem.Enabled = f15iter.Enabled
 			}
-			if f14iter.LogFormat != nil {
-				f14elem.LogFormat = svcsdktypes.LogFormat(*f14iter.LogFormat)
+			if f15iter.LogFormat != nil {
+				f15elem.LogFormat = svcsdktypes.LogFormat(*f15iter.LogFormat)
 			}
-			if f14iter.LogType != nil {
-				f14elem.LogType = svcsdktypes.LogType(*f14iter.LogType)
+			if f15iter.LogType != nil {
+				f15elem.LogType = svcsdktypes.LogType(*f15iter.LogType)
 			}
-			f14 = append(f14, *f14elem)
+			f15 = append(f15, *f15elem)
 		}
-		res.LogDeliveryConfigurations = f14
+		res.LogDeliveryConfigurations = f15
 	}
 	if r.ko.Spec.MultiAZEnabled != nil {
 		res.MultiAZEnabled = r.ko.Spec.MultiAZEnabled
@@ -1039,38 +1042,38 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.NetworkType = svcsdktypes.NetworkType(*r.ko.Spec.NetworkType)
 	}
 	if r.ko.Spec.NodeGroupConfiguration != nil {
-		f17 := []svcsdktypes.NodeGroupConfiguration{}
-		for _, f17iter := range r.ko.Spec.NodeGroupConfiguration {
-			f17elem := &svcsdktypes.NodeGroupConfiguration{}
-			if f17iter.NodeGroupID != nil {
-				f17elem.NodeGroupId = f17iter.NodeGroupID
+		f18 := []svcsdktypes.NodeGroupConfiguration{}
+		for _, f18iter := range r.ko.Spec.NodeGroupConfiguration {
+			f18elem := &svcsdktypes.NodeGroupConfiguration{}
+			if f18iter.NodeGroupID != nil {
+				f18elem.NodeGroupId = f18iter.NodeGroupID
 			}
-			if f17iter.PrimaryAvailabilityZone != nil {
-				f17elem.PrimaryAvailabilityZone = f17iter.PrimaryAvailabilityZone
+			if f18iter.PrimaryAvailabilityZone != nil {
+				f18elem.PrimaryAvailabilityZone = f18iter.PrimaryAvailabilityZone
 			}
-			if f17iter.PrimaryOutpostARN != nil {
-				f17elem.PrimaryOutpostArn = f17iter.PrimaryOutpostARN
+			if f18iter.PrimaryOutpostARN != nil {
+				f18elem.PrimaryOutpostArn = f18iter.PrimaryOutpostARN
 			}
-			if f17iter.ReplicaAvailabilityZones != nil {
-				f17elem.ReplicaAvailabilityZones = aws.ToStringSlice(f17iter.ReplicaAvailabilityZones)
+			if f18iter.ReplicaAvailabilityZones != nil {
+				f18elem.ReplicaAvailabilityZones = aws.ToStringSlice(f18iter.ReplicaAvailabilityZones)
 			}
-			if f17iter.ReplicaCount != nil {
-				replicaCountCopy0 := *f17iter.ReplicaCount
+			if f18iter.ReplicaCount != nil {
+				replicaCountCopy0 := *f18iter.ReplicaCount
 				if replicaCountCopy0 > math.MaxInt32 || replicaCountCopy0 < math.MinInt32 {
 					return nil, fmt.Errorf("error: field ReplicaCount is of type int32")
 				}
 				replicaCountCopy := int32(replicaCountCopy0)
-				f17elem.ReplicaCount = &replicaCountCopy
+				f18elem.ReplicaCount = &replicaCountCopy
 			}
-			if f17iter.ReplicaOutpostARNs != nil {
-				f17elem.ReplicaOutpostArns = aws.ToStringSlice(f17iter.ReplicaOutpostARNs)
+			if f18iter.ReplicaOutpostARNs != nil {
+				f18elem.ReplicaOutpostArns = aws.ToStringSlice(f18iter.ReplicaOutpostARNs)
 			}
-			if f17iter.Slots != nil {
-				f17elem.Slots = f17iter.Slots
+			if f18iter.Slots != nil {
+				f18elem.Slots = f18iter.Slots
 			}
-			f17 = append(f17, *f17elem)
+			f18 = append(f18, *f18elem)
 		}
-		res.NodeGroupConfiguration = f17
+		res.NodeGroupConfiguration = f18
 	}
 	if r.ko.Spec.NotificationTopicARN != nil {
 		res.NotificationTopicArn = r.ko.Spec.NotificationTopicARN
@@ -1135,18 +1138,18 @@ func (rm *resourceManager) newCreateRequestPayload(
 		res.SnapshotWindow = r.ko.Spec.SnapshotWindow
 	}
 	if r.ko.Spec.Tags != nil {
-		f32 := []svcsdktypes.Tag{}
-		for _, f32iter := range r.ko.Spec.Tags {
-			f32elem := &svcsdktypes.Tag{}
-			if f32iter.Key != nil {
-				f32elem.Key = f32iter.Key
+		f33 := []svcsdktypes.Tag{}
+		for _, f33iter := range r.ko.Spec.Tags {
+			f33elem := &svcsdktypes.Tag{}
+			if f33iter.Key != nil {
+				f33elem.Key = f33iter.Key
 			}
-			if f32iter.Value != nil {
-				f32elem.Value = f32iter.Value
+			if f33iter.Value != nil {
+				f33elem.Value = f33iter.Value
 			}
-			f32 = append(f32, *f32elem)
+			f33 = append(f33, *f33elem)
 		}
-		res.Tags = f32
+		res.Tags = f33
 	}
 	if r.ko.Spec.TransitEncryptionEnabled != nil {
 		res.TransitEncryptionEnabled = r.ko.Spec.TransitEncryptionEnabled
@@ -1195,6 +1198,7 @@ func (rm *resourceManager) sdkUpdate(
 		input.Durability = ""
 	}
 	rm.updateUserGroupIDsPayload(input, desired, latest, delta)
+	stripGlobalDatastoreMemberFields(input, desired, delta)
 
 	var resp *svcsdk.ModifyReplicationGroupOutput
 	_ = resp

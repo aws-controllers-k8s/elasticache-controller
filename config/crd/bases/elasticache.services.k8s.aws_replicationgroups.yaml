@@ -262,6 +262,12 @@ spec:
                   existing cluster or replication group and create it anew with the earlier
                   engine version.
                 type: string
+              globalReplicationGroupID:
+                description: The name of the Global datastore
+                type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
               ipDiscovery:
                 description: |-
                   The network type you choose when creating a replication group, either ipv4

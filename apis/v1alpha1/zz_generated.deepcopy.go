@@ -2849,6 +2849,11 @@ func (in *ReplicationGroupSpec) DeepCopyInto(out *ReplicationGroupSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.GlobalReplicationGroupID != nil {
+		in, out := &in.GlobalReplicationGroupID, &out.GlobalReplicationGroupID
+		*out = new(string)
+		**out = **in
+	}
 	if in.IPDiscovery != nil {
 		in, out := &in.IPDiscovery, &out.IPDiscovery
 		*out = new(string)

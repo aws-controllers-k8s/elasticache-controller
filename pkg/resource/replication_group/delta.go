@@ -132,6 +132,13 @@ func newResourceDelta(
 			delta.Add("Spec.EngineVersion", a.ko.Spec.EngineVersion, b.ko.Spec.EngineVersion)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.GlobalReplicationGroupID, b.ko.Spec.GlobalReplicationGroupID) {
+		delta.Add("Spec.GlobalReplicationGroupID", a.ko.Spec.GlobalReplicationGroupID, b.ko.Spec.GlobalReplicationGroupID)
+	} else if a.ko.Spec.GlobalReplicationGroupID != nil && b.ko.Spec.GlobalReplicationGroupID != nil {
+		if *a.ko.Spec.GlobalReplicationGroupID != *b.ko.Spec.GlobalReplicationGroupID {
+			delta.Add("Spec.GlobalReplicationGroupID", a.ko.Spec.GlobalReplicationGroupID, b.ko.Spec.GlobalReplicationGroupID)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery) {
 		delta.Add("Spec.IPDiscovery", a.ko.Spec.IPDiscovery, b.ko.Spec.IPDiscovery)
 	} else if a.ko.Spec.IPDiscovery != nil && b.ko.Spec.IPDiscovery != nil {
