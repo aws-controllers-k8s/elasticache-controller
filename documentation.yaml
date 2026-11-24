@@ -1,0 +1,56 @@
+resources:
+  ReplicationGroup:
+    fields:
+      CacheNodeType: &datastoreOwned
+        append: |
+          While the replication group is a Global Datastore member, this field is
+          managed by the GlobalReplicationGroup and the declared value is not
+          applied. After the group leaves the datastore, an update fails with
+          a terminal error naming each such field whose declared value differs
+          from AWS; set them to the values AWS reports.
+          Drift on any field can also be ignored with the
+          services.k8s.aws/ignore-field-drift annotation, which requires the
+          IgnoreFieldDrift feature gate.
+      CacheParameterGroupName:
+        append: |
+          While the replication group is a Global Datastore member, this field is
+          managed by the GlobalReplicationGroup and the declared value is not
+          applied. After the group leaves the datastore, an update fails with
+          a terminal error naming each such field whose declared value differs
+          from AWS; set them to the values AWS reports.
+          After leaving, AWS keeps the group on its global-datastore parameter
+          group, while this field can still hold the value late-initialized at
+          create even if the manifest never set it; set it to the group AWS
+          reports. Drift on any field can also be ignored with the
+          services.k8s.aws/ignore-field-drift annotation, which requires the
+          IgnoreFieldDrift feature gate.
+      Engine: *datastoreOwned
+      EngineVersion: *datastoreOwned
+      AutomaticFailoverEnabled: *datastoreOwned
+      AutoMinorVersionUpgrade: &memberLocked
+        append: |
+          This field cannot be changed while the replication group is a Global
+          Datastore member: the GlobalReplicationGroup has no API for it and AWS
+          rejects the change on the member. The error is reported on the resource;
+          revert the field, or change it after the group leaves the datastore.
+      TransitEncryptionEnabled: *memberLocked
+      Durability: *memberLocked
+      NumNodeGroups: *datastoreOwned
+      PrimaryClusterID: *datastoreOwned
+      NodeGroupConfiguration:
+        append: |
+          While the replication group is a Global Datastore member, its shard
+          count is managed by the GlobalReplicationGroup. A configuration whose
+          shard count differs from the group's is not applied, including its
+          per-shard replica settings.
+  GlobalReplicationGroup:
+    fields:
+      PrimaryReplicationGroupID: &createOnly
+        append: |
+          Used only to create the Global Datastore. It is not resolved or
+          compared afterwards, so after a failover it still names the original
+          primary; an adopted datastore records the primary at adoption time.
+          status.members and the PRIMARY column show the current primary. The
+          adopt-or-create adoption policy requires this field or
+          primaryReplicationGroupRef.
+      PrimaryReplicationGroupRef: *createOnly
