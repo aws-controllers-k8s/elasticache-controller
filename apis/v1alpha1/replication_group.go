@@ -172,6 +172,9 @@ type ReplicationGroupSpec struct {
 	// existing cluster or replication group and create it anew with the earlier
 	// engine version.
 	EngineVersion *string `json:"engineVersion,omitempty"`
+	// The name of the Global datastore
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	GlobalReplicationGroupID *string `json:"globalReplicationGroupID,omitempty"`
 	// The network type you choose when creating a replication group, either ipv4
 	// | ipv6. IPv6 is supported for workloads using Valkey 7.2 and above, Redis
 	// OSS engine version 6.2 to 7.1 or Memcached engine version 1.6.6 and above

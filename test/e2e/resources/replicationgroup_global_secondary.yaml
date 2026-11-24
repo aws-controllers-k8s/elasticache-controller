@@ -1,0 +1,11 @@
+# Replication group shaped like a Global Datastore secondary: no engine, engine version,
+# cache node type, shard count or failover setting, which AWS takes from the global group.
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: $RG_ID
+spec:
+  description: global datastore secondary
+  replicationGroupID: $RG_ID
+  globalReplicationGroupID: $GLOBAL_RG_ID
+  replicasPerNodeGroup: 1

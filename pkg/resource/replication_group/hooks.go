@@ -1634,6 +1634,30 @@ func (rm *resourceManager) updateUserGroupIDsPayload(
 	}
 }
 
+// stripGlobalDatastoreMemberFields removes the members that ModifyReplicationGroup
+// rejects on a Global Datastore member, even with unchanged values, from the
+// update payload. It applies only to a group created with
+// Spec.GlobalReplicationGroupID, and only to a member the user has not edited,
+// so a deliberate change still reaches AWS and surfaces AWS's own error.
+func stripGlobalDatastoreMemberFields(
+	input *svcsdk.ModifyReplicationGroupInput,
+	desired *resource,
+	delta *ackcompare.Delta,
+) {
+	if desired.ko.Spec.GlobalReplicationGroupID == nil {
+		return
+	}
+	if !delta.DifferentAt("Spec.AutoMinorVersionUpgrade") {
+		input.AutoMinorVersionUpgrade = nil
+	}
+	if !delta.DifferentAt("Spec.CacheNodeType") {
+		input.CacheNodeType = nil
+	}
+	if !delta.DifferentAt("Spec.CacheParameterGroupName") {
+		input.CacheParameterGroupName = nil
+	}
+}
+
 // primaryClusterIDRequiresUpdate retrieves the current primary cluster ID and determines whether
 // an update is required. If no desired state is specified or there is an issue retrieving the
 // latest state, return false, nil. Otherwise, return false or true depending on equality of

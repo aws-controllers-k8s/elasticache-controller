@@ -19,6 +19,8 @@ import boto3
 import logging
 from time import sleep
 
+from kubernetes.client.rest import ApiException
+
 from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_elasticache_resource
@@ -240,6 +242,37 @@ class TestReplicationGroup:
         sleep(DEFAULT_WAIT_SECS)
         # throws exception if wait fails
         rg_deletion_waiter.wait(ReplicationGroupId=input_dict['RG_ID'])
+
+    def test_rg_global_replication_group_id(self, make_rg_name, make_replication_group, elasticache_client):
+        # A real secondary needs a cross-region primary and a global group, so the
+        # group ID points at one that does not exist. AWS must receive the field and
+        # answer GlobalReplicationGroupNotFoundFault (recoverable) instead of creating
+        # a standalone replication group.
+        input_dict = {
+            "RG_ID": make_rg_name("rg-grg"),
+            "GLOBAL_RG_ID": "zzzzz-ack-nonexistent",
+        }
+        (reference, _) = make_replication_group(
+            "replicationgroup_global_secondary", input_dict, input_dict["RG_ID"])
+
+        try:
+            sleep(DEFAULT_WAIT_SECS)
+            resource = k8s.get_resource(reference)
+            assert_recoverable_condition_set(resource)
+
+            with pytest.raises(elasticache_client.exceptions.ReplicationGroupNotFoundFault):
+                elasticache_client.describe_replication_groups(
+                    ReplicationGroupId=input_dict["RG_ID"])
+
+            # spec.globalReplicationGroupID is create-only: changing it is rejected
+            # by the CRD validation.
+            patch = {"spec": {"globalReplicationGroupID": "zzzzz-ack-other"}}
+            with pytest.raises(ApiException) as exc:
+                k8s.patch_custom_resource(reference, patch)
+            assert exc.value.status == 422
+            assert "immutable" in str(exc.value.body).lower()
+        finally:
+            k8s.delete_custom_resource(reference)
 
     # test update of fields that can be changed quickly
 
