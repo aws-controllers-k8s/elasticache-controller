@@ -50,7 +50,7 @@ var (
 // +kubebuilder:rbac:groups=elasticache.services.k8s.aws,resources=globalreplicationgroups,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=elasticache.services.k8s.aws,resources=globalreplicationgroups/status,verbs=get;update;patch
 
-var lateInitializeFieldNames = []string{"AutomaticFailoverEnabled", "CacheNodeType", "Description", "Engine", "EngineVersion", "NodeGroupCount"}
+var lateInitializeFieldNames = []string{}
 
 // resourceManager is responsible for providing a consistent way to perform
 // CRUD operations in a backend AWS service API for Book custom resources.
@@ -260,27 +260,7 @@ func (rm *resourceManager) lateInitializeFromReadOneOutput(
 	observed acktypes.AWSResource,
 	latest acktypes.AWSResource,
 ) acktypes.AWSResource {
-	observedKo := rm.concreteResource(observed).ko.DeepCopy()
-	latestKo := rm.concreteResource(latest).ko.DeepCopy()
-	if observedKo.Spec.AutomaticFailoverEnabled != nil && latestKo.Spec.AutomaticFailoverEnabled == nil {
-		latestKo.Spec.AutomaticFailoverEnabled = observedKo.Spec.AutomaticFailoverEnabled
-	}
-	if observedKo.Spec.CacheNodeType != nil && latestKo.Spec.CacheNodeType == nil {
-		latestKo.Spec.CacheNodeType = observedKo.Spec.CacheNodeType
-	}
-	if observedKo.Spec.Description != nil && latestKo.Spec.Description == nil {
-		latestKo.Spec.Description = observedKo.Spec.Description
-	}
-	if observedKo.Spec.Engine != nil && latestKo.Spec.Engine == nil {
-		latestKo.Spec.Engine = observedKo.Spec.Engine
-	}
-	if observedKo.Spec.EngineVersion != nil && latestKo.Spec.EngineVersion == nil {
-		latestKo.Spec.EngineVersion = observedKo.Spec.EngineVersion
-	}
-	if observedKo.Spec.NodeGroupCount != nil && latestKo.Spec.NodeGroupCount == nil {
-		latestKo.Spec.NodeGroupCount = observedKo.Spec.NodeGroupCount
-	}
-	return &resource{latestKo}
+	return latest
 }
 
 // IsSynced returns true if the resource is synced.

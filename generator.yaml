@@ -502,12 +502,7 @@ resources:
         references:
           resource: ReplicationGroup
           path: Spec.ReplicationGroupID
-      # The datastore reports these whether or not the manifest sets them, so an
-      # unset one is late-initialized from AWS. cacheParameterGroupName is not
-      # reported back, so it cannot be.
       AutomaticFailoverEnabled:
-        late_initialize:
-          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: AutomaticFailoverEnabled
@@ -516,8 +511,6 @@ resources:
       # Copying the response back would claim fields the user never declared and
       # overwrite ones they did; an undeclared field is dropped from the delta instead.
       CacheNodeType:
-        late_initialize:
-          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: CacheNodeType
@@ -529,8 +522,6 @@ resources:
           operation: ModifyGlobalReplicationGroup
           path: CacheParameterGroupName
       Engine:
-        late_initialize:
-          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: Engine
@@ -538,8 +529,6 @@ resources:
           - method: Create
             ignore: from
       EngineVersion:
-        late_initialize:
-          skip_incomplete_check: {}
         from:
           operation: ModifyGlobalReplicationGroup
           path: EngineVersion
@@ -551,11 +540,6 @@ resources:
       # in customUpdateGlobalReplicationGroup.
       NodeGroupCount:
         type: "*int64"
-        late_initialize:
-          skip_incomplete_check: {}
-      Description:
-        late_initialize:
-          skip_incomplete_check: {}
     renames:
       operations:
         CreateGlobalReplicationGroup:
